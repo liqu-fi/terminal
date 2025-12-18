@@ -1,0 +1,576 @@
+.container {
+  transition: all var(--transition-normal);
+}
+
+.container.focused {
+  box-shadow: 0 0 0 2px var(--color-info);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.sideToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.sideBtn {
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.sideBtn.buyBtn.active {
+  background: var(--color-price-up);
+  color: white;
+}
+
+.sideBtn.sellBtn.active {
+  background: var(--color-price-down);
+  color: white;
+}
+
+.sideBtn:hover:not(.active) {
+  background: var(--color-bg-hover);
+}
+
+.typeToggle {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.typeBtn {
+  flex: 1;
+  padding: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: transparent;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.typeBtn.active {
+  background: var(--color-bg-hover);
+  border-color: var(--color-info);
+  color: var(--color-info);
+}
+
+.typeBtn:hover:not(.active) {
+  background: var(--color-bg-hover);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.input {
+  flex: 1;
+  padding-right: 60px;
+}
+
+.stepBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.stepBtn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+.inputSuffix {
+  position: absolute;
+  right: calc(28px + var(--space-1) + var(--space-2));
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.quickFillButtons {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.quickFillBtn {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  background: transparent;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quickFillBtn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+.percentButtons {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.percentBtn {
+  flex: 1;
+  padding: var(--space-1);
+  font-size: var(--font-size-xs);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.percentBtn:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-primary);
+}
+
+.totalRow,
+.balanceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) 0;
+}
+
+.totalRow {
+  border-top: 1px solid var(--color-border-secondary);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.totalLabel,
+.balanceLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+.totalValue {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.balanceValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.submitBtn {
+  width: 100%;
+  height: 44px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.buySubmit {
+  background: var(--color-price-up);
+  border-color: var(--color-price-up);
+  color: white;
+}
+
+.buySubmit:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.sellSubmit {
+  background: var(--color-price-down);
+  border-color: var(--color-price-down);
+  color: white;
+}
+
+.sellSubmit:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.focusBadge {
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-info);
+  background: var(--color-info-bg);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.estimatedInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.estimatedRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.estimatedLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.estimatedValue {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.degradedConfirm {
+  padding: var(--space-3);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+}
+
+.confirmText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.confirmActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.confirmBtn,
+.cancelBtn {
+  flex: 1;
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.confirmBtn {
+  background: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  color: white;
+}
+
+.confirmBtn:hover {
+  filter: brightness(1.1);
+}
+
+.cancelBtn {
+  background: transparent;
+  border: 1px solid var(--color-border-primary);
+  color: var(--color-text-secondary);
+}
+
+.cancelBtn:hover {
+  background: var(--color-bg-hover);
+}
+
+/* 数据状态提示 - 用视觉语言代替文字 */
+.confidenceWarning {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.confidenceWarning.degraded {
+  background: var(--color-warning-bg);
+}
+
+.confidenceWarning.resyncing {
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.confidenceWarning.stale {
+  background: var(--color-negative-bg);
+}
+
+.warningBar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.confidenceWarning.degraded .warningBar {
+  background: var(--color-warning);
+}
+
+.confidenceWarning.resyncing .warningBar {
+  background: #f97316;
+  animation: barPulse 1.5s ease-in-out infinite;
+}
+
+.confidenceWarning.stale .warningBar {
+  background: var(--color-negative);
+}
+
+@keyframes barPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.warningText {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.submitBtn.degraded {
+  border-color: var(--color-warning) !important;
+}
+
+.submitBtn.resyncing,
+.submitBtn.stale {
+  background: var(--color-bg-tertiary) !important;
+  border-color: var(--color-border-primary) !important;
+  color: var(--color-text-tertiary) !important;
+  cursor: not-allowed !important;
+}
+
+/* 快捷操作按钮 */
+.quickActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.quickBtn {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.quickBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.allInBuyBtn {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+  border-color: var(--color-price-up);
+  color: var(--color-price-up);
+}
+
+.allInBuyBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.1));
+}
+
+.allInSellBtn {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+  border-color: var(--color-price-down);
+  color: var(--color-price-down);
+}
+
+.allInSellBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.1));
+}
+
+/* 确认弹窗 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 360px;
+  max-width: 90vw;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.buyIcon {
+  color: var(--color-price-up);
+}
+
+.sellIcon {
+  color: var(--color-price-down);
+}
+
+.modalTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.modalBody {
+  padding: var(--space-4);
+}
+
+.modalMessage {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-2);
+  line-height: 1.5;
+}
+
+.modalDetail {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.modalActions {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.modalCancelBtn {
+  flex: 1;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modalCancelBtn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.modalConfirmBtn {
+  flex: 1;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modalConfirmBtn.buyConfirm {
+  background: var(--color-price-up);
+  color: white;
+}
+
+.modalConfirmBtn.buyConfirm:hover {
+  background: #16a34a;
+}
+
+.modalConfirmBtn.sellConfirm {
+  background: var(--color-price-down);
+  color: white;
+}
+
+.modalConfirmBtn.sellConfirm:hover {
+  background: #dc2626;
+}
+

@@ -1,0 +1,226 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.container .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.staleWarning {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 6px;
+  background: var(--color-price-down-bg);
+  border-radius: var(--radius-sm);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.asksSection,
+.bidsSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.asksSection {
+  justify-content: flex-end;
+}
+
+.level {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px var(--space-2);
+  position: relative;
+  height: 22px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.level:hover {
+  background: var(--color-bg-hover);
+}
+
+.level:active {
+  background: var(--accent-alpha, rgba(59, 130, 246, 0.1));
+}
+
+.depthBar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0.15;
+}
+
+.depthBar.bid {
+  right: 0;
+  background: var(--color-price-up);
+}
+
+.depthBar.ask {
+  right: 0;
+  background: var(--color-price-down);
+}
+
+.price {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  z-index: 1;
+}
+
+.quantity {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  z-index: 1;
+}
+
+.spreadSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-tertiary);
+  border-top: 1px solid var(--color-border-secondary);
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.spreadLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.spreadValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.spreadBps {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--color-text-tertiary);
+}
+
+/* 移除了 hint 部分，更简洁的界面 */
+
+/* ===== 诚实系统：可信度状态样式 ===== */
+
+/* 容器的可信度状态 */
+.container.degraded {
+  border-color: var(--color-warning);
+}
+
+.container.resyncing {
+  border-color: #f97316;
+  position: relative;
+}
+
+.container.stale {
+  border-color: var(--color-negative);
+}
+
+/* 可信度徽章 */
+.confidenceBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.confidenceBadge.degraded {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.confidenceBadge.resyncing {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.15);
+}
+
+.confidenceBadge.resyncing svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.confidenceBadge.stale {
+  color: var(--color-negative);
+  background: var(--color-negative-bg);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* 重建中的覆盖层 - 极简视觉 */
+.resyncOverlay {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #f97316, transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.resyncSpinner {
+  display: none;
+}
+
+/* 数据过期时的淡化效果 */
+.staleBody {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.staleBody .price,
+.staleBody .quantity {
+  color: var(--text-tertiary) !important;
+}
+

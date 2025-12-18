@@ -1,0 +1,217 @@
+/* ===== 数据可信度条 - 紧凑状态条设计 ===== */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 var(--space-4);
+  background: var(--color-bg-secondary);
+  border-bottom: 2px solid;
+  transition: all var(--transition-normal);
+}
+
+/* 四种可信度状态的颜色 */
+.bar.live {
+  border-bottom-color: var(--color-success);
+  background: linear-gradient(to right, rgba(22, 163, 74, 0.05), var(--color-bg-secondary));
+}
+
+.bar.degraded {
+  border-bottom-color: var(--color-warning);
+  background: linear-gradient(to right, rgba(202, 138, 4, 0.05), var(--color-bg-secondary));
+}
+
+.bar.resyncing {
+  border-bottom-color: #f97316;
+  background: linear-gradient(to right, rgba(249, 115, 22, 0.05), var(--color-bg-secondary));
+}
+
+.bar.stale {
+  border-bottom-color: var(--color-error);
+  background: linear-gradient(to right, rgba(220, 38, 38, 0.05), var(--color-bg-secondary));
+}
+
+/* 左区：状态指示 */
+.statusSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 180px;
+}
+
+.statusIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.statusIcon.live {
+  color: var(--color-success);
+}
+
+.statusIcon.degraded {
+  color: var(--color-warning);
+}
+
+.statusIcon.resyncing {
+  color: #f97316;
+}
+
+.statusIcon.stale {
+  color: var(--color-error);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.statusInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statusText {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+
+.statusReason {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* 中区：Last Trusted Update */
+.updateSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+}
+
+.updateTime {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+/* 右区：快速指标 + 控制 */
+.metricsSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.metricLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.metricValue {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.diagnosticsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.diagnosticsBtn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .bar {
+    padding: 0 var(--space-3);
+  }
+
+  .statusSection {
+    min-width: 150px;
+  }
+
+  .statusReason {
+    max-width: 120px;
+  }
+
+  .metricsSection {
+    gap: var(--space-2);
+  }
+
+  .metric {
+    min-width: 50px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 48px;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .statusSection {
+    min-width: auto;
+    flex: 1 1 100%;
+  }
+
+  .updateSection {
+    flex: 1 1 100%;
+    padding: var(--space-2) 0;
+    justify-content: flex-start;
+  }
+
+  .metricsSection {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}

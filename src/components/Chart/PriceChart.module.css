@@ -1,0 +1,232 @@
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.symbol {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.priceInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.currentPrice {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.priceChange {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.priceChange.up {
+  color: var(--buy);
+  background: rgba(63, 185, 80, 0.15);
+}
+
+.priceChange.down {
+  color: var(--sell);
+  background: rgba(248, 81, 73, 0.15);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.typeToggle {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--bg-tertiary);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+
+.typeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: all var(--transition-fast);
+}
+
+.typeBtn:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.typeBtn.active {
+  color: var(--accent);
+  background: var(--surface-active);
+}
+
+.rangeToggle {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.rangeBtn {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.rangeBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.rangeBtn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-alpha);
+}
+
+.chartWrapper {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  min-height: 380px;
+}
+
+/* 隐藏 TradingView 水印 */
+.chartWrapper :global(#tv-attr-logo),
+.chartWrapper :global([id^="tv-attr"]),
+.chartWrapper :global(a[href*="tradingview"]) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Loading Overlay */
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: var(--bg-secondary);
+  z-index: 10;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loadingOverlay span {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Error Overlay */
+.errorOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: var(--bg-secondary);
+  z-index: 10;
+}
+
+.errorOverlay svg {
+  color: var(--color-error);
+}
+
+.errorOverlay span {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.retryBtn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.retryBtn:hover {
+  filter: brightness(1.1);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
+  .controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .rangeToggle {
+    flex-wrap: wrap;
+  }
+}

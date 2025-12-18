@@ -1,0 +1,182 @@
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.body {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border-secondary);
+  transition: background-color var(--transition-fast);
+}
+
+.row:hover {
+  background: var(--color-bg-hover);
+}
+
+.row.pending {
+  opacity: 0.7;
+}
+
+.row.submitted {
+  opacity: 0.8;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0.5; }
+}
+
+.mainInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sideType {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.side {
+  padding: 2px 6px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+}
+
+.side.buy {
+  background: var(--color-price-up-bg);
+  color: var(--color-price-up);
+}
+
+.side.sell {
+  background: var(--color-price-down-bg);
+  color: var(--color-price-down);
+}
+
+.type {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+}
+
+.symbol {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.detailValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.progressBar {
+  height: 4px;
+  background: var(--color-bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width var(--transition-normal);
+}
+
+.progressFill.buyFill {
+  background: var(--color-price-up);
+}
+
+.progressFill.sellFill {
+  background: var(--color-price-down);
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.status_pending {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+}
+
+.status_submitted {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-info);
+}
+
+.status_open {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-info);
+}
+
+.status_partial {
+  background: var(--color-price-up-bg);
+  color: var(--color-price-up);
+}
+
+.cancelBtn {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background: transparent;
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-sm);
+  color: var(--color-error);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cancelBtn:hover {
+  background: var(--color-price-down-bg);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+
+
+
+

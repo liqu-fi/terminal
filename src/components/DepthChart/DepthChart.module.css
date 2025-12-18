@@ -1,0 +1,188 @@
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.container .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.midPrice {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.chart {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr;
+  gap: 0;
+  padding: var(--space-2);
+  min-height: 300px;
+}
+
+.bidSide,
+.askSide {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bidSide {
+  align-items: flex-end;
+}
+
+.askSide {
+  align-items: flex-start;
+}
+
+.level {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  gap: var(--space-1);
+}
+
+.bidSide .level {
+  flex-direction: row-reverse;
+}
+
+.bar {
+  height: 14px;
+  border-radius: 2px;
+  position: relative;
+  min-width: 4px;
+  transition: width var(--transition-fast);
+}
+
+.bidBar {
+  background: var(--color-price-up);
+  opacity: 0.3;
+}
+
+.askBar {
+  background: var(--color-price-down);
+  opacity: 0.3;
+}
+
+.barLabel {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+.bidSide .barLabel {
+  right: 4px;
+}
+
+.askSide .barLabel {
+  left: 4px;
+}
+
+.price {
+  font-size: var(--font-size-xs);
+  min-width: 60px;
+}
+
+.bidSide .price {
+  text-align: left;
+}
+
+.askSide .price {
+  text-align: right;
+}
+
+.center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.midLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border-primary);
+}
+
+.tradeIndicators {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.tradeIndicator {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.tradeIndicator.buyTrade {
+  background: var(--color-price-up);
+  box-shadow: 0 0 4px var(--color-price-up);
+}
+
+.tradeIndicator.sellTrade {
+  background: var(--color-price-down);
+  box-shadow: 0 0 4px var(--color-price-down);
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-2);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.legendDot.bidDot {
+  background: var(--color-price-up);
+}
+
+.legendDot.askDot {
+  background: var(--color-price-down);
+}
+
+.legendDot.tradeDot {
+  background: var(--color-info);
+  border-radius: 50%;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--color-text-tertiary);
+}
+
+
+
+
+
