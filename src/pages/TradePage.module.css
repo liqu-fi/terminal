@@ -1,70 +1,180 @@
 .container {
-  display: grid;
-  grid-template-columns: 200px 300px 1fr 320px;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  min-height: calc(100vh - 140px);
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.watchlistSidebar {
-  flex-shrink: 0;
-  width: 200px;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.leftColumn,
-.centerColumn,
-.rightColumn {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  padding: var(--space-2);
+  height: calc(100vh - 64px); /* Adjusted for TopNav height */
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.mainLayout {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar Panels */
+.leftPanel, .rightPanel {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
-@media (max-width: 1600px) {
-  .container {
-    grid-template-columns: 180px 280px 1fr 300px;
-  }
-  
-  .watchlistSidebar {
-    width: 180px;
-  }
+.sidebarContent, .rightContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  overflow: hidden;
 }
 
-@media (max-width: 1400px) {
-  .container {
-    grid-template-columns: 160px 260px 1fr 280px;
-  }
-  
-  .watchlistSidebar {
-    width: 160px;
-  }
+.sidebarContent > :first-child {
+  flex: 0 0 auto;
+  max-height: 50%;
+  overflow: hidden;
 }
 
-@media (max-width: 1200px) {
-  .container {
-    grid-template-columns: 1fr 320px;
-  }
-  
-  .watchlistSidebar,
-  .leftColumn {
+.sidebarContent > :last-child {
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow: hidden;
+}
+
+/* Center Panel */
+.centerPanel {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.centerPanelGroup {
+  flex: 1 !important;
+  height: 100% !important;
+}
+
+.chartPanel {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Center Content */
+.chartArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chartContainer {
+  flex: 1 1 auto;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.chartContainer > * {
+  height: 100%;
+}
+
+/* Right Content Overrides */
+.orderEntryWrapper {
+  flex-shrink: 0;
+}
+
+.orderBookWrapper {
+  flex: 1 1 0;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+/* 低分辨率时隐藏右侧的OrderBook（使用BottomTabs中的OrderBook tab） */
+@media (max-height: 900px) {
+  .orderBookWrapper {
     display: none;
   }
 }
 
-@media (max-width: 900px) {
-  .container {
-    grid-template-columns: 1fr;
+@media (max-width: 1400px) {
+  .orderBookWrapper {
+    display: none;
   }
 }
 
+/* Resize Handles */
+.resizeHandleHorizontal {
+  width: 4px;
+  margin: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  cursor: col-resize;
+  border-radius: var(--radius-xs);
+}
 
+.resizeHandleHorizontal:hover,
+.resizeHandleHorizontal[data-panel-group-direction="horizontal"][data-resize-handle-active] {
+  background: var(--accent);
+}
 
+.resizeHandleVertical {
+  height: 4px;
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  cursor: row-resize;
+  border-radius: var(--radius-xs);
+}
 
+.resizeHandleVertical:hover,
+.resizeHandleVertical[data-panel-group-direction="vertical"][data-resize-handle-active] {
+  background: var(--accent);
+}
 
+.resizeHandleInner {
+  width: 1px;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Responsive - Medium screens (1080p and similar) */
+@media (max-height: 900px) {
+  .chartArea {
+    gap: 0;
+  }
+  
+  .chartContainer {
+    min-height: 250px;
+  }
+}
+
+/* Responsive - Hide left panel on smaller widths */
+@media (max-width: 1200px) {
+  .leftPanel {
+    display: none !important;
+  }
+}
+
+/* Responsive - Stack layout on mobile */
+@media (max-width: 900px) {
+  .container {
+    overflow-y: auto;
+    height: auto;
+    min-height: calc(100vh - 64px);
+  }
+  
+  .mainLayout {
+    flex-direction: column !important;
+    min-height: fit-content;
+  }
+  
+  .rightPanel {
+    min-height: 500px;
+  }
+  
+  .orderBookWrapper {
+    min-height: 250px;
+  }
+}

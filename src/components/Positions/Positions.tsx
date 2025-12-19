@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Decimal from 'decimal.js';
-import { useTradingStore, selectBalances } from '../../store/tradingStore';
+import { useTradingStore } from '../../store/tradingStore';
+import { useWalletStore, selectBalances } from '../../store/walletStore';
 import { useMarketStore, selectMetrics, selectOrderBook } from '../../store/marketStore';
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
 import { useI18n } from '../../i18n';
 import { toast } from '../Toast';
 import { Icon } from '../Icon';
+import { TPSLForm } from './TPSLForm';
 import styles from './Positions.module.css';
 
 // 确认弹窗组件
@@ -62,7 +64,7 @@ function formatCrypto(value: string | number): string {
 
 export function Positions() {
   const { t } = useI18n();
-  const balances = useTradingStore(selectBalances);
+  const balances = useWalletStore(selectBalances);
   const positions = useTradingStore((state) => state.positions);
   const createOrder = useTradingStore((state) => state.createOrder);
   const metrics = useMarketStore(selectMetrics);
@@ -79,6 +81,13 @@ export function Positions() {
     value: number;
   } | null>(null);
 
+  const [tpslTarget, setTpslTarget] = useState<{
+    symbol: string;
+    currentPrice: number;
+    avgEntryPrice: number;
+    quantity: string;
+  } | null>(null);
+
   // 当前选中币种的 mid 价格
   const currentSymbolMidPrice = metrics ? new Decimal(metrics.mid) : new Decimal(0);
   const currentSymbol = orderBook?.symbol || selectedSymbol;
@@ -90,15 +99,27 @@ export function Positions() {
   // Calculate position values
   // 注意：只有当前选中币种的持仓才能计算实时盈亏
   // 其他币种的持仓使用入场价作为参考（因为没有实时价格）
-  const positionEntries = Array.from(positions.entries());
+  let positionEntries: [string, any][] = [];
+  if (positions instanceof Map) {
+    positionEntries = Array.from(positions.entries());
+  } else if (typeof positions === 'object' && positions !== null) {
+    positionEntries = Object.entries(positions);
+  }
+  
   let totalPositionValue = new Decimal(0);
   let totalUnrealizedPnl = new Decimal(0);
 
   const positionsWithPnl = positionEntries
-    .filter(([_, pos]) => pos.side === 'long' && new Decimal(pos.quantity).gt(0))
+    .filter(([_, pos]) => {
+      // 防御性检查：确保 position 数据完整
+      if (!pos || pos.quantity === undefined || pos.avgEntryPrice === undefined) {
+        return false;
+      }
+      return pos.side === 'long' && new Decimal(pos.quantity).gt(0);
+    })
     .map(([symbol, pos]) => {
-      const qty = new Decimal(pos.quantity);
-      const avgEntry = new Decimal(pos.avgEntryPrice);
+      const qty = new Decimal(pos.quantity || '0');
+      const avgEntry = new Decimal(pos.avgEntryPrice || '0');
       
       // 只有当前选中的币种才使用实时价格计算盈亏
       const isCurrentSymbol = symbol === currentSymbol;
@@ -121,8 +142,8 @@ export function Positions() {
       }
 
       return {
-        symbol,
         ...pos,
+        symbol,
         currentPrice: currentPrice.toNumber(),
         value: value.toNumber(),
         unrealizedPnl: unrealizedPnl.toNumber(),
@@ -132,10 +153,9 @@ export function Positions() {
     });
 
   const totalAccountValue = usdtTotal.plus(totalPositionValue);
-  const initialValue = new Decimal(100000);
-  const accountPnlPercent = initialValue.gt(0) 
-    ? totalAccountValue.minus(initialValue).div(initialValue).times(100).toNumber()
-    : 0;
+  // Calculate total deposits for PnL reference (simplified: just use current total as we can't track initial deposits without ledger access here)
+  // For now, just show unrealized PnL based on positions
+  const accountPnlPercent = totalUnrealizedPnl.div(totalAccountValue.gt(0) ? totalAccountValue : 1).times(100).toNumber();
 
   const handleReset = () => {
     resetAccount();
@@ -237,9 +257,9 @@ export function Positions() {
                     <span className={`${styles.balanceTotal} tabular-nums`}>
                       {balance.asset === 'USDT' ? formatUSDT(balance.total) : formatCrypto(balance.total)}
                     </span>
-                    {new Decimal(balance.locked).gt(0) && (
+                    {new Decimal(balance.frozen).gt(0) && (
                       <span className={`${styles.balanceLocked} tabular-nums`}>
-                        ({balance.asset === 'USDT' ? formatUSDT(balance.locked) : formatCrypto(balance.locked)} {t.account.locked})
+                        ({balance.asset === 'USDT' ? formatUSDT(balance.frozen) : formatCrypto(balance.frozen)} {t.account.locked})
                       </span>
                     )}
                   </div>
@@ -260,14 +280,29 @@ export function Positions() {
                       <span className={styles.positionSymbol}>{pos.symbol}</span>
                       <span className={`${styles.positionSide} ${styles.long}`}>{t.positions.long}</span>
                     </div>
-                    <button 
-                      className={styles.closePositionBtn}
-                      onClick={() => handleClosePositionClick(pos.symbol, pos.quantity, pos.value)}
-                      title={t.positions?.closePosition || '市价全平'}
-                    >
-                      <Icon name="log-out" size="sm" />
-                      {t.positions?.marketClose || '市价全平'}
-                    </button>
+                    <div className={styles.positionActions}>
+                      <button 
+                        className={styles.tpslBtn}
+                        onClick={() => setTpslTarget({
+                          symbol: pos.symbol,
+                          currentPrice: pos.currentPrice,
+                          avgEntryPrice: parseFloat(pos.avgEntryPrice),
+                          quantity: pos.quantity
+                        })}
+                        title="TP/SL"
+                      >
+                        <Icon name="target" size="xs" />
+                        TP/SL
+                      </button>
+                      <button 
+                        className={styles.closePositionBtn}
+                        onClick={() => handleClosePositionClick(pos.symbol, pos.quantity, pos.value)}
+                        title={t.positions?.closePosition || '市价全平'}
+                      >
+                        <Icon name="external-link" size="sm" />
+                        {t.positions?.marketClose || '市价全平'}
+                      </button>
+                    </div>
                   </div>
                   <div className={styles.positionDetails}>
                     <div className={styles.positionDetail}>
@@ -317,6 +352,20 @@ export function Positions() {
         onCancel={() => setCloseConfirm(null)}
         type="danger"
       />
+
+      {tpslTarget && (
+        <div className={styles.tpslModalOverlay} onClick={() => setTpslTarget(null)}>
+          <div className={styles.tpslModalContent} onClick={e => e.stopPropagation()}>
+            <TPSLForm
+              symbol={tpslTarget.symbol}
+              currentPrice={tpslTarget.currentPrice}
+              avgEntryPrice={tpslTarget.avgEntryPrice}
+              quantity={tpslTarget.quantity}
+              onClose={() => setTpslTarget(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

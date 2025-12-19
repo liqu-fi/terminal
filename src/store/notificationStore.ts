@@ -6,6 +6,7 @@ export type ToastPriority = 'high' | 'normal' | 'low';
 export type ToastKey = 
   | `order:${string}:${string}`      // order:orderId:status
   | `connection:${string}`           // connection:state
+  | `automation:${string}:${string}`   // automation:triggerId:status
   | `error:${string}`                // error:errorCode
   | `warning:${string}`;             // warning:warningType
 

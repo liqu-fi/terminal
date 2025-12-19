@@ -1,0 +1,130 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.statusPending {
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info);
+}
+
+.statusPending .iconWrapper {
+  color: var(--color-info);
+}
+
+.statusSuccess {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success);
+}
+
+.statusSuccess .iconWrapper {
+  color: var(--color-success);
+}
+
+.statusError {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+}
+
+.statusError .iconWrapper {
+  color: var(--color-error);
+}
+
+.iconWrapper {
+  margin-bottom: var(--space-3);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.content {
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.progressSection {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.progressBar {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+  transition: width 0.1s linear;
+}
+
+.progressText {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  min-width: 32px;
+}
+
+.demoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.demoButton {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.demoButton:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+  border-style: solid;
+}
+
+.demoHint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+

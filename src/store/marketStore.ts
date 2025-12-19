@@ -50,13 +50,18 @@ const MAX_RECENT_TRADES = 50;
 const MAX_LOGS = 200;
 
 // 状态切换滞后配置（防止频繁切换）
-const LEVEL_CHANGE_THRESHOLD = 3; // 需要连续 N 次检测才切换状态
+const LEVEL_UPGRADE_THRESHOLD = 2;   // 恢复到更好状态需要连续 2 次
+const LEVEL_DOWNGRADE_THRESHOLD = 5; // 降级到更差状态需要连续 5 次（增加容忍度）
+const STALE_THRESHOLD = 8;           // 进入 stale 状态需要连续 8 次（最严格保护）
 let consecutiveLevelCounts: Record<DataConfidenceLevel, number> = {
   live: 0,
   degraded: 0,
   resyncing: 0,
   stale: 0,
 };
+// 上次状态变化时间，用于防止抖动
+let lastLevelChangeTime = 0;
+const MIN_LEVEL_CHANGE_INTERVAL_MS = 3000; // 状态切换最小间隔 3 秒
 
 const initialConnectionStatus: ConnectionStatus = {
   state: 'disconnected',
@@ -116,20 +121,26 @@ function calculateConfidence(
   let rawLevel: DataConfidenceLevel;
   let reason: string;
   
-  if (state === 'disconnected') {
-    rawLevel = 'stale';
-    reason = t.dataConfidence.connectionDisconnected;
-  } else if (state === 'connecting') {
+  if (state === 'connecting') {
     rawLevel = 'resyncing';
     reason = t.dataConfidence.establishingConnection;
-  } else if (state === 'reconnecting' || orderBook?.isStale) {
+  } else if (state === 'reconnecting') {
+    // 重连中显示 resyncing 而不是 stale，给用户更好的体验
+    rawLevel = 'resyncing';
+    reason = t.dataConfidence.rebuildingData;
+  } else if (state === 'disconnected') {
+    // 只有真正断开且没有重连尝试时才显示 stale
+    rawLevel = 'stale';
+    reason = t.dataConfidence.connectionDisconnected;
+  } else if (orderBook?.isStale) {
     rawLevel = 'resyncing';
     reason = t.dataConfidence.rebuildingData;
   } else if (!hasReceivedData) {
     rawLevel = 'resyncing';
     reason = t.dataConfidence.waitingData;
   } else if (timeSinceUpdate > CONFIDENCE_THRESHOLDS.DEGRADED_UPDATE_INTERVAL || latencyMs > CONFIDENCE_THRESHOLDS.DEGRADED_LATENCY) {
-    rawLevel = 'stale';
+    // 数据过期但连接还在，显示 degraded 而不是 stale（重连会自动触发）
+    rawLevel = 'degraded';
     reason = timeSinceUpdate > CONFIDENCE_THRESHOLDS.DEGRADED_UPDATE_INTERVAL ? t.dataConfidence.dataExpired : t.dataConfidence.highLatency;
   } else if (timeSinceUpdate > CONFIDENCE_THRESHOLDS.LIVE_UPDATE_INTERVAL || latencyMs > CONFIDENCE_THRESHOLDS.LIVE_LATENCY || messageRate < CONFIDENCE_THRESHOLDS.DEGRADED_MESSAGE_RATE) {
     rawLevel = 'degraded';
@@ -148,7 +159,7 @@ function calculateConfidence(
     reason = t.dataConfidence.dataSyncing;
   }
   
-  // === 滞后缓冲逻辑 ===
+  // === 滞后缓冲逻辑（防止网络抖动导致的频繁切换） ===
   // 更新计数器
   for (const l of ['live', 'degraded', 'resyncing', 'stale'] as DataConfidenceLevel[]) {
     if (l === rawLevel) {
@@ -160,21 +171,39 @@ function calculateConfidence(
   
   // 判断是否应该切换状态
   let level = prevConfidence.level;
+  const timeSinceLevelChange = now - lastLevelChangeTime;
   
-  // 快速恢复：从差状态到好状态只需 2 次
-  // 慢速降级：从好状态到差状态需要 LEVEL_CHANGE_THRESHOLD 次
+  // 确定切换阈值
+  // 快速恢复：从差状态到好状态只需 LEVEL_UPGRADE_THRESHOLD 次
+  // 慢速降级：从好状态到差状态需要更多次数
   const isUpgrade = (rawLevel === 'live' && level !== 'live') ||
                     (rawLevel === 'degraded' && (level === 'stale' || level === 'resyncing'));
+  const isToStale = rawLevel === 'stale' && level !== 'stale';
   
-  const threshold = isUpgrade ? 2 : LEVEL_CHANGE_THRESHOLD;
+  let threshold: number;
+  if (isUpgrade) {
+    threshold = LEVEL_UPGRADE_THRESHOLD;
+  } else if (isToStale) {
+    threshold = STALE_THRESHOLD; // 进入 stale 需要最严格的确认
+  } else {
+    threshold = LEVEL_DOWNGRADE_THRESHOLD;
+  }
   
-  if (consecutiveLevelCounts[rawLevel] >= threshold) {
+  // 额外的时间保护：状态切换需要满足最小间隔
+  const canChangeLevel = timeSinceLevelChange >= MIN_LEVEL_CHANGE_INTERVAL_MS || isUpgrade;
+  
+  if (consecutiveLevelCounts[rawLevel] >= threshold && canChangeLevel) {
+    if (level !== rawLevel) {
+      lastLevelChangeTime = now;
+    }
     level = rawLevel;
   }
   
-  // 特殊情况：断开连接立即切换到 stale
-  if (state === 'disconnected') {
+  // 特殊情况：断开连接需要满足更宽松的条件才切换到 stale
+  // 短暂的断开不立即显示 stale（给重连一个机会）
+  if (state === 'disconnected' && consecutiveLevelCounts.stale >= 3) {
     level = 'stale';
+    lastLevelChangeTime = now;
   }
   
   // 可用性判断
@@ -245,14 +274,20 @@ export const useMarketStore = create<MarketState>()(
             switch (type) {
               case 'ORDERBOOK_UPDATE': {
                 const data = payload as OrderBookUpdatePayload;
+                // 使用 payload 中的 lastMessageTime 更新 connectionStatus，确保 timeSinceUpdate 计算准确
+                const updatedConnectionStatus = {
+                  ...state.connectionStatus,
+                  lastMessageTime: data.lastMessageTime,
+                };
                 const newConfidence = calculateConfidence(
-                  state.connectionStatus,
+                  updatedConnectionStatus,
                   data.orderBook,
                   state.dataConfidence
                 );
                 set({
                   orderBook: data.orderBook,
                   metrics: data.metrics,
+                  connectionStatus: updatedConnectionStatus,
                   dataConfidence: newConfidence,
                 });
                 break;

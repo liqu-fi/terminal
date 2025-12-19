@@ -1,20 +1,39 @@
 .container {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
+/* Compact horizontal scrollable layout */
 .grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-primary) transparent;
+}
+
+.grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.grid::-webkit-scrollbar-thumb {
+  background: var(--color-border-primary);
+  border-radius: 2px;
 }
 
 .metricItem {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
+  min-width: fit-content;
+  flex-shrink: 0;
 }
 
 .labelRow {
@@ -24,10 +43,11 @@
 }
 
 .label {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .infoBtn {
@@ -52,17 +72,18 @@
 .valueRow {
   display: flex;
   align-items: baseline;
-  gap: var(--space-1);
+  gap: 2px;
 }
 
 .value {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
 .unit {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   color: var(--color-text-tertiary);
 }
 
@@ -86,19 +107,18 @@
 .depthInfo {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
   border-top: 1px solid var(--color-border-secondary);
   background: var(--color-bg-tertiary);
+  font-size: 10px;
 }
 
 .depthLabel {
-  font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
 
 .depthValue {
-  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
@@ -106,7 +126,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 150px;
+  min-height: 80px;
   color: var(--color-text-tertiary);
 }
 

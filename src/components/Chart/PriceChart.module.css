@@ -2,45 +2,209 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  height: 100%;
+  min-height: 350px;
 }
 
-.header {
+@media (max-height: 900px) {
+  .container {
+    min-height: 280px;
+  }
+}
+
+.container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  border-radius: 0;
+  min-height: 100vh;
+}
+
+/* 工具栏 */
+.toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
-.titleSection {
+.toolbarLeft {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
-.symbol {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* 指标按钮组 */
+.indicatorGroup {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.indicatorBtn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.indicatorBtn:hover {
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+}
+
+.indicatorBtn.active {
+  color: var(--accent);
+  background: var(--accent-alpha);
+}
+
+/* 图表类型按钮 */
+.chartTypeGroup {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.chartTypeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: all var(--transition-fast);
+}
+
+.chartTypeBtn:hover {
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+}
+
+.chartTypeBtn.active {
+  color: var(--accent);
+  background: var(--accent-alpha);
+}
+
+/* 时间周期按钮 */
+.timeRangeGroup {
+  display: flex;
+  gap: 2px;
+}
+
+.timeRangeBtn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.timeRangeBtn:hover {
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+}
+
+.timeRangeBtn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-alpha);
+}
+
+/* 工具按钮 */
+.toolBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.toolBtn:hover {
   color: var(--text-primary);
+  border-color: var(--border);
+  background: var(--surface-hover);
 }
 
-.priceInfo {
+/* OHLC 信息栏 */
+.ohlcBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+
+.symbolInfo {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
+.symbolName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .currentPrice {
   font-family: var(--font-mono);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .priceChange {
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: 12px;
+  font-weight: 500;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
 }
@@ -55,83 +219,107 @@
   background: rgba(248, 81, 73, 0.15);
 }
 
-.controls {
+.ohlcData {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
-.typeToggle {
-  display: flex;
-  gap: var(--space-1);
-  background: var(--bg-tertiary);
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-}
-
-.typeBtn {
+.ohlcItem {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: none;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-xs);
-  transition: all var(--transition-fast);
 }
 
-.typeBtn:hover {
-  color: var(--text-primary);
-  background: var(--surface-hover);
+.ohlcItem label {
+  color: var(--text-tertiary);
+  font-weight: 500;
+  min-width: 20px;
 }
 
-.typeBtn.active {
-  color: var(--accent);
-  background: var(--surface-active);
+.ohlcItem.up {
+  color: var(--buy);
 }
 
-.rangeToggle {
+.ohlcItem.down {
+  color: var(--sell);
+}
+
+/* 图例 */
+.legend {
   display: flex;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
-.rangeBtn {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
 }
 
-.rangeBtn:hover {
-  color: var(--text-primary);
-  border-color: var(--border);
-}
-
-.rangeBtn.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-alpha);
-}
-
-.chartWrapper {
+/* 主图表 */
+.mainChart {
   position: relative;
   width: 100%;
-  height: 380px;
-  min-height: 380px;
+  flex: 1;
+  min-height: 200px;
+}
+
+.container.fullscreen .mainChart {
+  min-height: calc(100vh - 280px);
+}
+
+@media (max-height: 900px) {
+  .mainChart {
+    min-height: 150px;
+  }
+}
+
+/* 成交量图表 */
+.volumeChart {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+}
+
+.volumeLabel {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.volumeChartInner {
+  width: 100%;
+  height: 100%;
 }
 
 /* 隐藏 TradingView 水印 */
-.chartWrapper :global(#tv-attr-logo),
-.chartWrapper :global([id^="tv-attr"]),
-.chartWrapper :global(a[href*="tradingview"]) {
+.mainChart :global(#tv-attr-logo),
+.mainChart :global([id^="tv-attr"]),
+.mainChart :global(a[href*="tradingview"]),
+.volumeChartInner :global(#tv-attr-logo),
+.volumeChartInner :global([id^="tv-attr"]),
+.volumeChartInner :global(a[href*="tradingview"]) {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -213,20 +401,28 @@
   to { transform: rotate(360deg); }
 }
 
-/* 响应式调整 */
+/* 响应式 */
 @media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2);
+  .toolbar {
+    padding: var(--space-2);
   }
   
-  .controls {
+  .toolbarLeft {
     width: 100%;
     justify-content: space-between;
   }
   
-  .rangeToggle {
-    flex-wrap: wrap;
+  .ohlcBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .ohlcData {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .mainChart {
+    min-height: 250px;
   }
 }

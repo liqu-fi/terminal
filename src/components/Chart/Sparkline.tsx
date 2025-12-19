@@ -7,57 +7,71 @@ interface SparklineProps {
   height?: number;
   color?: string;
   className?: string;
+  lineWidth?: number;
+  id?: string;
 }
 
 export function Sparkline({ 
   data, 
-  width = 60, 
-  height = 24, 
-  color = 'var(--accent)',
-  className = '' 
+  width = 100, 
+  height = 36, 
+  color,
+  className = '',
+  lineWidth = 1.5,
+  id
 }: SparklineProps) {
-  const path = useMemo(() => {
-    if (data.length === 0) return '';
+  // 核心修复：手动定义颜色值，避免 SVG stop-color 无法解析 var() 的问题
+  const colors = {
+    up: '#22c55e',
+    down: '#ef4444',
+    neutral: '#94a3b8'
+  };
+
+  const { path, areaPath, isPositive } = useMemo(() => {
+    if (data.length < 2) return { path: '', areaPath: '', isPositive: true };
 
     const min = Math.min(...data);
     const max = Math.max(...data);
-    const range = max - min || 1;
+    const range = (max - min) || 1;
+    const padding = 2;
 
-    const points = data.map((value, index) => {
-      const x = (index / (data.length - 1 || 1)) * width;
-      const y = height - ((value - min) / range) * height;
-      return `${x},${y}`;
-    });
+    const points = data.map((value, index) => ({
+      x: (index / (data.length - 1)) * width,
+      y: padding + (height - padding * 2) - ((value - min) / range) * (height - padding * 2)
+    }));
 
-    return `M ${points.join(' L ')}`;
+    const linePath = `M ${points[0].x},${points[0].y} ` + points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ');
+    const area = `${linePath} L ${width},${height} L 0,${height} Z`;
+
+    return { path: linePath, areaPath: area, isPositive: data[data.length - 1] >= data[0] };
   }, [data, width, height]);
 
-  if (data.length === 0) {
-    return (
-      <svg width={width} height={height} className={className}>
-        <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="var(--text-tertiary)" strokeWidth="1" />
-      </svg>
-    );
+  const finalColor = color || (isPositive ? colors.up : colors.down);
+  const gradientId = useMemo(() => `spark-grad-${id || Math.random().toString(36).substr(2, 9)}`, [id]);
+
+  if (data.length < 2) {
+    return <div className={`${styles.placeholder} ${className}`} style={{ width, height }} />;
   }
 
-  const isPositive = (data[data.length - 1] ?? 0) > (data[0] ?? 0);
-  const sparklineColor = isPositive ? 'var(--buy)' : 'var(--sell)';
-
   return (
-    <svg width={width} height={height} className={`${styles.sparkline} ${className}`}>
-      <path
-        d={path}
-        fill="none"
-        stroke={color || sparklineColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div className={`${styles.container} ${className}`} style={{ width, height }}>
+      <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={finalColor} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={finalColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" />
+        <path
+          d={path}
+          fill="none"
+          stroke={finalColor}
+          strokeWidth={lineWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   );
 }
-
-
-
-
-

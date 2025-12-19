@@ -26,6 +26,8 @@ export interface PaperOrder {
   updatedAt: number;
   fills: Fill[];           // 成交明细
   rejectReason?: string;   // 拒绝原因
+  takeProfitPrice?: string; // 止盈触发价
+  stopLossPrice?: string;   // 止损触发价
 }
 
 export interface Fill {
@@ -46,6 +48,8 @@ export interface Position {
   unrealizedPnl: string;   // 未实现盈亏（基于 mid 价格）
   realizedPnl: string;     // 已实现盈亏（卖出时结算）
   updatedAt: number;
+  takeProfitPrice?: string; // 止盈价
+  stopLossPrice?: string;   // 止损价
 }
 
 export interface AccountBalance {

@@ -12,8 +12,9 @@ export interface SymbolInfo {
   sparkline?: number[]; // 24h price points for sparkline
 }
 
-// 默认交易对列表
+// 默认交易对列表（扩展版 - 30个热门币种）
 const DEFAULT_SYMBOLS: SymbolInfo[] = [
+  // 主流币
   { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
   { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
   { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT' },
@@ -24,6 +25,31 @@ const DEFAULT_SYMBOLS: SymbolInfo[] = [
   { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
   { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
   { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
+  // Layer2 & 新兴
+  { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT' },
+  { symbol: 'ARBUSDT', baseAsset: 'ARB', quoteAsset: 'USDT' },
+  { symbol: 'OPUSDT', baseAsset: 'OP', quoteAsset: 'USDT' },
+  { symbol: 'APTUSDT', baseAsset: 'APT', quoteAsset: 'USDT' },
+  { symbol: 'SUIUSDT', baseAsset: 'SUI', quoteAsset: 'USDT' },
+  // DeFi
+  { symbol: 'UNIUSDT', baseAsset: 'UNI', quoteAsset: 'USDT' },
+  { symbol: 'AAVEUSDT', baseAsset: 'AAVE', quoteAsset: 'USDT' },
+  { symbol: 'LDOUSDT', baseAsset: 'LDO', quoteAsset: 'USDT' },
+  // AI
+  { symbol: 'FETUSDT', baseAsset: 'FET', quoteAsset: 'USDT' },
+  { symbol: 'RENDERUSDT', baseAsset: 'RENDER', quoteAsset: 'USDT' },
+  { symbol: 'WLDUSDT', baseAsset: 'WLD', quoteAsset: 'USDT' },
+  // GameFi
+  { symbol: 'AXSUSDT', baseAsset: 'AXS', quoteAsset: 'USDT' },
+  { symbol: 'SANDUSDT', baseAsset: 'SAND', quoteAsset: 'USDT' },
+  { symbol: 'MANAUSDT', baseAsset: 'MANA', quoteAsset: 'USDT' },
+  // 其他热门
+  { symbol: 'LTCUSDT', baseAsset: 'LTC', quoteAsset: 'USDT' },
+  { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT' },
+  { symbol: 'NEARUSDT', baseAsset: 'NEAR', quoteAsset: 'USDT' },
+  { symbol: 'FILUSDT', baseAsset: 'FIL', quoteAsset: 'USDT' },
+  { symbol: 'INJUSDT', baseAsset: 'INJ', quoteAsset: 'USDT' },
+  { symbol: 'PEPEUSDT', baseAsset: 'PEPE', quoteAsset: 'USDT' },
 ];
 
 interface WatchlistState {

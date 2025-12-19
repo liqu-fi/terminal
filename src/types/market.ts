@@ -146,11 +146,11 @@ export interface DataConfidence {
 
 // 可信度状态的触发阈值
 export const CONFIDENCE_THRESHOLDS = {
-  LIVE_UPDATE_INTERVAL: 5000,      // ms，更新间隔 < 5s 为 LIVE（放宽）
-  DEGRADED_UPDATE_INTERVAL: 15000, // ms，更新间隔 5-15s 为 DEGRADED（放宽）
-  LIVE_LATENCY: 1000,              // ms，延迟 < 1000ms 为 LIVE（放宽，网络波动容忍）
-  DEGRADED_LATENCY: 3000,          // ms，延迟 1-3s 为 DEGRADED（放宽）
-  DEGRADED_MESSAGE_RATE: 0.5,      // msg/s，低于此值进入 Degraded（放宽）
+  LIVE_UPDATE_INTERVAL: 5000,      // ms，更新间隔 < 5s 为 LIVE
+  DEGRADED_UPDATE_INTERVAL: 12000, // ms，更新间隔 5-12s 为 DEGRADED（在重连触发前）
+  LIVE_LATENCY: 1000,              // ms，延迟 < 1000ms 为 LIVE
+  DEGRADED_LATENCY: 2500,          // ms，延迟 1-2.5s 为 DEGRADED
+  DEGRADED_MESSAGE_RATE: 0.5,      // msg/s，低于此值进入 Degraded
   QUEUE_WARNING: 100,              // 队列长度警告阈值
 } as const;
 
@@ -180,6 +180,7 @@ export interface SubscribePayload {
 export interface OrderBookUpdatePayload {
   orderBook: OrderBook;
   metrics: DerivedMetrics;
+  lastMessageTime: number; // 最新消息时间戳（Date.now() 格式），用于准确计算更新间隔
 }
 
 export interface TradeUpdatePayload {

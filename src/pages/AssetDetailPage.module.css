@@ -1,0 +1,392 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+/* Top Area - Summary Cards */
+.topArea {
+  display: grid;
+  grid-template-columns: 320px 1fr 240px;
+  gap: var(--space-4);
+}
+
+.summaryCard, .growthCard, .allocationCard, .recentActivity, .assetsArea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-2);
+}
+
+.summaryTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.summaryIcon {
+  color: var(--accent);
+}
+
+.accountId {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.totalValue {
+  font-size: 32px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin: var(--space-1) 0;
+  letter-spacing: -1px;
+}
+
+.currency {
+  font-size: 20px;
+  color: var(--text-tertiary);
+  margin-right: 4px;
+}
+
+.pnlRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-2);
+}
+
+.pnlBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.pnlPositive { background: rgba(34, 197, 94, 0.15); color: var(--buy); }
+.pnlNegative { background: rgba(239, 68, 68, 0.15); color: var(--sell); }
+
+.pnlLabel {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Growth Card */
+.growthCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.cardTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.timeRange {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  background: rgba(var(--accent-rgb), 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.sparklineContainer {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  margin-top: var(--space-2);
+}
+
+/* Quick Actions */
+.quickActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.actionBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.actionBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tradeBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+.tradeBtn:hover {
+  background: var(--accent);
+  filter: brightness(1.1);
+  color: white;
+}
+
+/* Main Grid */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+}
+
+.assetsArea {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tableActions {
+  display: flex;
+  gap: 12px;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.searchBox input {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  outline: none;
+  width: 150px;
+}
+
+.tableWrapper {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.assetTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assetTable th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 1;
+}
+
+.assetTable td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+
+.assetCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.assetIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 14px;
+  border: 1px solid var(--border-subtle);
+}
+
+.assetSymbol {
+  font-weight: 700;
+}
+
+.assetName {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.textRight { text-align: right; }
+.mono { font-family: var(--font-mono); }
+.bold { font-weight: 700; }
+.dim { color: var(--text-tertiary); }
+.tiny { font-size: 10px; }
+
+.pnlUp { color: var(--buy); }
+.pnlDown { color: var(--sell); }
+
+.miniTradeBtn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.miniTradeBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+/* Allocation & Side Area */
+.sideArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.allocationChart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.allocItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.allocInfo {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.allocBullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 8px;
+}
+
+.allocSymbol {
+  font-weight: 700;
+  flex: 1;
+}
+
+.allocPercent {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+.allocBarContainer {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.allocBar {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.recentActivity {
+  flex: 1;
+}
+
+.emptyActivity {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  gap: 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 1200px) {
+  .topArea { grid-template-columns: 1fr 1fr; }
+  .quickActions { grid-column: span 2; flex-direction: row; }
+}
+
+@media (max-width: 900px) {
+  .mainGrid { grid-template-columns: 1fr; }
+  .topArea { grid-template-columns: 1fr; }
+  .quickActions { grid-column: span 1; }
+}

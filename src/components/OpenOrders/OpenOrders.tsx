@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTradingStore } from '../../store/tradingStore';
 import { useI18n } from '../../i18n';
 import { toast } from '../Toast';

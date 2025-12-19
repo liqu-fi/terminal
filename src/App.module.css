@@ -29,6 +29,10 @@
   margin-left: auto;
 }
 
+.accountWrapper {
+  margin-left: var(--space-2);
+}
+
 .settingsBtn {
   display: flex;
   align-items: center;
@@ -78,8 +82,9 @@
 
 .main {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .footer {
@@ -94,4 +99,3 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
 }
-

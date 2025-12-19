@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { 
   useWatchlistStore, 
   selectFilteredSymbols, 
@@ -9,9 +9,10 @@ import {
   selectShowFavoritesOnly,
   type SymbolInfo 
 } from '../../store/watchlistStore';
+import { useTradingStore, selectPositions } from '../../store/tradingStore';
 import { useI18n } from '../../i18n';
-import { Sparkline } from '../Chart';
 import styles from './Watchlist.module.css';
+import Decimal from 'decimal.js';
 
 // SVG 图标组件
 function StarIcon({ filled }: { filled: boolean }) {
@@ -54,9 +55,11 @@ interface WatchlistItemProps {
   isSelected: boolean;
   isFavorite: boolean;
   isPinned: boolean;
+  position?: { quantity: string; avgEntryPrice: string; unrealizedPnl: string };
   onSelect: () => void;
   onToggleFavorite: () => void;
   onTogglePinned: () => void;
+  isCollapsed?: boolean;
 }
 
 function WatchlistItem({ 
@@ -64,69 +67,119 @@ function WatchlistItem({
   isSelected, 
   isFavorite,
   isPinned,
+  position,
   onSelect, 
   onToggleFavorite,
   onTogglePinned,
+  isCollapsed = false,
 }: WatchlistItemProps) {
-  const { t } = useI18n();
-  const priceChangeClass = useMemo(() => {
-    if (!symbol.priceChange24h) return '';
-    return symbol.priceChange24h > 0 ? styles.priceUp : symbol.priceChange24h < 0 ? styles.priceDown : '';
-  }, [symbol.priceChange24h]);
+  const changeBadgeClass = useMemo(() => {
+    if (!symbol || symbol.priceChange24h === undefined) return '';
+    return symbol.priceChange24h > 0 ? styles.changeUp : symbol.priceChange24h < 0 ? styles.changeDown : '';
+  }, [symbol]);
+
+  const pnlPercent = useMemo(() => {
+    if (!position || !symbol || !symbol.price) return null;
+    try {
+      const currentPrice = new Decimal(symbol.price);
+      const avgPrice = new Decimal(position.avgEntryPrice || 0);
+      if (avgPrice.lte(0) || currentPrice.lte(0)) return null;
+      return currentPrice.minus(avgPrice).div(avgPrice).times(100);
+    } catch {
+      return null;
+    }
+  }, [position, symbol]);
+
+  const hasPrice = symbol.price && parseFloat(symbol.price) > 0;
+
+  if (!symbol) return null;
+
+  if (isCollapsed) {
+    return (
+      <div 
+        className={`${styles.item} ${styles.itemCollapsed} ${isSelected ? styles.selected : ''}`}
+        onClick={onSelect}
+        title={`${symbol.baseAsset}/${symbol.quoteAsset}`}
+      >
+        <div className={styles.symbolIconCollapsed}>
+          {symbol.baseAsset?.charAt(0)}
+        </div>
+        {position && parseFloat(position.quantity || '0') > 0 && (
+          <div className={styles.positionIndicator} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div 
-      className={`${styles.item} ${isSelected ? styles.selected : ''}`}
+      className={`${styles.item} ${isSelected ? styles.selected : ''} ${isCollapsed ? styles.itemCollapsed : ''}`}
       onClick={onSelect}
     >
       <div className={styles.itemLeft}>
-        <button 
-          className={`${styles.favoriteBtn} ${isFavorite ? styles.active : ''}`}
-          onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-          aria-label={t.watchlist?.toggleFavorite || 'Toggle favorite'}
-        >
-          <StarIcon filled={isFavorite} />
-        </button>
+        {!isCollapsed && (
+          <button 
+            className={`${styles.favoriteBtn} ${isFavorite ? styles.active : ''}`}
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+          >
+            <StarIcon filled={isFavorite} />
+          </button>
+        )}
         <div className={styles.symbolInfo}>
-          <span className={styles.symbolName}>
-            {isPinned && <PinIcon filled={true} />}
-            {symbol.baseAsset}
-          </span>
-          <span className={styles.symbolQuote}>/{symbol.quoteAsset}</span>
-        </div>
-      </div>
-      <div className={styles.itemRight}>
-        {symbol.price ? (
-          <>
-            <div className={styles.priceRow}>
-              <span className={`${styles.price} tabular-nums`}>
-                {parseFloat(symbol.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
-              </span>
-              {symbol.priceChange24h !== undefined && (
-                <span className={`${styles.priceChange} ${priceChangeClass} tabular-nums`}>
-                  {symbol.priceChange24h > 0 ? '+' : ''}{symbol.priceChange24h.toFixed(2)}%
-                </span>
-              )}
-            </div>
-            {symbol.sparkline && symbol.sparkline.length > 0 && (
-              <div className={styles.sparklineContainer}>
-                <Sparkline data={symbol.sparkline} width={60} height={20} />
+          <div className={styles.symbolHeader}>
+            {isCollapsed ? (
+              <div className={styles.symbolIconCollapsed} title={`${symbol.baseAsset}/${symbol.quoteAsset}`}>
+                {symbol.baseAsset?.charAt(0)}
+              </div>
+            ) : (
+              <div className={styles.symbolName}>
+                {isPinned && <PinIcon filled={true} />}
+                {symbol.baseAsset || '--'}
               </div>
             )}
-          </>
-        ) : (
-          <span className={styles.noPrice}>--</span>
-        )}
+            {!isCollapsed && <div className={styles.symbolQuote}>/{symbol.quoteAsset || 'USDT'}</div>}
+          </div>
+          {position && parseFloat(position.quantity || '0') > 0 && (
+            isCollapsed ? (
+              <div className={styles.positionIndicator} />
+            ) : (
+              <div className={styles.pnlRow}>
+                <span className={styles.pnlLabel}>PnL:</span>
+                <span className={`${styles.pnlValue} ${pnlPercent && pnlPercent.gte(0) ? styles.priceUp : styles.priceDown}`}>
+                  {pnlPercent ? (pnlPercent.gte(0) ? '+' : '') : ''}{pnlPercent ? pnlPercent.toFixed(2) : '--'}%
+                </span>
+              </div>
+            )
+          )}
+        </div>
       </div>
+      {!isCollapsed && (
+        <div className={styles.itemRight}>
+          <div className={`${styles.price} tabular-nums`}>
+            {hasPrice 
+              ? parseFloat(symbol.price!).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+              : <span className={styles.loading}>...</span>
+            }
+          </div>
+          {symbol.priceChange24h !== undefined ? (
+            <div className={`${styles.priceChange} ${changeBadgeClass} tabular-nums`}>
+              {symbol.priceChange24h > 0 ? '+' : ''}{symbol.priceChange24h.toFixed(2)}%
+            </div>
+          ) : (
+            <div className={`${styles.priceChange} ${styles.loading} tabular-nums`}>--%</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 interface WatchlistProps {
   onSymbolChange?: (symbol: string) => void;
+  isCollapsed?: boolean;
 }
 
-export function Watchlist({ onSymbolChange }: WatchlistProps) {
+export function Watchlist({ onSymbolChange, isCollapsed = false }: WatchlistProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -136,7 +189,73 @@ export function Watchlist({ onSymbolChange }: WatchlistProps) {
   const selectedSymbol = useWatchlistStore(selectSelectedSymbol);
   const searchQuery = useWatchlistStore(selectSearchQuery);
   const showFavoritesOnly = useWatchlistStore(selectShowFavoritesOnly);
+  const positions = useTradingStore(selectPositions);
+  const symbols = useWatchlistStore(state => state.symbols);
+  const updateSymbolPrice = useWatchlistStore(state => state.updateSymbolPrice);
   
+  // 获取所有 symbols 的价格数据
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        // 使用 Binance 24hr ticker API 获取所有价格
+        const symbolList = symbols.map(s => s.symbol).join(',');
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolList.split(',').map(s => `"${s}"`).join(',')}]`);
+        
+        if (!response.ok) {
+          // 如果批量请求失败，逐个获取
+          for (const sym of symbols) {
+            try {
+              const singleResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym.symbol}`);
+              if (singleResponse.ok) {
+                const data = await singleResponse.json();
+                updateSymbolPrice(
+                  sym.symbol, 
+                  data.lastPrice, 
+                  parseFloat(data.priceChangePercent)
+                );
+              }
+            } catch {
+              // 忽略单个请求失败
+            }
+          }
+          return;
+        }
+        
+        const data = await response.json();
+        
+        // 更新每个 symbol 的价格
+        for (const ticker of data) {
+          updateSymbolPrice(
+            ticker.symbol, 
+            ticker.lastPrice, 
+            parseFloat(ticker.priceChangePercent)
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch prices:', err);
+      }
+    };
+
+    // 立即获取一次
+    fetchPrices();
+
+    // 每 5 秒更新一次
+    const interval = setInterval(fetchPrices, 5000);
+
+    return () => clearInterval(interval);
+  }, [symbols, updateSymbolPrice]);
+  
+  const getPosition = useCallback((symbol: string) => {
+    if (positions instanceof Map) {
+      return positions.get(symbol);
+    }
+    // Fallback if positions is not a Map (e.g. during hydration or if storage is corrupted)
+    if (typeof positions === 'object' && positions !== null) {
+      return (positions as Record<string, { quantity: string; avgEntryPrice: string; unrealizedPnl: string }>)[symbol];
+    }
+    return undefined;
+  }, [positions]);
+
   const {
     setSelectedSymbol,
     setSearchQuery,
@@ -182,38 +301,43 @@ export function Watchlist({ onSymbolChange }: WatchlistProps) {
   }, [filteredSymbols, selectedSymbol, handleSymbolSelect, onSymbolChange]);
 
   return (
-    <div className={`card ${styles.container}`}>
-      <div className="card-header">
-        <span>{t.watchlist?.title || 'Watchlist'}</span>
-        <button 
-          className={`${styles.filterBtn} ${showFavoritesOnly ? styles.active : ''}`}
-          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-          title={showFavoritesOnly ? t.watchlist?.showAll : t.watchlist?.showFavorites}
-        >
-          <StarIcon filled={showFavoritesOnly} />
-        </button>
-      </div>
+    <div className={`card ${styles.container} ${isCollapsed ? styles.collapsed : ''}`}>
+      {!isCollapsed && (
+        <div className="card-header">
+          <span>{t.watchlist?.title || 'Watchlist'}</span>
+          <button 
+            className={`${styles.filterBtn} ${showFavoritesOnly ? styles.active : ''}`}
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            title={showFavoritesOnly ? t.watchlist?.showAll : t.watchlist?.showFavorites}
+          >
+            <StarIcon filled={showFavoritesOnly} />
+            <span>{showFavoritesOnly ? t.watchlist?.favorites || 'Favorites Only' : t.watchlist?.all || 'All'}</span>
+          </button>
+        </div>
+      )}
       
       {/* 搜索框 */}
-      <div className={styles.searchWrapper}>
-        <div className={styles.searchIcon}>
-          <SearchIcon />
+      {!isCollapsed && (
+        <div className={styles.searchWrapper}>
+          <div className={styles.searchIcon}>
+            <SearchIcon />
+          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            className={styles.searchInput}
+            placeholder={t.watchlist?.searchPlaceholder || 'Search symbols...'}
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+          />
+          {searchQuery && (
+            <button className={styles.clearBtn} onClick={handleClearSearch}>
+              <ClearIcon />
+            </button>
+          )}
         </div>
-        <input
-          ref={inputRef}
-          type="text"
-          className={styles.searchInput}
-          placeholder={t.watchlist?.searchPlaceholder || 'Search symbol...'}
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onKeyDown={handleKeyDown}
-        />
-        {searchQuery && (
-          <button className={styles.clearBtn} onClick={handleClearSearch}>
-            <ClearIcon />
-          </button>
-        )}
-      </div>
+      )}
 
       {/* 列表 */}
       <div className={styles.list}>
@@ -225,27 +349,30 @@ export function Watchlist({ onSymbolChange }: WatchlistProps) {
               isSelected={selectedSymbol === symbol.symbol}
               isFavorite={favorites.includes(symbol.symbol)}
               isPinned={pinned.includes(symbol.symbol)}
+              position={getPosition(symbol.symbol)}
               onSelect={() => handleSymbolSelect(symbol.symbol)}
               onToggleFavorite={() => toggleFavorite(symbol.symbol)}
               onTogglePinned={() => togglePinned(symbol.symbol)}
+              isCollapsed={isCollapsed}
             />
           ))
         ) : (
           <div className={styles.empty}>
-            {searchQuery 
+            {isCollapsed ? <Icon name="search" size="sm" /> : (searchQuery 
               ? (t.watchlist?.noResults || 'No matching symbols')
-              : (t.watchlist?.empty || 'No symbols in watchlist')}
+              : (t.watchlist?.empty || 'No symbols in watchlist'))}
           </div>
         )}
       </div>
 
       {/* 底部统计 */}
-      <div className={styles.footer}>
-        <span className={styles.count}>
-          {filteredSymbols.length} {t.watchlist?.symbols || 'symbols'}
-        </span>
-      </div>
+      {!isCollapsed && (
+        <div className={styles.footer}>
+          <span className={styles.count}>
+            {filteredSymbols.length} {t.watchlist?.symbols || 'symbols'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
-

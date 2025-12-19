@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useMarketStore, selectOrderBook, selectMetrics, selectDataConfidence } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
@@ -13,7 +13,7 @@ interface PriceLevelProps {
   onPriceClick?: (price: string, side: 'buy' | 'sell') => void;
 }
 
-function PriceLevel({ level, side, maxQuantity, prevPrice, onPriceClick }: PriceLevelProps) {
+const PriceLevel = React.memo(({ level, side, maxQuantity, prevPrice, onPriceClick }: PriceLevelProps) => {
   const depthPercent = Math.min((parseFloat(level.quantity) / maxQuantity) * 100, 100);
   const priceChanged = prevPrice && prevPrice !== level.price;
   const priceUp = priceChanged && parseFloat(level.price) > parseFloat(prevPrice);
@@ -44,7 +44,9 @@ function PriceLevel({ level, side, maxQuantity, prevPrice, onPriceClick }: Price
       </span>
     </div>
   );
-}
+});
+
+PriceLevel.displayName = 'PriceLevel';
 
 function formatPrice(price: string): string {
   const num = parseFloat(price);
@@ -62,9 +64,10 @@ function formatQuantity(qty: string): string {
 
 interface OrderBookProps {
   onPriceClick?: (price: string, side: 'buy' | 'sell') => void;
+  embedded?: boolean;  // 嵌入到BottomTabs时使用的模式
 }
 
-export function OrderBook({ onPriceClick }: OrderBookProps) {
+export function OrderBook({ onPriceClick, embedded = false }: OrderBookProps) {
   const { t } = useI18n();
   const orderBook = useMarketStore(selectOrderBook);
   const metrics = useMarketStore(selectMetrics);
@@ -82,11 +85,12 @@ export function OrderBook({ onPriceClick }: OrderBookProps) {
   const { maxBidQty, maxAskQty } = useMemo(() => {
     if (!orderBook) return { maxBidQty: 1, maxAskQty: 1 };
     
-    const maxBid = Math.max(...orderBook.bids.map(l => parseFloat(l.quantity)), 0.001);
-    const maxAsk = Math.max(...orderBook.asks.map(l => parseFloat(l.quantity)), 0.001);
-    const maxQty = Math.max(maxBid, maxAsk);
+    // Efficiently find max quantity from all visible levels
+    let max = 0.001;
+    orderBook.bids.forEach(lvl => max = Math.max(max, parseFloat(lvl.quantity)));
+    orderBook.asks.forEach(lvl => max = Math.max(max, parseFloat(lvl.quantity)));
     
-    return { maxBidQty: maxQty, maxAskQty: maxQty };
+    return { maxBidQty: max, maxAskQty: max };
   }, [orderBook]);
 
   const prevPriceMap = useMemo(() => {
@@ -102,9 +106,9 @@ export function OrderBook({ onPriceClick }: OrderBookProps) {
   if (!orderBook) {
     return (
       <div className={`card ${styles.container}`}>
-        <div className="card-header">{t.orderBook.title}</div>
+        <div className="card-header"><span className="card-title">{t.orderBook.title}</span></div>
         <div className={`card-body ${styles.loading}`}>
-          <span>{t.common.loading}</span>
+          <Icon name="loader" className={styles.spinner} />
         </div>
       </div>
     );
@@ -113,81 +117,140 @@ export function OrderBook({ onPriceClick }: OrderBookProps) {
   const spread = metrics?.spread ? parseFloat(metrics.spread) : 0;
   const spreadBps = metrics?.spreadBps ?? 0;
 
-  // 获取可信度状态的颜色类
-  const getConfidenceClass = () => {
-    if (isStale) return styles.stale;
-    if (isResyncing) return styles.resyncing;
-    if (level === 'degraded') return styles.degraded;
-    return '';
-  };
+  // 嵌入模式使用横向布局
+  if (embedded) {
+    return (
+      <div className={`${styles.embeddedContainer} ${styles[level] || ''}`}>
+        <div className={`${styles.embeddedBody} ${isStale ? styles.staleBody : ''}`}>
+          {/* Bids Section - Left */}
+          <div className={styles.embeddedBids}>
+            <div className={styles.embeddedHeader}>
+              <span className="price-up">{t.orderBook?.buyOrders || 'Bids'}</span>
+              <span>{t.orderBook.price}</span>
+              <span>{t.orderBook.amount}</span>
+            </div>
+            <div className={styles.embeddedScrollContent}>
+              {orderBook.bids.slice(0, 15).map((lvl, i) => (
+                <PriceLevel
+                  key={`bid-${lvl.price}`}
+                  level={lvl}
+                  side="bid"
+                  maxQuantity={maxBidQty}
+                  prevPrice={prevPriceMap.get(`bid-${i}`)}
+                  onPriceClick={onPriceClick}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Spread in center */}
+          <div className={styles.embeddedSpread}>
+            <div className={styles.spreadValue}>
+              <span className="tabular-nums">{formatPrice(String(spread))}</span>
+              <span className={styles.spreadBps}>({spreadBps.toFixed(2)} bps)</span>
+            </div>
+            {level !== 'live' && (
+              <div className={styles.confidenceIcon} title={reason}>
+                {isResyncing && <Icon name="refresh-cw" size="sm" className={styles.spinning} />}
+                {isStale && <Icon name="wifi-off" size="sm" />}
+                {level === 'degraded' && <Icon name="alert-triangle" size="sm" />}
+              </div>
+            )}
+          </div>
+
+          {/* Asks Section - Right */}
+          <div className={styles.embeddedAsks}>
+            <div className={styles.embeddedHeader}>
+              <span className="price-down">{t.orderBook?.sellOrders || 'Asks'}</span>
+              <span>{t.orderBook.price}</span>
+              <span>{t.orderBook.amount}</span>
+            </div>
+            <div className={styles.embeddedScrollContent}>
+              {orderBook.asks.slice(0, 15).map((lvl, i) => (
+                <PriceLevel
+                  key={`ask-${lvl.price}`}
+                  level={lvl}
+                  side="ask"
+                  maxQuantity={maxAskQty}
+                  prevPrice={prevPriceMap.get(`ask-${i}`)}
+                  onPriceClick={onPriceClick}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {isResyncing && (
+          <div className={styles.resyncOverlay}>
+            <Icon name="refresh-cw" className={styles.resyncSpinner} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className={`card ${styles.container} ${getConfidenceClass()}`}>
+    <div className={`card ${styles.container} ${styles[level] || ''}`}>
       <div className="card-header">
-        <span>{t.orderBook.title}</span>
-        {/* 状态指示 - 纯视觉，无文字，SVG 图标 */}
+        <span className="card-title">{t.orderBook.title}</span>
         {level !== 'live' && (
-          <span className={`${styles.confidenceBadge} ${styles[level]}`} title={reason}>
-            {isResyncing && <Icon name="refresh-cw" size="sm" />}
-            {isStale && <Icon name="pause" size="sm" />}
+          <div className={styles.confidenceIcon} title={reason}>
+            {isResyncing && <Icon name="refresh-cw" size="sm" className={styles.spinning} />}
+            {isStale && <Icon name="wifi-off" size="sm" />}
             {level === 'degraded' && <Icon name="alert-triangle" size="sm" />}
-          </span>
+          </div>
         )}
       </div>
       
-      {/* 重建中的覆盖层 - 简洁的视觉反馈 */}
-      {isResyncing && (
-        <div className={styles.resyncOverlay}>
-          <div className={styles.resyncSpinner} />
-        </div>
-      )}
-      
       <div className={`${styles.body} ${isStale ? styles.staleBody : ''}`}>
-        {/* Header */}
         <div className={styles.header}>
           <span>{t.orderBook.price}</span>
           <span>{t.orderBook.amount}</span>
         </div>
 
-        {/* Asks (reversed to show lowest at bottom) */}
         <div className={styles.asksSection}>
-          {[...orderBook.asks].reverse().slice(0, 12).map((lvl, i) => (
-            <PriceLevel
-              key={`ask-${lvl.price}`}
-              level={lvl}
-              side="ask"
-              maxQuantity={maxAskQty}
-              prevPrice={prevPriceMap.get(`ask-${11 - i}`)}
-              onPriceClick={onPriceClick ? (price) => onPriceClick(price, 'sell') : undefined}
-            />
-          ))}
+          <div className={styles.scrollContent}>
+            {orderBook.asks.slice().reverse().map((lvl, i) => (
+              <PriceLevel
+                key={`ask-${lvl.price}`}
+                level={lvl}
+                side="ask"
+                maxQuantity={maxAskQty}
+                prevPrice={prevPriceMap.get(`ask-${orderBook.asks.length - 1 - i}`)}
+                onPriceClick={onPriceClick}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Spread */}
         <div className={styles.spreadSection}>
-          <span className={styles.spreadLabel}>{t.orderBook.spread}</span>
-          <span className={`${styles.spreadValue} tabular-nums`}>
-            {formatPrice(String(spread))}
-          </span>
-          <span className={`${styles.spreadBps} tabular-nums`}>
-            ({spreadBps.toFixed(2)} {t.orderBook.spreadBps})
-          </span>
+          <div className={styles.spreadValue}>
+            <span className="tabular-nums">{formatPrice(String(spread))}</span>
+            <span className={styles.spreadBps}>({spreadBps.toFixed(2)} bps)</span>
+          </div>
         </div>
 
-        {/* Bids */}
         <div className={styles.bidsSection}>
-          {orderBook.bids.slice(0, 12).map((lvl, i) => (
-            <PriceLevel
-              key={`bid-${lvl.price}`}
-              level={lvl}
-              side="bid"
-              maxQuantity={maxBidQty}
-              prevPrice={prevPriceMap.get(`bid-${i}`)}
-              onPriceClick={onPriceClick ? (price) => onPriceClick(price, 'buy') : undefined}
-            />
-          ))}
+          <div className={styles.scrollContent}>
+            {orderBook.bids.map((lvl, i) => (
+              <PriceLevel
+                key={`bid-${lvl.price}`}
+                level={lvl}
+                side="bid"
+                maxQuantity={maxBidQty}
+                prevPrice={prevPriceMap.get(`bid-${i}`)}
+                onPriceClick={onPriceClick}
+              />
+            ))}
+          </div>
         </div>
       </div>
+
+      {isResyncing && (
+        <div className={styles.resyncOverlay}>
+          <Icon name="refresh-cw" className={styles.resyncSpinner} />
+        </div>
+      )}
     </div>
   );
 }

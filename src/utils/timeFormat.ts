@@ -35,6 +35,20 @@ export function formatLastUpdateTime(timestamp: number): string {
   return `${timeStr} · ${relativeStr}`;
 }
 
+/**
+ * 格式化通用时间显示 (MM-DD HH:MM:SS)
+ */
+export function formatTime(timestamp: number, showSeconds: boolean = true): string {
+  return new Date(timestamp).toLocaleString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: showSeconds ? '2-digit' : undefined,
+    hour12: false,
+  });
+}
+
 
 
 

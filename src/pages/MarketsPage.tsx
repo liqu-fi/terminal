@@ -1,270 +1,267 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { Sparkline } from '../components/Chart';
 import { Icon } from '../components/Icon';
 import { useWatchlistStore } from '../store/watchlistStore';
+import {
+  fetchAllTickers,
+  fetchSparkline,
+  calculateIndicators,
+  formatVolume,
+  formatPrice,
+  parseSymbol,
+  POPULAR_SYMBOLS,
+  type MarketTicker,
+  type MarketSparkline,
+  type MarketIndicators,
+} from '../services/marketDataService';
 import styles from './MarketsPage.module.css';
-
-type ViewMode = 'table' | 'grid';
-type SortField = 'symbol' | 'price' | 'change24h' | 'volume24h';
-type SortOrder = 'asc' | 'desc';
 
 interface MarketData {
   symbol: string;
-  price: number;
-  change24h: number;
-  volume24h: number;
-  sparkline: number[];
+  ticker: MarketTicker | null;
+  sparkline: MarketSparkline | null;
+  indicators: MarketIndicators | null;
 }
-
-// Mock data - in real implementation, this would come from miniTicker WebSocket
-const MOCK_MARKETS: MarketData[] = [
-  { symbol: 'BTCUSDT', price: 43250.5, change24h: 2.5, volume24h: 1500000000, sparkline: [43000, 43100, 43200, 43250, 43250, 43250] },
-  { symbol: 'ETHUSDT', price: 2650.8, change24h: -1.2, volume24h: 800000000, sparkline: [2680, 2670, 2660, 2655, 2650, 2650] },
-  { symbol: 'BNBUSDT', price: 315.2, change24h: 0.8, volume24h: 200000000, sparkline: [312, 313, 314, 315, 315, 315] },
-  { symbol: 'SOLUSDT', price: 98.5, change24h: 3.5, volume24h: 500000000, sparkline: [95, 96, 97, 98, 98.5, 98.5] },
-  { symbol: 'XRPUSDT', price: 0.62, change24h: -0.5, volume24h: 300000000, sparkline: [0.63, 0.625, 0.62, 0.62, 0.62, 0.62] },
-];
 
 export function MarketsPage() {
   const { t } = useI18n();
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const navigate = useNavigate();
+  const [markets, setMarkets] = useState<MarketData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<SortField>('symbol');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [quoteFilter, setQuoteFilter] = useState<string>('ALL');
-  
-  const toggleFavorite = useWatchlistStore((state) => state.toggleFavorite);
-  const addSymbol = useWatchlistStore((state) => state.addSymbol);
-  const symbols = useWatchlistStore((state) => state.symbols);
-  const favorites = useWatchlistStore((state) => state.favorites);
+  const [category, setCategory] = useState('All');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [sortField, setSortField] = useState<keyof MarketTicker>('quoteVolume24h');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const filteredAndSorted = useMemo(() => {
-    let filtered = MOCK_MARKETS.filter(m => {
+  const { favorites, toggleFavorite, addSymbol } = useWatchlistStore();
+
+  const loadData = useCallback(async () => {
+    try {
+      const tickers = await fetchAllTickers();
+      const initialMarkets: MarketData[] = tickers.map(t => ({
+        symbol: t.symbol,
+        ticker: t,
+        sparkline: null,
+        indicators: null,
+      }));
+      setMarkets(initialMarkets);
+      setLoading(false);
+
+      // Async load sparklines and indicators in small batches to prevent blocking
+      for (const ticker of tickers) {
+        fetchSparkline(ticker.symbol).then(s => {
+          setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, sparkline: s } : m));
+        });
+        calculateIndicators(ticker.symbol).then(i => {
+          setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, indicators: i } : m));
+        });
+      }
+    } catch (err) {
+      console.error('Market load error:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    const timer = setInterval(loadData, 10000);
+    return () => clearInterval(timer);
+  }, [loadData]);
+
+  const filteredMarkets = useMemo(() => {
+    return markets.filter(m => {
       const matchesSearch = m.symbol.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesQuote = quoteFilter === 'ALL' || m.symbol.endsWith(quoteFilter);
-      return matchesSearch && matchesQuote;
+      const matchesCategory = category === 'All' || category === 'Favorites' ? true : m.symbol.includes(category);
+      const isFav = favorites.includes(m.symbol);
+      if (category === 'Favorites' && !isFav) return false;
+      return matchesSearch && matchesCategory;
+    }).sort((a, b) => {
+      if (!a.ticker || !b.ticker) return 0;
+      const vA = a.ticker[sortField] as number;
+      const vB = b.ticker[sortField] as number;
+      return sortOrder === 'desc' ? vB - vA : vA - vB;
     });
+  }, [markets, searchTerm, category, favorites, sortField, sortOrder]);
 
-    filtered.sort((a, b) => {
-      let aVal: number | string;
-      let bVal: number | string;
+  const stats = useMemo(() => {
+    const active = markets.filter(m => m.ticker);
+    const up = active.filter(m => (m.ticker?.priceChangePercent ?? 0) > 0).length;
+    const down = active.length - up;
+    const totalVol = active.reduce((acc, m) => acc + (m.ticker?.quoteVolume24h ?? 0), 0);
+    return { up, down, totalVol };
+  }, [markets]);
 
-      switch (sortField) {
-        case 'symbol':
-          aVal = a.symbol;
-          bVal = b.symbol;
-          break;
-        case 'price':
-          aVal = a.price;
-          bVal = b.price;
-          break;
-        case 'change24h':
-          aVal = a.change24h;
-          bVal = b.change24h;
-          break;
-        case 'volume24h':
-          aVal = a.volume24h;
-          bVal = b.volume24h;
-          break;
-        default:
-          return 0;
-      }
-
-      if (typeof aVal === 'string') {
-        return sortOrder === 'asc' 
-          ? aVal.localeCompare(bVal as string)
-          : (bVal as string).localeCompare(aVal);
-      }
-
-      return sortOrder === 'asc' 
-        ? (aVal as number) - (bVal as number)
-        : (bVal as number) - (aVal as number);
-    });
-
-    return filtered;
-  }, [searchTerm, sortField, sortOrder, quoteFilter]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
+  const handleSelect = (symbol: string) => {
+    const { base, quote } = parseSymbol(symbol);
+    addSymbol({ symbol, baseAsset: base, quoteAsset: quote });
+    navigate('/trade');
   };
 
-  const isFavorite = (symbol: string) => {
-    return favorites.includes(symbol);
-  };
-
-  const handleToggleFavorite = (symbol: string) => {
-    // 如果交易对不在 watchlist 中，先添加
-    if (!symbols.find(s => s.symbol === symbol)) {
-      const parts = symbol.replace('USDT', '').replace('BTC', '').replace('ETH', '');
-      addSymbol({
-        symbol,
-        baseAsset: parts,
-        quoteAsset: symbol.endsWith('USDT') ? 'USDT' : symbol.endsWith('BTC') ? 'BTC' : 'ETH',
-      });
-    }
-    toggleFavorite(symbol);
+  const handleSort = (field: keyof MarketTicker) => {
+    if (sortField === field) setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    else { setSortField(field); setSortOrder('desc'); }
   };
 
   return (
     <div className={styles.container}>
-      <div className={`card ${styles.content}`}>
-        <div className="card-header">
-          <span>{t.markets?.title || 'Markets'}</span>
-          <div className={styles.headerActions}>
-            <div className={styles.viewToggle}>
-              <button
-                className={`${styles.viewBtn} ${viewMode === 'table' ? styles.active : ''}`}
-                onClick={() => setViewMode('table')}
-                title={t.markets?.tableView || 'Table View'}
-              >
-                <Icon name="clipboard-list" size="sm" />
-              </button>
-              <button
-                className={`${styles.viewBtn} ${viewMode === 'grid' ? styles.active : ''}`}
-                onClick={() => setViewMode('grid')}
-                title={t.markets?.gridView || 'Grid View'}
-              >
-                <Icon name="bar-chart-3" size="sm" />
-              </button>
-            </div>
+      {/* Header Intelligence Dashboard */}
+      <div className={styles.dashboard}>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Market Breadth</span>
+          <div className={styles.breadthBar}>
+            <div className={styles.breadthUp} style={{ width: `${(stats.up / (stats.up + stats.down || 1)) * 100}%` }} />
+          </div>
+          <div className={styles.statValueRow}>
+            <span className="price-up">{stats.up} UP</span>
+            <span className="price-down">{stats.down} DOWN</span>
           </div>
         </div>
-
-        <div className={styles.filters}>
-          <div className={styles.searchBar}>
-            <Icon name="search" size="sm" className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder={t.markets?.searchPlaceholder || 'Search symbols...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={styles.searchInput}
-            />
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>24h Aggregate Volume</span>
+          <span className={styles.statValue}>${formatVolume(stats.totalVol)}</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Market Status</span>
+          <div className={styles.statusIndicator}>
+            <div className="dot dot-live" />
+            <span>REAL-TIME FEED ACTIVE</span>
           </div>
-          <div className={styles.quoteFilter}>
-            {['ALL', 'USDT', 'BTC'].map((quote) => (
-              <button
-                key={quote}
-                className={`${styles.quoteBtn} ${quoteFilter === quote ? styles.active : ''}`}
-                onClick={() => setQuoteFilter(quote)}
+        </div>
+        <div className={styles.statCard} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <button className="btn-secondary" onClick={() => navigate('/assets')}>
+            <Icon name="layout" size="sm" />
+            {t.wallet?.overview || 'Details'}
+          </button>
+        </div>
+      </div>
+
+      <div className={`card ${styles.mainCard}`}>
+        <div className={styles.toolbar}>
+          <div className={styles.tabs}>
+            {['All', 'Favorites', 'Main', 'DeFi', 'AI', 'Meme'].map(cat => (
+              <button 
+                key={cat}
+                className={`${styles.tab} ${category === cat ? styles.activeTab : ''}`}
+                onClick={() => setCategory(cat)}
               >
-                {quote}
+                {cat === 'Favorites' && <Icon name="star" size="xs" />}
+                {cat}
               </button>
             ))}
           </div>
+          <div className={styles.searchWrapper}>
+            <Icon name="search" size="sm" className={styles.searchIcon} />
+            <input 
+              className={styles.search}
+              placeholder="Filter assets..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className={styles.viewToggle}>
+            <button className={`${styles.toggleBtn} ${viewMode === 'table' ? styles.activeMode : ''}`} onClick={() => setViewMode('table')}>
+              <Icon name="clipboard-list" size="sm" />
+            </button>
+            <button className={`${styles.toggleBtn} ${viewMode === 'grid' ? styles.activeMode : ''}`} onClick={() => setViewMode('grid')}>
+              <Icon name="bar-chart-3" size="sm" />
+            </button>
+          </div>
         </div>
 
-        {viewMode === 'table' ? (
-          <div className={styles.tableContainer}>
+        <div className={styles.tableArea}>
+          {viewMode === 'table' ? (
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>
-                    <button className={styles.sortBtn} onClick={() => handleSort('symbol')}>
-                      {t.markets?.symbol || 'Symbol'}
-                      {sortField === 'symbol' && (
-                        <Icon name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'} size="xs" />
-                      )}
-                    </button>
-                  </th>
-                  <th>
-                    <button className={styles.sortBtn} onClick={() => handleSort('price')}>
-                      {t.markets?.price || 'Price'}
-                      {sortField === 'price' && (
-                        <Icon name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'} size="xs" />
-                      )}
-                    </button>
-                  </th>
-                  <th>
-                    <button className={styles.sortBtn} onClick={() => handleSort('change24h')}>
-                      {t.markets?.change24h || '24h %'}
-                      {sortField === 'change24h' && (
-                        <Icon name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'} size="xs" />
-                      )}
-                    </button>
-                  </th>
-                  <th>
-                    <button className={styles.sortBtn} onClick={() => handleSort('volume24h')}>
-                      {t.markets?.volume24h || '24h Vol'}
-                      {sortField === 'volume24h' && (
-                        <Icon name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'} size="xs" />
-                      )}
-                    </button>
-                  </th>
-                  <th>{t.markets?.chart || 'Chart'}</th>
-                  <th>{t.markets?.actions || 'Actions'}</th>
+                  <th style={{ width: '40px' }}></th>
+                  <th onClick={() => handleSort('symbol')} className={styles.sortable}>Asset</th>
+                  <th onClick={() => handleSort('price')} className={styles.sortable}>Last Price</th>
+                  <th onClick={() => handleSort('priceChangePercent')} className={styles.sortable}>24h Change</th>
+                  <th onClick={() => handleSort('quoteVolume24h')} className={styles.sortable}>24h Volume</th>
+                  <th>Indicators</th>
+                  <th style={{ width: '120px' }}>Last 24h</th>
+                  <th style={{ width: '100px' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSorted.map((market) => (
-                  <tr key={market.symbol}>
-                    <td className={styles.symbolCell}>{market.symbol}</td>
-                    <td className="tabular-nums">{market.price.toFixed(2)}</td>
-                    <td className={`tabular-nums ${market.change24h >= 0 ? 'price-up' : 'price-down'}`}>
-                      {market.change24h >= 0 ? '+' : ''}{market.change24h.toFixed(2)}%
-                    </td>
-                    <td className="tabular-nums">{market.volume24h.toLocaleString()}</td>
+                {filteredMarkets.map(m => (
+                  <tr key={m.symbol} onClick={() => handleSelect(m.symbol)}>
                     <td>
-                      <Sparkline data={market.sparkline} />
-                    </td>
-                    <td>
-                      <button
-                        className={styles.favoriteBtn}
-                        onClick={() => handleToggleFavorite(market.symbol)}
-                        title={isFavorite(market.symbol) ? t.watchlist?.removeFromFavorites : t.watchlist?.addToFavorites}
+                      <button 
+                        className={`${styles.favBtn} ${favorites.includes(m.symbol) ? styles.isFav : ''}`}
+                        onClick={e => { e.stopPropagation(); toggleFavorite(m.symbol); }}
                       >
-                        <Icon 
-                          name={isFavorite(market.symbol) ? 'star-filled' : 'star'} 
-                          size="sm"
-                          style={{ color: isFavorite(market.symbol) ? 'var(--color-warning)' : undefined }}
-                        />
+                        <Icon name="star" size="sm" />
                       </button>
+                    </td>
+                    <td>
+                      <div className={styles.assetCell}>
+                        <span className={styles.base}>{parseSymbol(m.symbol).base}</span>
+                        <span className={styles.quote}>/USDT</span>
+                      </div>
+                    </td>
+                    <td className="tabular-nums font-medium">
+                      {m.ticker ? formatPrice(m.ticker.price) : '---'}
+                    </td>
+                    <td className={`tabular-nums ${(m.ticker?.priceChangePercent ?? 0) >= 0 ? 'price-up' : 'price-down'}`}>
+                      {m.ticker ? `${m.ticker.priceChangePercent > 0 ? '+' : ''}${m.ticker.priceChangePercent.toFixed(2)}%` : '---'}
+                    </td>
+                    <td className="tabular-nums text-secondary">
+                      ${m.ticker ? formatVolume(m.ticker.quoteVolume24h) : '---'}
+                    </td>
+                    <td>
+                      <div className={styles.indicatorCell}>
+                        {m.indicators ? (
+                          <>
+                            <span className={`${styles.badge} ${m.indicators.rsi14 && m.indicators.rsi14 > 70 ? styles.warn : ''}`}>
+                              RSI: {m.indicators.rsi14?.toFixed(0)}
+                            </span>
+                            <Icon 
+                              name={m.indicators.momentum === 'bullish' ? 'trending-up' : 'trending-down'} 
+                              size="xs" 
+                              className={m.indicators.momentum === 'bullish' ? 'price-up' : 'price-down'}
+                            />
+                          </>
+                        ) : <div className={styles.skeletonSmall} />}
+                      </div>
+                    </td>
+                    <td>
+                      {m.sparkline ? (
+                        <Sparkline data={m.sparkline.prices} height={24} width={100} />
+                      ) : <div className={styles.skeletonWide} />}
+                    </td>
+                    <td>
+                      <button className={styles.tradeBtn}>Execute</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        ) : (
-          <div className={styles.gridContainer}>
-            {filteredAndSorted.map((market) => (
-              <div key={market.symbol} className={styles.gridCard}>
-                <div className={styles.cardHeader}>
-                  <span className={styles.cardSymbol}>{market.symbol}</span>
-                  <button
-                    className={styles.favoriteBtn}
-                    onClick={() => handleToggleFavorite(market.symbol)}
-                  >
-                    <Icon 
-                      name={isFavorite(market.symbol) ? 'star-filled' : 'star'} 
-                      size="sm"
-                      style={{ color: isFavorite(market.symbol) ? 'var(--color-warning)' : undefined }}
-                    />
-                  </button>
+          ) : (
+            <div className={styles.grid}>
+              {filteredMarkets.map(m => (
+                <div key={m.symbol} className={styles.card} onClick={() => handleSelect(m.symbol)}>
+                  <div className={styles.cardTop}>
+                    <span className={styles.cardSymbol}>{parseSymbol(m.symbol).base}</span>
+                    <span className={`${styles.cardChange} ${(m.ticker?.priceChangePercent ?? 0) >= 0 ? 'price-up' : 'price-down'}`}>
+                      {m.ticker?.priceChangePercent.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className={styles.cardPrice}>{m.ticker ? formatPrice(m.ticker.price) : '---'}</div>
+                  <div className={styles.cardChart}>
+                    {m.sparkline && <Sparkline data={m.sparkline.prices} height={40} width={180} />}
+                  </div>
+                  <div className={styles.cardFooter}>
+                    <span className="text-secondary">Vol: ${formatVolume(m.ticker?.quoteVolume24h ?? 0)}</span>
+                    <button className={styles.miniTradeBtn}>Trade</button>
+                  </div>
                 </div>
-                <div className={styles.cardPrice}>
-                  <span className="tabular-nums">{market.price.toFixed(2)}</span>
-                  <span className={`tabular-nums ${market.change24h >= 0 ? 'price-up' : 'price-down'}`}>
-                    {market.change24h >= 0 ? '+' : ''}{market.change24h.toFixed(2)}%
-                  </span>
-                </div>
-                <div className={styles.cardChart}>
-                  <Sparkline data={market.sparkline} width={120} height={40} />
-                </div>
-                <div className={styles.cardVolume}>
-                  <span className={styles.volumeLabel}>{t.markets?.volume24h || '24h Vol'}:</span>
-                  <span className="tabular-nums">{market.volume24h.toLocaleString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

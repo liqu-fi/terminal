@@ -1,11 +1,24 @@
 .container {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .body {
-  max-height: 300px;
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .row {
@@ -96,6 +109,7 @@
 .detailValue {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .progressBar {

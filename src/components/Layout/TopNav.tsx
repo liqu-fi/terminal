@@ -9,6 +9,12 @@ export function TopNav() {
   return (
     <nav className={styles.nav}>
       <NavLink 
+        to="/assets" 
+        className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+      >
+        {t.wallet?.overview || 'Overview'}
+      </NavLink>
+      <NavLink 
         to="/trade" 
         className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
       >

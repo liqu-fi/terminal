@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useTradingStore } from '../store/tradingStore';
+import { useAutomationStore } from '../store/automationStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
+import { TriggerList, ExecutionLogList } from '../components/AutomationPanel';
 import type { PaperOrder, OrderStatus } from '../types/trading';
 import styles from './OrdersPage.module.css';
 
-type TabType = 'open' | 'history' | 'trades';
+type TabType = 'open' | 'history' | 'trades' | 'automation';
 
 // 格式化时间
 function formatTime(timestamp: number): string {
@@ -243,6 +245,12 @@ export function OrdersPage() {
         >
           {t.orders?.tradesTab || '成交记录'}
         </button>
+        <button 
+          className={`${styles.tab} ${activeTab === 'automation' ? styles.active : ''}`}
+          onClick={() => setActiveTab('automation')}
+        >
+          {t.automation?.title || '自动化'}
+        </button>
       </div>
 
       {/* 内容区 */}
@@ -303,6 +311,19 @@ export function OrdersPage() {
                 />
               ))
             )}
+          </div>
+        )}
+
+        {activeTab === 'automation' && (
+          <div className={styles.automationContainer}>
+            <div className={styles.automationSection}>
+              <h3 className={styles.sectionTitle}>{t.automation.activeTriggers}</h3>
+              <TriggerList />
+            </div>
+            <div className={styles.automationSection}>
+              <h3 className={styles.sectionTitle}>{t.automation.logs}</h3>
+              <ExecutionLogList />
+            </div>
           </div>
         )}
       </div>

@@ -21,12 +21,14 @@ const BINANCE_WS_URLS = [
 ];
 let currentWsUrlIndex = 0;
 const BINANCE_REST_URL = 'https://api.binance.com/api/v3';
-const RECONNECT_BASE_DELAY_MS = 2000;  // 增加基础重连延迟
-const RECONNECT_MAX_DELAY_MS = 60000;  // 增加最大重连延迟
-const HEARTBEAT_INTERVAL_MS = 30000;
-const STALE_CHECK_INTERVAL_MS = 500;   // 降低状态检查频率（100ms → 500ms）
-const METRICS_UPDATE_INTERVAL_MS = 200; // 降低指标更新频率（100ms → 200ms）
-const MAX_RECONNECTS_PER_MINUTE = 3;    // 减少每分钟最大重连次数
+const RECONNECT_BASE_DELAY_MS = 2000;  // 基础重连延迟
+const RECONNECT_MAX_DELAY_MS = 30000;  // 最大重连延迟（缩短）
+const HEARTBEAT_INTERVAL_MS = 15000;   // 心跳检测间隔 15 秒
+const HEARTBEAT_TIMEOUT_MS = 20000;    // 心跳超时 20 秒（匹配 stale 阈值）
+const STALE_CHECK_INTERVAL_MS = 1000;  // 状态检查频率
+const STALE_RECONNECT_THRESHOLD_MS = 15000; // 15秒无更新主动触发重连
+const METRICS_UPDATE_INTERVAL_MS = 250; // 指标更新频率
+const MAX_RECONNECTS_PER_MINUTE = 5;    // 每分钟最大重连次数（放宽）
 const QUEUE_WARNING_THRESHOLD = 100;
 const QUEUE_TRADE_DOWNSAMPLE_THRESHOLD = 500;
 const QUEUE_RESYNC_THRESHOLD = 1000;
@@ -41,11 +43,18 @@ let reconnectTimestamps: number[] = [];
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let staleCheckTimer: ReturnType<typeof setInterval> | null = null;
 let metricsTimer: ReturnType<typeof setInterval> | null = null;
+let tradeBatchTimer: ReturnType<typeof setInterval> | null = null; // 成交批处理定时器
+let reconnectMonitorTimer: ReturnType<typeof setInterval> | null = null; // 重连监控定时器
 let lastMessageTime = 0;
 let gapCount = 0;
 let resyncCount = 0;
 let messageQueue: unknown[] = [];
+let tradeBatch: Trade[] = []; // 成交批处理队列
 let tradeDownsampleActive = false;
+let isIntentionalClose = false; // 标记是否为主动关闭（切换币种/取消订阅）
+let connectionId = 0; // 连接 ID，用于处理竞态条件
+let pendingConnectTimer: ReturnType<typeof setTimeout> | null = null; // 延迟连接定时器
+let lastReconnectAttemptTime = 0; // 上次重连尝试时间
 
 // 消息速率计算：滑动窗口方式
 const MESSAGE_RATE_WINDOW_MS = 1000; // 1秒窗口
@@ -251,20 +260,36 @@ function sendOrderBookUpdate(): void {
 
   const orderBook = orderBookManager.getOrderBook();
   const metrics = orderBookManager.getMetrics();
+  
+  // 计算最新消息时间戳（转换为 Date.now() 格式）
+  const now = performance.now();
+  const lastMsgTime = lastMessageTime > 0 ? Date.now() - (now - lastMessageTime) : 0;
 
   sendMessage<OrderBookUpdatePayload>('ORDERBOOK_UPDATE', {
     orderBook,
     metrics,
+    lastMessageTime: lastMsgTime,
   });
 }
 
 // ===== WebSocket Management =====
 async function connect(symbol: string): Promise<void> {
-  // 关闭旧连接
+  // 取消任何待处理的连接请求（防抖，避免 React StrictMode 双重挂载问题）
+  if (pendingConnectTimer) {
+    clearTimeout(pendingConnectTimer);
+    pendingConnectTimer = null;
+  }
+  
+  // 关闭旧连接（标记为主动关闭，避免记录错误）
   if (ws) {
+    isIntentionalClose = true;
     ws.close();
     ws = null;
   }
+  
+  // 递增连接 ID，使之前的回调失效
+  connectionId++;
+  const thisConnectionId = connectionId;
 
   // 重置所有状态（切换币种时很重要）
   currentSymbol = symbol;
@@ -274,10 +299,14 @@ async function connect(symbol: string): Promise<void> {
   gapCount = 0;
   resyncCount = 0;
   lastMessageTime = 0;
+  lastReconnectAttemptTime = 0;
   messageQueue = [];
   messageTimestamps = [];
   latencyHistory = [];
   tradeDownsampleActive = false;
+  
+  // 启动重连监控器
+  startReconnectMonitor();
   
   // 重置网络健康统计（但保留事件历史）
   sessionStartTime = Date.now();
@@ -290,80 +319,127 @@ async function connect(symbol: string): Promise<void> {
   
   sendConnectionStatus();
 
-  const streamName = `${symbol.toLowerCase()}@depth@100ms`;
-  const tradeStreamName = `${symbol.toLowerCase()}@trade`;
-  // Binance WebSocket 组合流格式：使用 /stream?streams= 端点
-  const baseUrl = BINANCE_WS_URLS[currentWsUrlIndex % BINANCE_WS_URLS.length];
-  const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}`;
-
-  log('info', 'ws', 'ws.connecting', { symbol, url: wsUrl, urlIndex: currentWsUrlIndex });
-
-  try {
-    ws = new WebSocket(wsUrl);
+  // 延迟创建 WebSocket，避免 React StrictMode 双重挂载导致的竞态条件
+  // 如果在延迟期间 connect 被再次调用，定时器会被取消
+  pendingConnectTimer = setTimeout(() => {
+    pendingConnectTimer = null;
     
-    ws.onopen = () => {
-      connectionState = 'connected';
-      reconnectAttempts = 0;
-      lastConnectedStart = Date.now(); // 记录连接开始时间
-      addNetworkEvent('connected', symbol);
-      log('info', 'ws', 'ws.connected', { symbol });
-      sendConnectionStatus();
+    // 再次检查连接 ID，确保这次连接请求仍然有效
+    if (thisConnectionId !== connectionId) {
+      return;
+    }
+    
+    const streamName = `${symbol.toLowerCase()}@depth@100ms`;
+    const tradeStreamName = `${symbol.toLowerCase()}@trade`;
+    // Binance WebSocket 组合流格式：使用 /stream?streams= 端点
+    const baseUrl = BINANCE_WS_URLS[currentWsUrlIndex % BINANCE_WS_URLS.length];
+    const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}`;
+
+    log('info', 'ws', 'ws.connecting', { symbol, url: wsUrl, urlIndex: currentWsUrlIndex });
+
+    try {
+      isIntentionalClose = false; // 重置主动关闭标志
+      ws = new WebSocket(wsUrl);
       
-      // Fetch initial snapshot
-      fetchSnapshot(symbol);
-      
-      // Start heartbeat
-      startHeartbeat();
-    };
+      ws.onopen = () => {
+        // 检查连接 ID，如果已被新连接取代则忽略
+        if (thisConnectionId !== connectionId) {
+          return;
+        }
+        
+        connectionState = 'connected';
+        reconnectAttempts = 0;
+        lastConnectedStart = Date.now(); // 记录连接开始时间
+        addNetworkEvent('connected', symbol);
+        log('info', 'ws', 'ws.connected', { symbol });
+        sendConnectionStatus();
+        
+        // Fetch initial snapshot
+        fetchSnapshot(symbol);
+        
+        // Start heartbeat
+        startHeartbeat();
+      };
 
-    ws.onmessage = (event) => {
-      const now = performance.now();
-      lastMessageTime = now;
-      messageTimestamps.push(now); // 记录消息时间戳用于速率计算
+      ws.onmessage = (event) => {
+        // 检查连接 ID，如果已被新连接取代则忽略
+        if (thisConnectionId !== connectionId) {
+          return;
+        }
+        
+        const now = performance.now();
+        lastMessageTime = now;
+        messageTimestamps.push(now); // 记录消息时间戳用于速率计算
 
-      try {
-        const data = JSON.parse(event.data as string);
-        handleMessage(data);
-      } catch (err) {
-        log('error', 'ws', 'ws.parse_error', { error: String(err) });
-      }
-    };
+        try {
+          const data = JSON.parse(event.data as string);
+          handleMessage(data);
+        } catch (err) {
+          log('error', 'ws', 'ws.parse_error', { error: String(err) });
+        }
+      };
 
-    ws.onerror = (event) => {
-      // WebSocket error event 不包含详细错误信息
-      // 真正的错误原因会在 onclose 事件中通过 code 和 reason 提供
-      log('error', 'ws', 'ws.error', { 
-        type: event.type,
-        message: 'WebSocket connection error (see onclose for details)',
-      });
-    };
+      ws.onerror = (event) => {
+        // 检查连接 ID，如果已被新连接取代则忽略
+        if (thisConnectionId !== connectionId) {
+          return;
+        }
+        
+        // 如果是主动关闭导致的错误，不记录为错误
+        if (isIntentionalClose) {
+          log('info', 'ws', 'ws.closed_intentionally', { type: event.type });
+          return;
+        }
+        
+        // WebSocket error event 不包含详细错误信息
+        // 真正的错误原因会在 onclose 事件中通过 code 和 reason 提供
+        log('error', 'ws', 'ws.error', { 
+          type: event.type,
+          message: 'WebSocket connection error (see onclose for details)',
+        });
+      };
 
-    ws.onclose = (event) => {
-      // 更新连接时间统计
-      if (lastConnectedStart > 0) {
-        connectedTime += Date.now() - lastConnectedStart;
-        lastConnectedStart = 0;
-      }
-      
+      ws.onclose = (event) => {
+        // 检查连接 ID，如果已被新连接取代则忽略（不重连）
+        if (thisConnectionId !== connectionId) {
+          return;
+        }
+        
+        // 更新连接时间统计
+        if (lastConnectedStart > 0) {
+          connectedTime += Date.now() - lastConnectedStart;
+          lastConnectedStart = 0;
+        }
+        
+        connectionState = 'disconnected';
+        
+        // 如果是主动关闭，不记录警告也不触发重连
+        if (isIntentionalClose) {
+          log('info', 'ws', 'ws.closed_intentionally', { code: event.code });
+          sendConnectionStatus();
+          stopHeartbeat();
+          return;
+        }
+        
+        addNetworkEvent('disconnected', `code: ${event.code}`, event.code);
+        log('warn', 'ws', 'ws.disconnected', { 
+          code: event.code, 
+          reason: event.reason || 'No reason provided',
+          wasClean: event.wasClean,
+        });
+        sendConnectionStatus();
+        stopHeartbeat();
+        
+        // Attempt reconnect
+        scheduleReconnect();
+      };
+    } catch (err) {
+      log('error', 'ws', 'ws.connect_error', { error: String(err) });
       connectionState = 'disconnected';
-      addNetworkEvent('disconnected', `code: ${event.code}`, event.code);
-      log('warn', 'ws', 'ws.disconnected', { 
-        code: event.code, 
-        reason: event.reason || 'No reason provided',
-        wasClean: event.wasClean,
-      });
       sendConnectionStatus();
-      stopHeartbeat();
-      
-      // Attempt reconnect
       scheduleReconnect();
-    };
-  } catch (err) {
-    log('error', 'ws', 'ws.connect_error', { error: String(err) });
-    connectionState = 'disconnected';
-    sendConnectionStatus();
-    scheduleReconnect();
-  }
+    }
+  }, 50); // 50ms 延迟足以处理 StrictMode 的快速卸载-挂载周期
 }
 
 async function fetchSnapshot(symbol: string): Promise<void> {
@@ -516,8 +592,20 @@ function handleTradeUpdate(msg: Record<string, unknown>): void {
     trade.localReceiveTime
   );
 
-  // Send trade to main thread
-  sendMessage<TradeUpdatePayload>('TRADE_UPDATE', { trades: [trade] });
+  // Add to batch instead of sending immediately
+  tradeBatch.push(trade);
+  
+  // If batch gets too large, send immediately
+  if (tradeBatch.length >= 50) {
+    sendTradeBatch();
+  }
+}
+
+function sendTradeBatch(): void {
+  if (tradeBatch.length === 0) return;
+  
+  sendMessage<TradeUpdatePayload>('TRADE_UPDATE', { trades: tradeBatch });
+  tradeBatch = [];
 }
 
 function checkBackpressure(): void {
@@ -550,14 +638,31 @@ function checkBackpressure(): void {
 
 function scheduleReconnect(): void {
   const now = Date.now();
+  lastReconnectAttemptTime = now;
   
   // Track reconnect attempts per minute
   reconnectTimestamps = reconnectTimestamps.filter(t => now - t < 60000);
   
   if (reconnectTimestamps.length >= MAX_RECONNECTS_PER_MINUTE) {
     log('warn', 'ws', 'ws.reconnect_rate_limited', { 
-      attempts: reconnectTimestamps.length 
+      attempts: reconnectTimestamps.length,
+      maxPerMinute: MAX_RECONNECTS_PER_MINUTE
     });
+    // 即使被限流，也保持 reconnecting 状态而不是立即切换到 stale
+    // 这样 UI 会显示"重连中"而不是"已过期"
+    if (connectionState !== 'reconnecting') {
+      connectionState = 'reconnecting';
+      sendConnectionStatus();
+    }
+    // 在限流期间，延迟后重试（延迟时间根据限流窗口动态计算）
+    const oldestTimestamp = reconnectTimestamps[0] || now;
+    const waitTime = Math.max(60000 - (now - oldestTimestamp) + 1000, 5000); // 等到限流窗口过期 + 1秒
+    log('info', 'ws', 'ws.waiting_for_rate_limit', { waitTime });
+    setTimeout(() => {
+      if (currentSymbol && (connectionState === 'reconnecting' || connectionState === 'disconnected')) {
+        scheduleReconnect();
+      }
+    }, waitTime);
     return;
   }
 
@@ -565,16 +670,19 @@ function scheduleReconnect(): void {
   reconnectTimestamps.push(now);
   
   // 尝试下一个 WebSocket URL（在多次失败后切换）
-  if (reconnectAttempts % 2 === 0) {
+  if (reconnectAttempts % 3 === 0) {
     currentWsUrlIndex = (currentWsUrlIndex + 1) % BINANCE_WS_URLS.length;
     log('info', 'ws', 'ws.trying_alternate_url', { urlIndex: currentWsUrlIndex });
   }
   
-  // Exponential backoff
-  const delay = Math.min(
-    RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttempts - 1),
+  // Exponential backoff with jitter to avoid thundering herd
+  const baseDelay = Math.min(
+    RECONNECT_BASE_DELAY_MS * Math.pow(1.3, reconnectAttempts - 1), // 使用 1.3 倍增，更快重连
     RECONNECT_MAX_DELAY_MS
   );
+  // 添加随机抖动 (±20%)
+  const jitter = baseDelay * 0.2 * (Math.random() * 2 - 1);
+  const delay = Math.round(baseDelay + jitter);
 
   connectionState = 'reconnecting';
   addNetworkEvent('reconnecting', `attempt #${reconnectAttempts}`, reconnectAttempts);
@@ -583,10 +691,155 @@ function scheduleReconnect(): void {
   log('info', 'ws', 'ws.reconnect_scheduled', { delay, attempt: reconnectAttempts });
 
   setTimeout(() => {
-    if (currentSymbol && connectionState === 'reconnecting') {
-      connect(currentSymbol);
+    if (currentSymbol && (connectionState === 'reconnecting' || connectionState === 'disconnected')) {
+      reconnectWithRetainedData(currentSymbol);
     }
   }, delay);
+}
+
+// 重连时保留数据的连接函数
+async function reconnectWithRetainedData(symbol: string): Promise<void> {
+  // 保留现有的 orderBookManager 和数据，不重置
+  // 只是重新建立 WebSocket 连接
+  
+  // 取消任何待处理的连接请求
+  if (pendingConnectTimer) {
+    clearTimeout(pendingConnectTimer);
+    pendingConnectTimer = null;
+  }
+  
+  // 关闭旧连接
+  if (ws) {
+    isIntentionalClose = true;
+    ws.close();
+    ws = null;
+  }
+  
+  // 递增连接 ID
+  connectionId++;
+  const thisConnectionId = connectionId;
+  
+  // 保留 symbol 和 orderBookManager（不重置数据）
+  currentSymbol = symbol;
+  connectionState = 'reconnecting'; // 保持 reconnecting 状态
+  
+  // 不重置这些统计（保持连续性）：
+  // - gapCount, resyncCount（累计值）
+  // - networkEvents（事件历史）
+  
+  // 重置连接相关的临时状态
+  lastMessageTime = 0;
+  messageQueue = [];
+  messageTimestamps = [];
+  latencyHistory = [];
+  tradeDownsampleActive = false;
+  
+  sendConnectionStatus();
+  
+  // 延迟创建 WebSocket
+  pendingConnectTimer = setTimeout(() => {
+    pendingConnectTimer = null;
+    
+    if (thisConnectionId !== connectionId) {
+      return;
+    }
+    
+    const streamName = `${symbol.toLowerCase()}@depth@100ms`;
+    const tradeStreamName = `${symbol.toLowerCase()}@trade`;
+    const baseUrl = BINANCE_WS_URLS[currentWsUrlIndex % BINANCE_WS_URLS.length];
+    const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}`;
+    
+    log('info', 'ws', 'ws.reconnecting', { symbol, url: wsUrl, urlIndex: currentWsUrlIndex });
+    
+    try {
+      isIntentionalClose = false;
+      ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        if (thisConnectionId !== connectionId) return;
+        
+        connectionState = 'connected';
+        reconnectAttempts = 0;
+        lastConnectedStart = Date.now();
+        addNetworkEvent('connected', `reconnected: ${symbol}`);
+        log('info', 'ws', 'ws.reconnected', { symbol });
+        sendConnectionStatus();
+        
+        // 如果 orderBookManager 已经有数据，不需要重新获取 snapshot
+        // 只有在检测到 gap 时才会触发 resync
+        if (!orderBookManager || !orderBookManager.isInitialized) {
+          // 需要创建新的 manager 或获取 snapshot
+          if (!orderBookManager) {
+            orderBookManager = new OrderBookManager(symbol);
+          }
+          fetchSnapshot(symbol);
+        }
+        
+        startHeartbeat();
+      };
+      
+      ws.onmessage = (event) => {
+        if (thisConnectionId !== connectionId) return;
+        
+        const now = performance.now();
+        lastMessageTime = now;
+        messageTimestamps.push(now);
+        
+        try {
+          const data = JSON.parse(event.data as string);
+          handleMessage(data);
+        } catch (err) {
+          log('error', 'ws', 'ws.parse_error', { error: String(err) });
+        }
+      };
+      
+      ws.onerror = (event) => {
+        if (thisConnectionId !== connectionId) return;
+        if (isIntentionalClose) {
+          log('info', 'ws', 'ws.closed_intentionally', { type: event.type });
+          return;
+        }
+        log('error', 'ws', 'ws.error', { 
+          type: event.type,
+          message: 'WebSocket connection error',
+        });
+      };
+      
+      ws.onclose = (event) => {
+        if (thisConnectionId !== connectionId) return;
+        
+        if (lastConnectedStart > 0) {
+          connectedTime += Date.now() - lastConnectedStart;
+          lastConnectedStart = 0;
+        }
+        
+        connectionState = 'disconnected';
+        
+        if (isIntentionalClose) {
+          log('info', 'ws', 'ws.closed_intentionally', { code: event.code });
+          sendConnectionStatus();
+          stopHeartbeat();
+          return;
+        }
+        
+        addNetworkEvent('disconnected', `code: ${event.code}`, event.code);
+        log('warn', 'ws', 'ws.disconnected', { 
+          code: event.code, 
+          reason: event.reason || 'No reason provided',
+          wasClean: event.wasClean,
+        });
+        sendConnectionStatus();
+        stopHeartbeat();
+        
+        scheduleReconnect();
+      };
+    } catch (err) {
+      log('error', 'ws', 'ws.reconnect_error', { error: String(err) });
+      connectionState = 'disconnected';
+      sendConnectionStatus();
+      scheduleReconnect();
+    }
+  }, 50);
 }
 
 function startHeartbeat(): void {
@@ -597,22 +850,46 @@ function startHeartbeat(): void {
       // Binance doesn't require ping frames from client, but we track connection health
       const timeSinceLastMessage = performance.now() - lastMessageTime;
       
-      if (timeSinceLastMessage > HEARTBEAT_INTERVAL_MS * 2) {
-        log('warn', 'ws', 'ws.heartbeat_timeout', { timeSinceLastMessage });
+      // 如果超过心跳超时时间没收到消息，关闭连接触发重连
+      if (lastMessageTime > 0 && timeSinceLastMessage > HEARTBEAT_TIMEOUT_MS) {
+        log('warn', 'ws', 'ws.heartbeat_timeout', { 
+          timeSinceLastMessage: Math.round(timeSinceLastMessage),
+          threshold: HEARTBEAT_TIMEOUT_MS 
+        });
         ws.close();
       }
     }
   }, HEARTBEAT_INTERVAL_MS);
 
-  // Stale check timer
+  // Stale check timer - 检测数据过期并主动触发重连
   staleCheckTimer = setInterval(() => {
     sendConnectionStatus();
+    
+    // 主动检测 stale 状态并触发重连
+    if (lastMessageTime > 0 && connectionState === 'connected') {
+      const timeSinceLastMessage = performance.now() - lastMessageTime;
+      if (timeSinceLastMessage > STALE_RECONNECT_THRESHOLD_MS) {
+        log('warn', 'ws', 'ws.stale_detected', { 
+          timeSinceLastMessage: Math.round(timeSinceLastMessage),
+          threshold: STALE_RECONNECT_THRESHOLD_MS 
+        });
+        // 主动关闭并触发重连
+        if (ws) {
+          ws.close();
+        }
+      }
+    }
   }, STALE_CHECK_INTERVAL_MS);
 
   // Metrics update timer
   metricsTimer = setInterval(() => {
     sendOrderBookUpdate();
   }, METRICS_UPDATE_INTERVAL_MS);
+
+  // Trade batch timer
+  tradeBatchTimer = setInterval(() => {
+    sendTradeBatch();
+  }, 100); // Send trade batch every 100ms
 }
 
 function stopHeartbeat(): void {
@@ -628,12 +905,56 @@ function stopHeartbeat(): void {
     clearInterval(metricsTimer);
     metricsTimer = null;
   }
+  if (tradeBatchTimer) {
+    clearInterval(tradeBatchTimer);
+    tradeBatchTimer = null;
+  }
+}
+
+// 启动重连监控定时器（在连接断开期间持续运行）
+function startReconnectMonitor(): void {
+  stopReconnectMonitor();
+  
+  reconnectMonitorTimer = setInterval(() => {
+    // 持续发送状态更新（即使断开连接）
+    sendConnectionStatus();
+    
+    // 如果处于断开或重连状态，检查是否需要触发重连
+    if (currentSymbol && (connectionState === 'disconnected' || connectionState === 'reconnecting')) {
+      const now = Date.now();
+      const timeSinceLastReconnect = now - lastReconnectAttemptTime;
+      
+      // 如果距离上次重连尝试超过 10 秒且没有活跃的 WebSocket，主动触发重连
+      if (timeSinceLastReconnect > 10000 && (!ws || ws.readyState === WebSocket.CLOSED)) {
+        log('info', 'ws', 'ws.reconnect_monitor_trigger', { 
+          timeSinceLastReconnect,
+          connectionState 
+        });
+        scheduleReconnect();
+      }
+    }
+  }, 2000); // 每 2 秒检查一次
+}
+
+function stopReconnectMonitor(): void {
+  if (reconnectMonitorTimer) {
+    clearInterval(reconnectMonitorTimer);
+    reconnectMonitorTimer = null;
+  }
 }
 
 function disconnect(): void {
+  // 取消待处理的连接请求
+  if (pendingConnectTimer) {
+    clearTimeout(pendingConnectTimer);
+    pendingConnectTimer = null;
+  }
+  
   stopHeartbeat();
+  stopReconnectMonitor(); // 停止重连监控
   
   if (ws) {
+    isIntentionalClose = true; // 标记为主动关闭
     ws.close();
     ws = null;
   }
@@ -646,6 +967,7 @@ function disconnect(): void {
   gapCount = 0;
   resyncCount = 0;
   lastMessageTime = 0;
+  lastReconnectAttemptTime = 0;
   messageQueue = [];
   messageTimestamps = [];
   latencyHistory = [];

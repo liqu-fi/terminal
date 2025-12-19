@@ -1,53 +1,55 @@
 .container {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
-}
-
-.container .card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.staleWarning {
-  color: var(--color-error);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 2px 6px;
-  background: var(--color-price-down-bg);
-  border-radius: var(--radius-sm);
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  border: none !important;
+  background: var(--bg-secondary);
 }
 
 .body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-2xs);
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--color-border-secondary);
+  flex-shrink: 0;
 }
 
 .asksSection,
 .bidsSection {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scrollContent {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.scrollContent::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollContent::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 2px;
 }
 
 .asksSection {
@@ -77,7 +79,8 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  opacity: 0.15;
+  opacity: 0.25;
+  transition: width 0.3s ease-out;
 }
 
 .depthBar.bid {
@@ -94,12 +97,14 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   z-index: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .quantity {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   z-index: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .spreadSection {
@@ -138,8 +143,6 @@
   min-height: 200px;
   color: var(--color-text-tertiary);
 }
-
-/* 移除了 hint 部分，更简洁的界面 */
 
 /* ===== 诚实系统：可信度状态样式 ===== */
 
@@ -224,3 +227,105 @@
   color: var(--text-tertiary) !important;
 }
 
+/* ===== 嵌入模式样式 (BottomTabs) ===== */
+.embeddedContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  position: relative;
+}
+
+.embeddedBody {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.embeddedBids,
+.embeddedAsks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.embeddedHeader {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-2);
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border-secondary);
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
+
+.embeddedHeader span:first-child {
+  font-weight: var(--font-weight-semibold);
+}
+
+.embeddedScrollContent {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.embeddedScrollContent::-webkit-scrollbar {
+  width: 3px;
+}
+
+.embeddedScrollContent::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 2px;
+}
+
+.embeddedSpread {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--color-bg-tertiary);
+  border-left: 1px solid var(--color-border-secondary);
+  border-right: 1px solid var(--color-border-secondary);
+  min-width: 100px;
+}
+
+.embeddedSpread .spreadValue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.embeddedSpread .spreadBps {
+  font-size: 10px;
+}
+
+.embeddedContainer .level {
+  height: 20px;
+  padding: 2px var(--space-2);
+}
+
+.embeddedContainer .price,
+.embeddedContainer .quantity {
+  font-size: var(--font-size-xs);
+}
+
+.confidenceIcon {
+  display: flex;
+  align-items: center;
+  color: var(--color-warning);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}

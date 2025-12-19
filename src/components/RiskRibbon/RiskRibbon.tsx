@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
-import { useTradingStore, selectBalances } from '../../store/tradingStore';
+import React, { useMemo, useEffect } from 'react';
+import { useTradingStore } from '../../store/tradingStore';
+import { useWalletStore, selectBalances } from '../../store/walletStore';
 import { useMarketStore, selectMetrics, selectOrderBook } from '../../store/marketStore';
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
 import { useI18n } from '../../i18n';
+import { Icon } from '../Icon';
 import styles from './RiskRibbon.module.css';
 
 interface RiskMetrics {
@@ -14,11 +16,26 @@ interface RiskMetrics {
 
 export function RiskRibbon() {
   const { t } = useI18n();
-  const balances = useTradingStore(selectBalances);
+  const balances = useWalletStore(selectBalances);
+  const performanceMetrics = useWalletStore((state) => state.performanceMetrics);
+  const updatePerformanceMetrics = useWalletStore((state) => state.updatePerformanceMetrics);
   const positions = useTradingStore((state) => state.positions);
   const metrics = useMarketStore(selectMetrics);
   const orderBook = useMarketStore(selectOrderBook);
   const selectedSymbol = useWatchlistStore(selectSelectedSymbol);
+
+  // 定期更新绩效指标
+  useEffect(() => {
+    if (!metrics) return;
+    
+    // 我们假设当前选中的价格可以代表主要资产价格（简化的 equity 计算）
+    const prices: Record<string, string> = {};
+    if (metrics.mid && orderBook?.symbol) {
+      prices[orderBook.symbol] = metrics.mid;
+    }
+    
+    updatePerformanceMetrics(prices);
+  }, [metrics, orderBook?.symbol, updatePerformanceMetrics]);
 
   // 当前选中的币种
   const currentSymbol = orderBook?.symbol || selectedSymbol;
@@ -31,7 +48,13 @@ export function RiskRibbon() {
     const usdtTotal = parseFloat(usdtBalance?.total ?? '0');
     
     // 查找当前选中币种的持仓（只有当前币种才能计算实时盈亏）
-    const positionEntries = Array.from(positions.entries());
+    let positionEntries: [string, any][] = [];
+    if (positions instanceof Map) {
+      positionEntries = Array.from(positions.entries());
+    } else if (typeof positions === 'object' && positions !== null) {
+      positionEntries = Object.entries(positions);
+    }
+
     const activePosition = positionEntries.find(([symbol, pos]) => 
       symbol === currentSymbol && pos.side === 'long' && parseFloat(pos.quantity) > 0
     );
@@ -105,48 +128,53 @@ export function RiskRibbon() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <span className={styles.title}>{t.riskRibbon.title}</span>
-        <span className={`${styles.level} ${styles[riskLevel]}`}>
-          {getRiskLabel(riskLevel)}
-        </span>
-      </div>
-
-      {/* Main Risk Ribbon */}
-      <div className={`${styles.ribbon} ${styles[riskLevel]} ${riskMetrics.volatilityRisk > 50 ? styles.volatile : ''}`}>
-        {/* Position Size Segment */}
+      <div className={styles.ribbon}>
         <div 
-          className={styles.segment}
-          style={{ width: `${Math.min(riskMetrics.positionSizePercent, 100)}%` }}
-          data-tooltip={`${t.riskRibbon.positionRatio}: ${riskMetrics.positionSizePercent.toFixed(1)}%`}
-        >
-          <div className={`${styles.segmentFill} ${
+          className={`${styles.segmentFill} ${
             riskMetrics.unrealizedPnlPercent >= 0 ? styles.profit : styles.loss
-          }`} />
-        </div>
+          }`}
+          style={{ width: `${Math.min(riskMetrics.positionSizePercent, 100)}%` }}
+        />
       </div>
 
-      {/* Metrics */}
-      <div className={styles.metrics}>
-        <div className={styles.metric}>
-          <span className={styles.metricLabel}>{t.riskRibbon.positionRatio}</span>
-          <span className={`${styles.metricValue} tabular-nums`}>
+      <div className={styles.perfGrid}>
+        <div className={styles.perfItem} title={t.riskRibbon.positionRatio}>
+          <span className={styles.perfLabel}>Pos</span>
+          <span className={`${styles.perfValue} tabular-nums`}>
             {riskMetrics.positionSizePercent.toFixed(1)}%
           </span>
         </div>
-        <div className={styles.metric}>
-          <span className={styles.metricLabel}>{t.riskRibbon.unrealizedPnL}</span>
-          <span className={`${styles.metricValue} tabular-nums ${
-            riskMetrics.unrealizedPnlPercent >= 0 ? 'price-up' : 'price-down'
+        <div className={styles.perfItem} title={t.riskRibbon.unrealizedPnL}>
+          <span className={styles.perfLabel}>PnL</span>
+          <span className={`${styles.perfValue} tabular-nums ${
+            riskMetrics.unrealizedPnlPercent >= 0 ? styles.positive : styles.negative
           }`}>
             {riskMetrics.unrealizedPnlPercent >= 0 ? '+' : ''}
             {riskMetrics.unrealizedPnlPercent.toFixed(2)}%
           </span>
         </div>
-        <div className={styles.metric}>
-          <span className={styles.metricLabel}>{t.riskRibbon.volatilityRisk}</span>
-          <span className={`${styles.metricValue} tabular-nums`}>
-            {riskMetrics.volatilityRisk.toFixed(0)}
+        <div className={styles.perfItem} title={t.riskRibbon.winRate}>
+          <span className={styles.perfLabel}>Win</span>
+          <span className={`${styles.perfValue} tabular-nums`}>
+            {(performanceMetrics.winRate * 100).toFixed(0)}%
+          </span>
+        </div>
+        <div className={styles.perfItem} title={t.riskRibbon.profitFactor}>
+          <span className={styles.perfLabel}>PF</span>
+          <span className={`${styles.perfValue} tabular-nums`}>
+            {performanceMetrics.profitFactor.toFixed(2)}
+          </span>
+        </div>
+        <div className={styles.perfItem} title={t.riskRibbon.maxDrawdown}>
+          <span className={styles.perfLabel}>DD</span>
+          <span className={`${styles.perfValue} ${styles.negative} tabular-nums`}>
+            -{performanceMetrics.maxDrawdown.toFixed(0)}%
+          </span>
+        </div>
+        <div className={styles.perfItem} title={t.riskRibbon.totalRealizedPnl}>
+          <span className={styles.perfLabel}>Real</span>
+          <span className={`${styles.perfValue} ${parseFloat(performanceMetrics.totalRealizedPnl) >= 0 ? styles.positive : styles.negative} tabular-nums`}>
+            {parseFloat(performanceMetrics.totalRealizedPnl) >= 0 ? '+' : ''}{performanceMetrics.totalRealizedPnl}
           </span>
         </div>
       </div>

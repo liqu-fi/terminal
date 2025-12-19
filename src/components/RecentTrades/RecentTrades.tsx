@@ -1,17 +1,22 @@
+import React from 'react';
 import { useMarketStore, selectRecentTrades } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
+import { Icon } from '../Icon';
 import type { Trade } from '../../types/market';
 import styles from './RecentTrades.module.css';
 
-function TradeRow({ trade }: { trade: Trade }) {
+const TradeRow = React.memo(({ trade, onClick }: { trade: Trade; onClick?: (price: string) => void }) => {
   const isBuy = !trade.isBuyerMaker;
   const priceClass = isBuy ? 'price-up' : 'price-down';
-  const arrow = isBuy ? '▲' : '▼';
 
   return (
-    <div className={styles.row}>
+    <div className={styles.row} onClick={() => onClick?.(trade.price)} role="button" tabIndex={0}>
       <span className={`${styles.price} ${priceClass} tabular-nums`}>
-        <span className={styles.arrow}>{arrow}</span>
+        <Icon 
+          name={isBuy ? 'trending-up' : 'trending-down'} 
+          size="xs" 
+          className={styles.tradeIcon} 
+        />
         {formatPrice(trade.price)}
       </span>
       <span className={`${styles.quantity} tabular-nums`}>
@@ -22,7 +27,9 @@ function TradeRow({ trade }: { trade: Trade }) {
       </span>
     </div>
   );
-}
+});
+
+TradeRow.displayName = 'TradeRow';
 
 function formatPrice(price: string): string {
   const num = parseFloat(price);
@@ -48,27 +55,38 @@ function formatTime(timestamp: number): string {
   });
 }
 
-export function RecentTrades() {
+interface RecentTradesProps {
+  onPriceClick?: (price: string) => void;
+}
+
+export function RecentTrades({ onPriceClick }: RecentTradesProps) {
   const { t } = useI18n();
   const trades = useMarketStore(selectRecentTrades);
 
   return (
-    <div className={`card ${styles.container}`}>
-      <div className="card-header">{t.recentTrades.title}</div>
+    <div className={`card ${styles.container} animate-fade`}>
+      <div className="card-header">
+        <span className="card-title">{t.recentTrades?.title || 'Recent Trades'}</span>
+      </div>
       
       <div className={styles.header}>
-        <span>{t.orderBook.price}</span>
-        <span>{t.orderBook.amount}</span>
-        <span>{t.recentTrades.time}</span>
+        <span>{t.orderBook?.price || 'Price'}</span>
+        <span>{t.orderBook?.amount || 'Amount'}</span>
+        <span>{t.recentTrades?.time || 'Time'}</span>
       </div>
 
       <div className={styles.body}>
-        {trades.length === 0 ? (
-          <div className={styles.empty}>{t.recentTrades.noTrades}</div>
+        {!trades || trades.length === 0 ? (
+          <div className={styles.empty}>
+            <Icon name="history" size="lg" className={styles.emptyIcon} />
+            <span>{t.recentTrades?.noTrades || 'No trades'}</span>
+          </div>
         ) : (
-          trades.map((trade) => (
-            <TradeRow key={trade.id} trade={trade} />
-          ))
+          <div className={styles.list}>
+            {trades.slice(0, 50).map((trade) => (
+              <TradeRow key={trade.id} trade={trade} onClick={onPriceClick} />
+            ))}
+          </div>
         )}
       </div>
     </div>

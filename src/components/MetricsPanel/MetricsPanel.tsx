@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useMarketStore, selectMetrics, selectOrderBook, selectDataConfidence, selectCanTrustMetrics } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
@@ -65,37 +65,37 @@ export function MetricsPanel() {
   const dataConfidence = useMarketStore(selectDataConfidence);
   const canTrustMetrics = useMarketStore(selectCanTrustMetrics);
   
-  const { level } = dataConfidence;
+  const level = dataConfidence?.level || 'stale';
 
   if (!metrics || !orderBook) {
     return (
       <div className={`card ${styles.container}`}>
-        <div className="card-header">{t.metrics.title}</div>
+        <div className="card-header">{t.metrics?.title || 'Metrics'}</div>
         <div className={`card-body ${styles.loading}`}>
-          <span>{t.common.loading}</span>
+          <span>{t.common?.loading || 'Loading...'}</span>
         </div>
       </div>
     );
   }
 
-  const imbalanceClass = metrics.bidAskImbalance > 0.1 
+  const imbalanceClass = (metrics.bidAskImbalance || 0) > 0.1 
     ? 'price-up' 
-    : metrics.bidAskImbalance < -0.1 
+    : (metrics.bidAskImbalance || 0) < -0.1 
       ? 'price-down' 
       : '';
 
-  const liquidityClass = metrics.liquidityScore >= 70 
+  const liquidityClass = (metrics.liquidityScore || 0) >= 70 
     ? 'price-up' 
-    : metrics.liquidityScore <= 30 
+    : (metrics.liquidityScore || 0) <= 30 
       ? 'price-down' 
       : '';
 
   return (
     <div className={`card ${styles.container} ${!canTrustMetrics ? styles.degraded : ''}`}>
       <div className="card-header">
-        <span>{t.metrics.title}</span>
+        <span>{t.metrics?.title || 'Metrics'}</span>
         {!canTrustMetrics && (
-          <span className={`${styles.confidenceBadge} ${styles[level]}`} title={dataConfidence.reason}>
+          <span className={`${styles.confidenceBadge} ${styles[level]}`} title={dataConfidence?.reason}>
             <Icon name={level === 'stale' ? 'pause' : 'zap'} size="sm" />
           </span>
         )}
@@ -103,85 +103,85 @@ export function MetricsPanel() {
       
       <div className={styles.grid}>
         <MetricItem
-          label={t.metrics.midPrice}
+          label={t.metrics?.midPrice || 'Mid Price'}
           value={formatPrice(metrics.mid)}
-          tooltip={t.metrics.midPriceDesc}
+          tooltip={t.metrics?.midPriceDesc}
           isUncertain={true}
           confidenceLevel={level}
         />
         
         <MetricItem
-          label={t.metrics.spread}
-          value={metrics.spreadBps.toFixed(2)}
-          unit={t.orderBook.spreadBps}
-          tooltip={t.metrics.spreadDesc}
+          label={t.metrics?.spread || 'Spread'}
+          value={(metrics.spreadBps || 0).toFixed(2)}
+          unit={t.orderBook?.spreadBps || 'bps'}
+          tooltip={t.metrics?.spreadDesc}
           isUncertain={true}
           confidenceLevel={level}
         />
 
         <MetricItem
-          label={t.metrics.imbalance}
-          value={(metrics.bidAskImbalance * 100).toFixed(1)}
+          label={t.metrics?.imbalance || 'Imbalance'}
+          value={((metrics.bidAskImbalance || 0) * 100).toFixed(1)}
           unit="%"
           colorClass={imbalanceClass}
-          tooltip={t.metrics.imbalanceDesc}
+          tooltip={t.metrics?.imbalanceDesc}
           isUncertain={true}
           confidenceLevel={level}
         />
 
         <MetricItem
-          label={t.metrics.volatility}
-          value={metrics.microVolatility.toFixed(4)}
-          tooltip={t.metrics.volatilityDesc}
-          isUncertain={false}  // 基于历史数据，部分可信
+          label={t.metrics?.volatility || 'Volatility'}
+          value={(metrics.microVolatility || 0).toFixed(4)}
+          tooltip={t.metrics?.volatilityDesc}
+          isUncertain={false}
           confidenceLevel={level}
         />
 
         <MetricItem
-          label={t.metrics.tradeIntensity}
-          value={metrics.tradeIntensity}
+          label={t.metrics?.tradeIntensity || 'Intensity'}
+          value={metrics.tradeIntensity || 0}
           unit="/10s"
-          tooltip={t.metrics.tradeIntensityDesc}
+          tooltip={t.metrics?.tradeIntensityDesc}
           isUncertain={true}
           confidenceLevel={level}
         />
 
         <MetricItem
-          label={t.metrics.vwap}
+          label={t.metrics?.vwap || 'VWAP'}
           value={formatPrice(metrics.vwap60s)}
-          tooltip={t.metrics.vwapDesc}
-          isUncertain={false}  // 基于历史数据，部分可信
+          tooltip={t.metrics?.vwapDesc}
+          isUncertain={false}
           confidenceLevel={level}
         />
 
         <MetricItem
-          label={t.metrics.liquidityScore}
-          value={metrics.liquidityScore.toFixed(0)}
+          label={t.metrics?.liquidityScore || 'Liquidity'}
+          value={(metrics.liquidityScore || 0).toFixed(0)}
           unit="/100"
           colorClass={liquidityClass}
-          tooltip={t.metrics.liquidityScoreDesc}
+          tooltip={t.metrics?.liquidityScoreDesc}
           isUncertain={true}
           confidenceLevel={level}
         />
 
         <MetricItem
-          label={t.metrics.slippageEst}
+          label={t.metrics?.slippageEst || 'Slippage'}
           value={metrics.slippageEst === 'N/A' ? 'N/A' : `${metrics.slippageEst}`}
-          unit={metrics.slippageEst === 'N/A' ? '' : t.orderBook.spreadBps}
-          tooltip={t.metrics.slippageEstDesc}
+          unit={metrics.slippageEst === 'N/A' ? '' : (t.orderBook?.spreadBps || 'bps')}
+          tooltip={t.metrics?.slippageEstDesc}
           isUncertain={true}
           confidenceLevel={level}
         />
       </div>
 
       <div className={styles.depthInfo}>
-        <span className={styles.depthLabel}>{t.orderBook.depthLevels}:</span>
+        <span className={styles.depthLabel}>{t.orderBook?.depthLevels || 'Depth'}:</span>
         <span className={`${styles.depthValue} tabular-nums`}>
-          {orderBook.depth}
+          {orderBook.depth || 0}
         </span>
-        <span className={styles.depthLabel}>{t.dataConfidence.lastUpdate}:</span>
+        <span className={styles.depthLabel}>{t.dataConfidence?.lastUpdate || 'Update'}:</span>
         <span className={`${styles.depthValue} tabular-nums`}>
-          {new Date(orderBook.localUpdateTime).toLocaleTimeString()}
+          {new Date(orderBook.localUpdateTime || Date.now()).toLocaleTimeString()}
         </span>
       </div>
     </div>

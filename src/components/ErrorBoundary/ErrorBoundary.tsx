@@ -4,6 +4,8 @@ import styles from './ErrorBoundary.module.css';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  name?: string;
 }
 
 interface State {
@@ -22,31 +24,37 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error(`ErrorBoundary [${this.props.name || 'Anonymous'}] caught an error:`, error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
       return (
         <div className={styles.container}>
           <div className={styles.content}>
-            <Icon name="alert-triangle" size="lg" className={styles.icon} />
-            <h1 className={styles.title}>应用错误</h1>
+            <Icon name="alert-circle" size="xl" className={styles.icon} />
+            <h1 className={styles.title}>System Error</h1>
             <p className={styles.message}>
-              {this.state.error?.message || '发生了未知错误'}
+              {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
-            <button
-              className={styles.button}
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-            >
-              重新加载页面
-            </button>
+            <div className={styles.actions}>
+              <button
+                className={styles.button}
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+              >
+                Reload Page
+              </button>
+            </div>
             {this.state.error && (
               <details className={styles.details}>
-                <summary>错误详情</summary>
+                <summary>Error Details</summary>
                 <pre className={styles.stack}>
                   {this.state.error.stack}
                 </pre>
@@ -60,8 +68,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
-
-
-
-

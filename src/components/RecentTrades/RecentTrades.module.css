@@ -1,7 +1,9 @@
 .container {
   display: flex;
   flex-direction: column;
-  max-height: 400px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .header {
@@ -74,8 +76,3 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
 }
-
-
-
-
-

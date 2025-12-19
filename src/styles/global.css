@@ -23,6 +23,9 @@ body {
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
   min-height: 100vh;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===== Typography ===== */
@@ -33,9 +36,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ===== Tabular Numbers ===== */
 .tabular-nums {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
 }
 
 /* ===== Price Colors ===== */
@@ -325,8 +327,6 @@ h1, h2, h3, h4, h5, h6 {
   grid-template-columns: 1fr 320px;
   gap: var(--space-3);
   padding: var(--space-3);
-  max-width: 1600px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -346,7 +346,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Smooth card entrance */
 .card {
-  animation: cardEntrance 0.3s ease-out;
+  /* animation: cardEntrance 0.3s ease-out; */
 }
 
 @keyframes cardEntrance {
@@ -494,4 +494,3 @@ html {
     box-shadow: none !important;
   }
 }
-

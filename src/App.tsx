@@ -1,24 +1,37 @@
-import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { DataConfidenceBar } from './components/DataConfidenceBar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { LanguageToggle } from './components/LanguageToggle';
 import { ToastContainer } from './components/Toast';
-import { WelcomeGuide } from './components/WelcomeGuide';
 import { ShortcutsHelp } from './components/ShortcutsHelp';
 import { SoundToggle } from './components/SoundToggle';
-import { TopNav } from './components/Layout';
+import { TopNav, AssetSnapshot, AccountMenu } from './components/Layout';
 import { Icon } from './components/Icon';
 import { TradePage } from './pages/TradePage';
 import { MarketsPage } from './pages/MarketsPage';
 import { WalletPage } from './pages/WalletPage';
+import { AssetDetailPage } from './pages/AssetDetailPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { AuthPage } from './pages/AuthPage';
 import { useI18n } from './i18n';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useAuthStore } from './store/authStore';
 import styles from './App.module.css';
+
+// Private Route Component
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuthStore();
+  return isAuthenticated ? <>{children}</> : <Navigate to="/auth" replace />;
+};
 
 export function App() {
   const { t } = useI18n();
+  const location = useLocation();
+  const { isAuthenticated, logout } = useAuthStore();
+  
+  const isAuthPage = location.pathname === '/auth';
+  const showDataConfidenceBar = (location.pathname === '/trade' || location.pathname === '/') && isAuthenticated;
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
@@ -27,24 +40,41 @@ export function App() {
       action: () => {
         const root = document.documentElement;
         const currentTheme = root.getAttribute('data-theme');
-        root.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
-        localStorage.setItem('theme', currentTheme === 'dark' ? 'light' : 'dark');
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('theme', nextTheme);
       },
       description: 'Toggle theme',
     },
   ]);
 
+  if (isAuthPage) {
+    return (
+      <div className="app-container">
+        <Routes>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        </Routes>
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
   return (
     <div className="app-container">
       {/* Data Confidence Bar */}
-      <DataConfidenceBar />
+      {showDataConfidenceBar && <DataConfidenceBar />}
 
       {/* Header */}
       <header className="app-header">
         <div className={styles.logo}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
-          </svg>
+          <div className={styles.logoIcon}>
+            <Icon name="activity" size="lg" strokeWidth={2.5} />
+          </div>
           <span className={styles.title}>{t.header.title}</span>
         </div>
 
@@ -52,6 +82,7 @@ export function App() {
         <TopNav />
 
         <div className={styles.actions}>
+          <AssetSnapshot />
           <Link 
             to="/settings" 
             className={styles.settingsBtn}
@@ -63,18 +94,27 @@ export function App() {
           <SoundToggle />
           <LanguageToggle />
           <ThemeToggle />
+          
+          {isAuthenticated && (
+            <div className={styles.accountWrapper}>
+              <AccountMenu />
+            </div>
+          )}
         </div>
       </header>
 
       {/* Main Content - Routes */}
       <main className={styles.main}>
         <Routes>
-          <Route path="/trade" element={<TradePage />} />
-          <Route path="/markets" element={<MarketsPage />} />
-          <Route path="/wallet" element={<WalletPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/trade" element={<PrivateRoute><TradePage /></PrivateRoute>} />
+          <Route path="/markets" element={<PrivateRoute><MarketsPage /></PrivateRoute>} />
+          <Route path="/wallet" element={<PrivateRoute><WalletPage /></PrivateRoute>} />
+          <Route path="/assets" element={<PrivateRoute><AssetDetailPage /></PrivateRoute>} />
+          <Route path="/orders" element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route path="/" element={<Navigate to="/trade" replace />} />
+          <Route path="*" element={<Navigate to="/trade" replace />} />
         </Routes>
       </main>
 
@@ -84,9 +124,6 @@ export function App() {
 
       {/* Toast Container */}
       <ToastContainer />
-
-      {/* Welcome Guide */}
-      <WelcomeGuide />
     </div>
   );
 }

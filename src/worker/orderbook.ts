@@ -50,7 +50,7 @@ interface TradeBuffer {
 }
 
 const DEPTH_LEVELS = 20;
-const STALE_THRESHOLD_MS = 500;
+const STALE_THRESHOLD_MS = 2000; // 从 500ms 增加到 2000ms，网络不稳定时更容忍
 const RESYNC_COOLDOWN_MS = 5000;
 const MAX_CONSECUTIVE_FAILURES = 3;
 const VOLATILITY_WINDOW_SIZE = 60;
