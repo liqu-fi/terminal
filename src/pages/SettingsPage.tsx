@@ -3,15 +3,24 @@ import { useAuthStore, type UserPreferences } from '../store/authStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
 import { AvatarUpload } from '../components/AvatarUpload';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { MobileAccountPage } from './mobile';
 import styles from './SettingsPage.module.css';
 
 type SettingsSection = 'profile' | 'security' | 'preferences';
 
 export function SettingsPage() {
+  const isMobile = useIsMobile();
   const { t, locale, setLocale } = useI18n();
   const { user, preferences, updateProfile, updateAvatar, updatePreferences, changePassword } = useAuthStore();
   
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
+
+  // Render mobile layout
+  if (isMobile) {
+    return <MobileAccountPage />;
+  }
+
   
   // Profile form state
   const [displayName, setDisplayName] = useState(user?.displayName || '');

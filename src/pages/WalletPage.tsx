@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useWalletStore } from '../store/walletStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { MobileWalletPage } from './mobile';
 import {
   AccountOverviewCard,
   AssetBalancesPanel,
@@ -16,6 +18,13 @@ import styles from './WalletPage.module.css';
 type WalletTab = 'overview' | 'spot' | 'funding' | 'history';
 
 export function WalletPage() {
+  const isMobile = useIsMobile();
+
+  // Render mobile layout
+  if (isMobile) {
+    return <MobileWalletPage />;
+  }
+
   const { t } = useI18n();
   const stage = useWalletStore((state) => state.getOnboardingStage());
   

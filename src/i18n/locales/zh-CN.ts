@@ -194,6 +194,8 @@ export const zhCN = {
   // 盘口
   orderBook: {
     title: '盘口',
+    chart: '图表',
+    depth: '深度',
     price: '价格',
     amount: '数量',
     total: '累计',
@@ -367,6 +369,21 @@ export const zhCN = {
     realizedPnL: '已实现盈亏',
     marginUsed: '已用保证金',
     marginAvailable: '可用保证金',
+    vip: 'VIP',
+    verified: '已认证',
+    uid: 'UID',
+    tools: '工具',
+    toolAnalytics: '分析',
+    toolReferral: '返佣',
+    toolRewards: '奖励',
+    toolSupport: '帮助',
+    toolNews: '公告',
+    securityMoreHint: '更多安全设置请在网页端查看',
+    logoutConfirmTitle: '退出登录',
+    logoutConfirmMessage: '您确定要退出登录吗？',
+    selectLanguage: '选择语言',
+    selectTheme: '选择主题',
+    defaultQuoteAsset: '默认计价货币',
   },
 
   // 风险丝带
@@ -533,6 +550,14 @@ export const zhCN = {
     wallet: '钱包',
     orders: '订单',
     more: '更多',
+    account: '账户',
+  },
+
+  // 交易页
+  trade: {
+    stats24hHigh: '24H 最高',
+    stats24hLow: '24H 最低',
+    stats24hVol: '24H 成交量',
   },
 
   // 市场页
@@ -555,6 +580,13 @@ export const zhCN = {
     trade: '去交易',
     loadError: '同步市场失败',
     retry: '重试同步',
+    swipeHint: '← 左滑去交易 | 右滑收藏 →',
+    goToTrade: '去交易',
+    addFavorite: '添加收藏',
+    removeFavorite: '取消收藏',
+    emptyFavorites: '暂无自选',
+    emptySearch: '未找到结果',
+    searchPlaceholder: '搜索币种...',
     stats: {
       pairs: '品种',
       gainers: '上涨',

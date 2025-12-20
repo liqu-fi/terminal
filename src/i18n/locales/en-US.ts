@@ -196,6 +196,8 @@ export const enUS: Locale = {
   // Order Book
   orderBook: {
     title: 'Order Book',
+    chart: 'Chart',
+    depth: 'Depth',
     price: 'Price',
     amount: 'Amount',
     total: 'Total',
@@ -368,6 +370,21 @@ export const enUS: Locale = {
     realizedPnL: 'Realized P&L',
     marginUsed: 'Margin Used',
     marginAvailable: 'Available Margin',
+    vip: 'VIP',
+    verified: 'Verified',
+    uid: 'UID',
+    tools: 'Tools',
+    toolAnalytics: 'Analytics',
+    toolReferral: 'Referral',
+    toolRewards: 'Rewards',
+    toolSupport: 'Support',
+    toolNews: 'News',
+    securityMoreHint: 'More security settings can be accessed on the desktop version.',
+    logoutConfirmTitle: 'Log Out',
+    logoutConfirmMessage: 'Are you sure you want to log out of your account?',
+    selectLanguage: 'Select Language',
+    selectTheme: 'Select Theme',
+    defaultQuoteAsset: 'Default Quote Asset',
   },
 
   // Risk Ribbon
@@ -534,6 +551,14 @@ export const enUS: Locale = {
     wallet: 'Wallet',
     orders: 'Orders',
     more: 'More',
+    account: 'Account',
+  },
+
+  // Trade Page
+  trade: {
+    stats24hHigh: '24H High',
+    stats24hLow: '24H Low',
+    stats24hVol: '24H Vol',
   },
 
   // Markets
@@ -556,6 +581,13 @@ export const enUS: Locale = {
     trade: 'Execute',
     loadError: 'Failed to synchronize markets',
     retry: 'Retry Sync',
+    swipeHint: '← Swipe to trade | Swipe to favorite →',
+    goToTrade: 'Go to Trade',
+    addFavorite: 'Add to Favorites',
+    removeFavorite: 'Remove from Favorites',
+    emptyFavorites: 'No favorites yet',
+    emptySearch: 'No results found',
+    searchPlaceholder: 'Search assets...',
     stats: {
       pairs: 'Instruments',
       gainers: 'Advances',

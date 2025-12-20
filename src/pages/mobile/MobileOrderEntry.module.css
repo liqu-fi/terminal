@@ -1,0 +1,261 @@
+/* Mobile Order Entry */
+.container {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Side Toggle */
+.sideToggle {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+}
+
+.sideBtn {
+  flex: 1;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: transparent;
+  color: var(--text-tertiary);
+}
+
+.sideBtn.active {
+  color: white;
+}
+
+.buyBtn.active {
+  background: var(--color-positive);
+}
+
+.sellBtn.active {
+  background: var(--color-negative);
+}
+
+/* Type Toggle */
+.typeToggle {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.typeBtn {
+  flex: 1;
+  padding: var(--space-2);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.typeBtn.active {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Input Group */
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.availableHint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 60px 0 var(--space-4);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-family: var(--font-mono);
+  transition: border-color var(--transition-fast);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.inputSuffix {
+  position: absolute;
+  right: var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-tertiary);
+}
+
+/* Quick Price Buttons */
+.quickPriceRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.quickPriceBtn {
+  flex: 1;
+  padding: var(--space-2);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quickPriceBtn:active {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Percentage Buttons */
+.percentRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.percentBtn {
+  flex: 1;
+  padding: var(--space-2);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.percentBtn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.percentBtn:active:not(.active) {
+  background: var(--surface-hover);
+}
+
+/* Total Row */
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.totalLabel {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.totalValue {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+/* Warning */
+.warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+}
+
+.warning.degraded {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.warning.stale {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.warning.resyncing {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+/* Submit Button */
+.submitBtn {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buySubmit {
+  background: var(--color-positive);
+  color: white;
+}
+
+.sellSubmit {
+  background: var(--color-negative);
+  color: white;
+}
+

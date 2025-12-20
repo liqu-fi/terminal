@@ -3,6 +3,7 @@ import { createChart, IChartApi, ColorType, UTCTimestamp, LineSeries, Candlestic
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
 import { useAutomationStore } from '../../store/automationStore';
 import { useTradingStore } from '../../store/tradingStore';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
 import styles from './PriceChart.module.css';
@@ -115,6 +116,7 @@ function calculateBOLL(data: KlineData[], period: number = 20, stdDev: number = 
 
 export function PriceChart() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const mainChartRef = useRef<HTMLDivElement>(null);
   const volumeChartRef = useRef<HTMLDivElement>(null);
   const mainChartApiRef = useRef<IChartApi | null>(null);
@@ -694,10 +696,10 @@ export function PriceChart() {
   const indicators: Indicator[] = ['MA', 'EMA', 'BOLL', 'VOL'];
 
   return (
-    <div className={`card ${styles.container} ${isFullscreen ? styles.fullscreen : ''}`}>
+    <div className={`card ${styles.container} ${isFullscreen ? styles.fullscreen : ''} ${isMobile ? styles.mobile : ''}`}>
       {/* 头部工具栏 */}
       <div className={styles.toolbar}>
-        <div className={styles.toolbarLeft}>
+        <div className={styles.toolbarScrollArea}>
           {/* 指标按钮 */}
           <div className={styles.indicatorGroup}>
             {indicators.map((indicator) => (
@@ -781,16 +783,22 @@ export function PriceChart() {
                 <label>C</label>{crosshairData.close.toFixed(2)}
               </span>
               <span className={styles.ohlcItem}><label>V</label>{(crosshairData.volume / 1000).toFixed(2)}K</span>
-              <span className={`${styles.ohlcItem} ${crosshairData.changePercent >= 0 ? styles.up : styles.down}`}>
-                <label>Chg</label>{crosshairData.changePercent >= 0 ? '+' : ''}{crosshairData.changePercent.toFixed(2)}%
-              </span>
+              {!isMobile && (
+                <span className={`${styles.ohlcItem} ${crosshairData.changePercent >= 0 ? styles.up : styles.down}`}>
+                  <label>Chg</label>{crosshairData.changePercent >= 0 ? '+' : ''}{crosshairData.changePercent.toFixed(2)}%
+                </span>
+              )}
             </>
           ) : priceInfo && (
             <>
-              <span className={styles.ohlcItem}><label>24H High</label>{priceInfo.high24h.toFixed(2)}</span>
-              <span className={styles.ohlcItem}><label>24H Low</label>{priceInfo.low24h.toFixed(2)}</span>
-              <span className={styles.ohlcItem}><label>24H Vol</label>{(priceInfo.volume / 1000000).toFixed(2)}M</span>
-              <span className={styles.ohlcItem}><label>Amp</label>{priceInfo.amplitude.toFixed(2)}%</span>
+              <span className={styles.ohlcItem}><label>{isMobile ? 'H' : '24H High'}</label>{priceInfo.high24h.toFixed(2)}</span>
+              <span className={styles.ohlcItem}><label>{isMobile ? 'L' : '24H Low'}</label>{priceInfo.low24h.toFixed(2)}</span>
+              {!isMobile && (
+                <>
+                  <span className={styles.ohlcItem}><label>24H Vol</label>{(priceInfo.volume / 1000000).toFixed(2)}M</span>
+                  <span className={styles.ohlcItem}><label>Amp</label>{priceInfo.amplitude.toFixed(2)}%</span>
+                </>
+              )}
             </>
           )}
         </div>

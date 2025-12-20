@@ -576,3 +576,157 @@ html {
     box-shadow: none !important;
   }
 }
+
+/* ===== Mobile Enhancements ===== */
+
+/* Safe Area Insets */
+@supports (padding: env(safe-area-inset-bottom)) {
+  :root {
+    --safe-area-top: env(safe-area-inset-top);
+    --safe-area-right: env(safe-area-inset-right);
+    --safe-area-bottom: env(safe-area-inset-bottom);
+    --safe-area-left: env(safe-area-inset-left);
+  }
+}
+
+/* Haptic Feedback Visual Simulation */
+.haptic-light {
+  animation: haptic-pulse-light 0.1s ease-out;
+}
+
+.haptic-medium {
+  animation: haptic-pulse-medium 0.15s ease-out;
+}
+
+.haptic-heavy {
+  animation: haptic-pulse-heavy 0.2s ease-out;
+}
+
+.haptic-success {
+  animation: haptic-success 0.2s ease-out;
+}
+
+.haptic-error {
+  animation: haptic-error 0.3s ease-out;
+}
+
+@keyframes haptic-pulse-light {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.02); }
+}
+
+@keyframes haptic-pulse-medium {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.05); }
+}
+
+@keyframes haptic-pulse-heavy {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+
+@keyframes haptic-success {
+  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+  50% { filter: brightness(1.1) hue-rotate(10deg); }
+}
+
+@keyframes haptic-error {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Mobile Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Prevent text selection on interactive elements */
+  button,
+  a,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Faster tap response */
+  * {
+    touch-action: manipulation;
+  }
+
+  /* Larger hit areas for small buttons */
+  .btn-sm {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  /* Remove hover styles on touch devices */
+  .btn:hover,
+  .input:hover {
+    /* Reset hover to same as default */
+  }
+
+  /* Add active states instead */
+  .btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  /* Scroll momentum */
+  .scrollable {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Notch/Dynamic Island Safe Areas */
+@media screen and (display-mode: standalone) {
+  .app-container {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Prevent overscroll bounce on iOS */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+/* Better scrollbar for mobile */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Mobile animation performance */
+@media (prefers-reduced-motion: no-preference) and (max-width: 768px) {
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .animate-fade {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}

@@ -4,6 +4,8 @@ import { useAutomationStore } from '../store/automationStore';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { MobileOrdersPage } from './mobile';
 import { TriggerList, ExecutionLogList } from '../components/AutomationPanel';
 import type { PaperOrder, OrderStatus } from '../types/trading';
 import styles from './OrdersPage.module.css';
@@ -597,11 +599,17 @@ function AnalyticsPanel({ orders, trades }: { orders: PaperOrder[]; trades: { fi
 }
 
 export function OrdersPage() {
+  const isMobile = useIsMobile();
   const { t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>('open');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [symbolFilter, setSymbolFilter] = useState<string>('all');
   const [sideFilter, setSideFilter] = useState<'all' | 'buy' | 'sell'>('all');
+
+  // Render mobile layout
+  if (isMobile) {
+    return <MobileOrdersPage />;
+  }
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<PaperOrder | null>(null);
   

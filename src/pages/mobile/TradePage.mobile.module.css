@@ -1,0 +1,204 @@
+/* Mobile Trade Page - Binance-Style */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.symbolBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.symbolBtn:active {
+  background: var(--surface-hover);
+}
+
+.symbolName {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.symbolQuote {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+.priceInfo {
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--space-2);
+}
+
+.currentPrice {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-mono);
+}
+
+.priceChange {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.priceChange.positive {
+  color: var(--color-positive);
+}
+
+.priceChange.negative {
+  color: var(--color-negative);
+}
+
+.headerStats {
+  display: flex;
+  gap: var(--space-4);
+  margin-left: auto;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.statLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* Tab Navigation */
+.tabNav {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Content */
+.content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.content > * {
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chartWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chartWrapper > :first-child {
+  flex: 1;
+  min-height: 0;
+}
+
+.chartWrapper > :last-child {
+  flex-shrink: 0;
+}
+
+.depthWrapper {
+  height: 100%;
+  padding: var(--space-2);
+}
+
+/* Bottom Action Buttons */
+.bottomActions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.actionBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.actionBtn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.buyBtn {
+  background: var(--color-positive);
+  color: white;
+}
+
+.sellBtn {
+  background: var(--color-negative);
+  color: white;
+}
+
+.actionLabel {
+  font-weight: var(--font-weight-bold);
+}
+
+/* Fallback */
+.fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* Small screen adjustments */
+@media (max-width: 375px) {
+  .headerStats {
+    display: none;
+  }
+
+  .priceInfo {
+    margin-left: auto;
+    align-items: flex-end;
+  }
+}
+

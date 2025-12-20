@@ -39,17 +39,24 @@
   flex-shrink: 0;
 }
 
-.toolbarLeft {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
 .toolbarRight {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.toolbarScrollArea {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
+}
+
+.toolbarScrollArea::-webkit-scrollbar {
+  display: none;
 }
 
 /* Demo 模式指示器 */
@@ -425,24 +432,55 @@
 /* 响应式 */
 @media (max-width: 768px) {
   .toolbar {
-    padding: var(--space-2);
+    padding: 4px 8px;
+    flex-wrap: nowrap;
+    min-height: 40px;
   }
   
-  .toolbarLeft {
-    width: 100%;
-    justify-content: space-between;
+  .toolbarScrollArea {
+    gap: 8px;
+  }
+
+  .indicatorBtn {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .timeRangeBtn {
+    padding: 4px 6px;
+    font-size: 10px;
   }
   
   .ohlcBar {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 4px 8px;
+    gap: 4px;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
   
+  .symbolInfo {
+    gap: 6px;
+  }
+
+  .symbolName {
+    font-size: 13px;
+  }
+
+  .currentPrice {
+    font-size: 13px;
+  }
+
   .ohlcData {
     width: 100%;
-    justify-content: space-between;
+    gap: 8px;
+    justify-content: flex-start;
   }
   
+  .ohlcItem {
+    font-size: 10px;
+  }
+
   .mainChart {
     min-height: 250px;
   }

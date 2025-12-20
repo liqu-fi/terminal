@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, Pause, Zap, Star, Pencil, ArrowUpDown, ArrowUp, ArrowDown,
   Settings, Bell, Globe, Wifi, WifiOff, RefreshCw, Plus, Minus, LineChart,
   Wallet, ClipboardList, ArrowLeftRight, Star as StarOutline,
-  TrendingUp, TrendingDown, AlertCircle,
+  TrendingUp, TrendingDown, AlertCircle, BookOpen,
   // Wallet page icons
   Download, Upload, Copy, Link, History, Building2, CheckCircle, Loader, Trash2,
   CreditCard, ExternalLink, ChevronDown, ChevronUp, Filter, Clock,
@@ -11,7 +11,7 @@ import {
   // Chart icons
   Maximize2, Minimize2, Target, Crosshair, Shield,
   // View toggle icons
-  LayoutGrid, LayoutList,
+  LayoutGrid, LayoutList, Grid,
   // Orders page icons
   Layers, Percent, Repeat, PieChart, Send, Radio, XCircle, Eye, Scroll, Banknote, Layout,
   // Settings page icons
@@ -19,7 +19,9 @@ import {
   Languages, Palette, Database, FileText, LogOut, HardDrive, Server, Fingerprint,
   ShieldCheck, ShieldAlert, UserCheck, Mail, MessageSquare, ToggleLeft, ToggleRight,
   Sliders, Timer, Gauge, Binary, QrCode, Scan, KeyRound, UserCog, BellPlus,
-  MonitorSmartphone, CloudOff, Cloud, Cpu, MemoryStick, CircleDot, Eraser
+  MonitorSmartphone, CloudOff, Cloud, Cpu, MemoryStick, CircleDot, Eraser,
+  // Extra mobile icons
+  Users, Gift, Headphones, HelpCircle
 } from 'lucide-react';
 import { CSSProperties } from 'react';
 
@@ -77,6 +79,7 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'list'
+  | 'book-open'
   | 'inbox'
   | 'archive'
   | 'play'
@@ -87,6 +90,7 @@ export type IconName =
   | 'crosshair'
   | 'layout-grid'
   | 'layout-list'
+  | 'grid'
   // Orders page icons
   | 'layers'
   | 'percent'
@@ -139,7 +143,11 @@ export type IconName =
   | 'cpu'
   | 'memory-stick'
   | 'circle-dot'
-  | 'eraser';
+  | 'eraser'
+  | 'users'
+  | 'gift'
+  | 'headphones'
+  | 'help-circle';
 
 const iconMap: Record<IconName, typeof BarChart3> = {
   'bar-chart-2': BarChart2,
@@ -195,6 +203,7 @@ const iconMap: Record<IconName, typeof BarChart3> = {
   'sun': Sun,
   'moon': Moon,
   'list': List,
+  'book-open': BookOpen,
   'inbox': Inbox,
   'archive': Archive,
   'play': Play,
@@ -205,6 +214,7 @@ const iconMap: Record<IconName, typeof BarChart3> = {
   'crosshair': Crosshair,
   'layout-grid': LayoutGrid,
   'layout-list': LayoutList,
+  'grid': Grid,
   // Orders page icons
   'layers': Layers,
   'percent': Percent,
@@ -258,6 +268,10 @@ const iconMap: Record<IconName, typeof BarChart3> = {
   'memory-stick': MemoryStick,
   'circle-dot': CircleDot,
   'eraser': Eraser,
+  'users': Users,
+  'gift': Gift,
+  'headphones': Headphones,
+  'help-circle': HelpCircle,
 };
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';

@@ -4,6 +4,8 @@ import { useI18n } from '../i18n';
 import { Sparkline } from '../components/Chart';
 import { Icon } from '../components/Icon';
 import { useWatchlistStore } from '../store/watchlistStore';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { MobileMarketsPage } from './mobile';
 import {
   fetchAllTickers,
   fetchSparkline,
@@ -26,6 +28,13 @@ interface MarketData {
 }
 
 export function MarketsPage() {
+  const isMobile = useIsMobile();
+
+  // Render mobile layout
+  if (isMobile) {
+    return <MobileMarketsPage />;
+  }
+
   const { t } = useI18n();
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketData[]>([]);
@@ -36,7 +45,7 @@ export function MarketsPage() {
   const [sortField, setSortField] = useState<keyof MarketTicker>('quoteVolume24h');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const { favorites, toggleFavorite, addSymbol } = useWatchlistStore();
+  const { favorites, toggleFavorite, addSymbol, setSelectedSymbol } = useWatchlistStore();
 
   // Track if we've already loaded sparklines to avoid re-fetching
   const [sparklinesLoaded, setSparklinesLoaded] = useState(false);
@@ -184,6 +193,7 @@ export function MarketsPage() {
   const handleSelect = (symbol: string) => {
     const { base, quote } = parseSymbol(symbol);
     addSymbol({ symbol, baseAsset: base, quoteAsset: quote });
+    setSelectedSymbol(symbol);
     navigate('/trade');
   };
 
