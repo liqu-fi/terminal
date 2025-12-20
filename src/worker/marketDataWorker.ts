@@ -15,12 +15,14 @@ import type {
 
 // ===== Configuration =====
 // Binance WebSocket URLs（按优先级排序）
+// WebSocket 可直连，不需要代理
 const BINANCE_WS_URLS = [
   'wss://stream.binance.com:9443',  // 官方主要端点
   'wss://stream.binance.com:443',   // 备用端口
 ];
 let currentWsUrlIndex = 0;
-const BINANCE_REST_URL = 'https://api.binance.com/api/v3';
+// REST API 使用代理路径避免 CORS（在 worker 中使用相对路径）
+const BINANCE_REST_URL = '/binance-api/api/v3';
 const RECONNECT_BASE_DELAY_MS = 2000;  // 基础重连延迟
 const RECONNECT_MAX_DELAY_MS = 30000;  // 最大重连延迟（缩短）
 const HEARTBEAT_INTERVAL_MS = 15000;   // 心跳检测间隔 15 秒

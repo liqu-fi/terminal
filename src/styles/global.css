@@ -521,13 +521,49 @@ html {
   }
 }
 
+@media (max-width: 768px) {
+  /* Add padding for bottom navigation */
+  .app-container {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+  
+  /* Simplify header on mobile */
+  .app-header {
+    padding: 0 var(--space-2);
+    gap: var(--space-2);
+  }
+  
+  /* Hide desktop navigation on mobile */
+  .app-header nav {
+    display: none;
+  }
+  
+  /* Utility: hide on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
 @media (max-width: 640px) {
   html {
     font-size: 14px;
   }
-  
-  .app-header {
-    padding: 0 var(--space-2);
+}
+
+/* Utility: show only on mobile */
+@media (min-width: 769px) {
+  .show-mobile-only {
+    display: none !important;
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .input,
+  button,
+  a {
+    min-height: 44px;
   }
 }
 

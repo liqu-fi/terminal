@@ -223,7 +223,36 @@ export const useWalletStore = create<WalletState>()(
         confirmDeposit: (depositId) => {
           const state = get();
           const deposit = state.deposits.find((d) => d.depositId === depositId);
-          if (!deposit || deposit.status !== 'pending') return;
+          
+          // Guard: Only confirm if deposit exists and is pending
+          if (!deposit || deposit.status !== 'pending') {
+            // Clean up any stale timer
+            const timer = state._pendingTimers.get(depositId);
+            if (timer) {
+              clearTimeout(timer);
+              state._pendingTimers.delete(depositId);
+            }
+            return;
+          }
+
+          // Check if we already have a ledger entry for this deposit (prevent duplicate)
+          const existingEntry = state.ledger.find(
+            e => e.referenceType === 'deposit' && e.referenceId === depositId && e.type === 'DEPOSIT'
+          );
+          if (existingEntry) {
+            // Already confirmed, just update deposit status
+            const timer = state._pendingTimers.get(depositId);
+            if (timer) {
+              clearTimeout(timer);
+              state._pendingTimers.delete(depositId);
+            }
+            set({
+              deposits: state.deposits.map(d => 
+                d.depositId === depositId ? { ...d, status: 'confirmed', confirmedAt: Date.now() } : d
+              ),
+            });
+            return;
+          }
 
           const timer = state._pendingTimers.get(depositId);
           if (timer) clearTimeout(timer);
@@ -480,7 +509,19 @@ export const useWalletStore = create<WalletState>()(
         onRehydrateStorage: () => (s) => {
           if (s) {
             s._pendingTimers = new Map();
+            // Only set timers for deposits that are truly pending and not already confirmed
             s.deposits.filter(d => d.status === 'pending').forEach(d => {
+              // Skip if there's already a ledger entry for this deposit (indicates it was confirmed)
+              const hasLedgerEntry = s.ledger.some(
+                e => e.referenceType === 'deposit' && e.referenceId === d.depositId && e.type === 'DEPOSIT'
+              );
+              if (hasLedgerEntry) {
+                // Fix inconsistent state: mark as confirmed
+                d.status = 'confirmed' as DepositStatus;
+                d.confirmedAt = Date.now();
+                return;
+              }
+              
               const elapsed = Date.now() - d.createdAt;
               const timer = setTimeout(() => s.confirmDeposit(d.depositId), Math.max(5000 - elapsed, 1000));
               s._pendingTimers.set(d.depositId, timer);

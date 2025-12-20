@@ -46,9 +46,10 @@ function ConfirmModal({ isOpen, title, message, detail, confirmText, cancelText,
 interface OrderEntryProps {
   priceFromOrderBook?: string;
   sideFromOrderBook?: OrderSide;
+  compact?: boolean;
 }
 
-export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntryProps) {
+export function OrderEntry({ priceFromOrderBook, sideFromOrderBook, compact = false }: OrderEntryProps) {
   const { t } = useI18n();
   const [side, setSide] = useState<OrderSide>('buy');
   const [type, setType] = useState<OrderType>('limit');
@@ -72,7 +73,11 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
   const setFocusMode = useTradingStore((state) => state.setFocusMode);
   
   const priceInputRef = useRef<HTMLInputElement>(null);
+  const quantityInputRef = useRef<HTMLInputElement>(null);
+  const tpInputRef = useRef<HTMLInputElement>(null);
+  const slInputRef = useRef<HTMLInputElement>(null);
   const isInputFocused = useRef(false);
+  const activeInputRef = useRef<'price' | 'quantity' | 'tp' | 'sl' | null>(null);
 
   const symbol = orderBook?.symbol ?? 'BTCUSDT';
   const baseAsset = symbol.replace('USDT', '');
@@ -154,8 +159,20 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleStepUp, handleStepDown]);
 
-  const handleInputFocus = () => { isInputFocused.current = true; setFocusMode(true); };
-  const handleInputBlur = () => { isInputFocused.current = false; setTimeout(() => { if (!isInputFocused.current) setFocusMode(false); }, 100); };
+  const handleInputFocus = (inputName: 'price' | 'quantity' | 'tp' | 'sl') => () => { 
+    isInputFocused.current = true; 
+    activeInputRef.current = inputName;
+    setFocusMode(true); 
+  };
+  const handleInputBlur = () => { 
+    isInputFocused.current = false; 
+    setTimeout(() => { 
+      if (!isInputFocused.current) {
+        setFocusMode(false);
+        activeInputRef.current = null;
+      }
+    }, 100); 
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,7 +228,7 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
             <label className={styles.label}>{t.orderEntry.price}</label>
             <div className={styles.inputWrapper}>
               <button type="button" className={styles.stepBtn} onClick={handleStepDown}><Icon name="minus" size="xs" /></button>
-              <input ref={priceInputRef} type="text" className={`input ${styles.input}`} value={price} onChange={(e) => setPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="0.00" />
+              <input ref={priceInputRef} type="text" inputMode="decimal" className={`input ${styles.input}`} value={price} onChange={(e) => setPrice(e.target.value)} onFocus={handleInputFocus('price')} onBlur={handleInputBlur} placeholder="0.00" />
               <button type="button" className={styles.stepBtn} onClick={handleStepUp}><Icon name="plus" size="xs" /></button>
               <span className={styles.inputSuffix}>{quoteAsset}</span>
             </div>
@@ -227,7 +244,7 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
         <div className={styles.inputGroup}>
           <label className={styles.label}>{t.orderEntry.amount}</label>
           <div className={styles.inputWrapper}>
-            <input type="text" className={`input ${styles.input}`} value={quantity} onChange={(e) => setQuantity(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="0.00" style={{ paddingRight: '48px' }} />
+            <input ref={quantityInputRef} type="text" inputMode="decimal" className={`input ${styles.input}`} value={quantity} onChange={(e) => setQuantity(e.target.value)} onFocus={handleInputFocus('quantity')} onBlur={handleInputBlur} placeholder="0.00" style={{ paddingRight: '48px' }} />
             <span className={styles.inputSuffix} style={{ right: '8px' }}>{baseAsset}</span>
           </div>
           <div className={styles.sliderRow}>
@@ -246,11 +263,11 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
         <div className={styles.tpslContainer}>
           <div className={styles.inputGroupSmall}>
             <label className={styles.labelSmall}>{t.orderEntry.takeProfit}</label>
-            <input type="text" className={`input ${styles.inputSmall}`} value={takeProfitPrice} onChange={(e) => setTakeProfitPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="—" />
+            <input ref={tpInputRef} type="text" inputMode="decimal" className={`input ${styles.inputSmall}`} value={takeProfitPrice} onChange={(e) => setTakeProfitPrice(e.target.value)} onFocus={handleInputFocus('tp')} onBlur={handleInputBlur} placeholder="—" />
           </div>
           <div className={styles.inputGroupSmall}>
             <label className={styles.labelSmall}>{t.orderEntry.stopLoss}</label>
-            <input type="text" className={`input ${styles.inputSmall}`} value={stopLossPrice} onChange={(e) => setStopLossPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="—" />
+            <input ref={slInputRef} type="text" inputMode="decimal" className={`input ${styles.inputSmall}`} value={stopLossPrice} onChange={(e) => setStopLossPrice(e.target.value)} onFocus={handleInputFocus('sl')} onBlur={handleInputBlur} placeholder="—" />
           </div>
         </div>
 

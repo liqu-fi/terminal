@@ -533,6 +533,7 @@ export const enUS: Locale = {
     markets: 'Markets',
     wallet: 'Wallet',
     orders: 'Orders',
+    more: 'More',
   },
 
   // Markets

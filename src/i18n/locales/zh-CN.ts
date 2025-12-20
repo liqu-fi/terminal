@@ -532,6 +532,7 @@ export const zhCN = {
     markets: '市场',
     wallet: '钱包',
     orders: '订单',
+    more: '更多',
   },
 
   // 市场页

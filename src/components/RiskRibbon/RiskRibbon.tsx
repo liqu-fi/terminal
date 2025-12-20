@@ -14,7 +14,11 @@ interface RiskMetrics {
   hasRealTimePrice: boolean;    // 是否有实时价格用于计算盈亏
 }
 
-export function RiskRibbon() {
+interface RiskRibbonProps {
+  compact?: boolean;
+}
+
+export function RiskRibbon({ compact = false }: RiskRibbonProps) {
   const { t } = useI18n();
   const balances = useWalletStore(selectBalances);
   const performanceMetrics = useWalletStore((state) => state.performanceMetrics);
@@ -125,6 +129,28 @@ export function RiskRibbon() {
   };
 
   const riskLevel = getRiskColor(overallRisk);
+
+  // Compact mode for mobile - just show key metrics inline
+  if (compact) {
+    return (
+      <div className={styles.compactContainer}>
+        <div className={`${styles.compactLevel} ${styles[riskLevel]}`}>
+          <Icon name="shield" size="xs" />
+          {getRiskLabel(riskLevel)}
+        </div>
+        <span className={styles.compactDivider}>|</span>
+        <span className={styles.compactMetric}>
+          Pos: {riskMetrics.positionSizePercent.toFixed(0)}%
+        </span>
+        <span className={`${styles.compactMetric} ${
+          riskMetrics.unrealizedPnlPercent >= 0 ? styles.positive : styles.negative
+        }`}>
+          {riskMetrics.unrealizedPnlPercent >= 0 ? '+' : ''}
+          {riskMetrics.unrealizedPnlPercent.toFixed(1)}%
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

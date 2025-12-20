@@ -52,12 +52,15 @@ let tickerCache: Map<string, MarketTicker> = new Map();
 let lastFetchTime = 0;
 const CACHE_TTL = 3000;
 
+// Use proxy path for API calls (works in both dev and production)
+const API_BASE = '/binance-api/api/v3';
+
 export async function fetchAllTickers(): Promise<MarketTicker[]> {
   const now = Date.now();
   if (now - lastFetchTime < CACHE_TTL && tickerCache.size > 0) return Array.from(tickerCache.values());
 
   try {
-    const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    const response = await fetch(`${API_BASE}/ticker/24hr`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     
@@ -92,7 +95,7 @@ export async function fetchAllTickers(): Promise<MarketTicker[]> {
 
 export async function fetchSparkline(symbol: string): Promise<MarketSparkline | null> {
   try {
-    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=24`);
+    const response = await fetch(`${API_BASE}/klines?symbol=${symbol}&interval=1h&limit=24`);
     if (!response.ok) return null;
     const data = await response.json();
     return { symbol, prices: data.map((k: any) => parseFloat(k[4])) };
@@ -101,7 +104,7 @@ export async function fetchSparkline(symbol: string): Promise<MarketSparkline | 
 
 export async function calculateIndicators(symbol: string): Promise<MarketIndicators | null> {
   try {
-    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=30`);
+    const response = await fetch(`${API_BASE}/klines?symbol=${symbol}&interval=1h&limit=30`);
     if (!response.ok) return null;
     const data = await response.json();
     const closes = data.map((k: any) => parseFloat(k[4]));

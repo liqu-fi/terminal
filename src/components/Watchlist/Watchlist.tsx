@@ -177,9 +177,10 @@ function WatchlistItem({
 interface WatchlistProps {
   onSymbolChange?: (symbol: string) => void;
   isCollapsed?: boolean;
+  compact?: boolean;
 }
 
-export function Watchlist({ onSymbolChange, isCollapsed = false }: WatchlistProps) {
+export function Watchlist({ onSymbolChange, isCollapsed = false, compact = false }: WatchlistProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   

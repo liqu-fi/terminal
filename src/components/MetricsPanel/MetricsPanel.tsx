@@ -58,7 +58,11 @@ function MetricItem({ label, value, unit, tooltip, colorClass, isUncertain, conf
   );
 }
 
-export function MetricsPanel() {
+interface MetricsPanelProps {
+  compact?: boolean;
+}
+
+export function MetricsPanel({ compact = false }: MetricsPanelProps) {
   const { t } = useI18n();
   const metrics = useMarketStore(selectMetrics);
   const orderBook = useMarketStore(selectOrderBook);
@@ -68,7 +72,7 @@ export function MetricsPanel() {
   const level = dataConfidence?.level || 'stale';
 
   if (!metrics || !orderBook) {
-    return (
+    return compact ? null : (
       <div className={`card ${styles.container}`}>
         <div className="card-header">{t.metrics?.title || 'Metrics'}</div>
         <div className={`card-body ${styles.loading}`}>
@@ -89,6 +93,28 @@ export function MetricsPanel() {
     : (metrics.liquidityScore || 0) <= 30 
       ? 'price-down' 
       : '';
+
+  // Compact mode for mobile - horizontal strip
+  if (compact) {
+    return (
+      <div className={styles.compactContainer}>
+        <span className={styles.compactMetric}>
+          <span className={styles.compactLabel}>Mid</span>
+          <span className={styles.compactValue}>{formatPrice(metrics.mid)}</span>
+        </span>
+        <span className={styles.compactDivider}>|</span>
+        <span className={styles.compactMetric}>
+          <span className={styles.compactLabel}>Spread</span>
+          <span className={styles.compactValue}>{(metrics.spreadBps || 0).toFixed(1)} bps</span>
+        </span>
+        <span className={styles.compactDivider}>|</span>
+        <span className={styles.compactMetric}>
+          <span className={styles.compactLabel}>Vol</span>
+          <span className={styles.compactValue}>{formatVolume(metrics.bidDepthVolume + metrics.askDepthVolume)}</span>
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={`card ${styles.container} ${!canTrustMetrics ? styles.degraded : ''}`}>
@@ -194,4 +220,11 @@ function formatPrice(price: string): string {
   if (num >= 1000) return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (num >= 1) return num.toFixed(4);
   return num.toFixed(8);
+}
+
+function formatVolume(volume: number): string {
+  if (volume >= 1e9) return (volume / 1e9).toFixed(1) + 'B';
+  if (volume >= 1e6) return (volume / 1e6).toFixed(1) + 'M';
+  if (volume >= 1e3) return (volume / 1e3).toFixed(1) + 'K';
+  return volume.toFixed(0);
 }

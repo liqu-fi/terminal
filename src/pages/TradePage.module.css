@@ -161,8 +161,8 @@
   }
 }
 
-/* Responsive - Stack layout on mobile */
-@media (max-width: 900px) {
+/* Responsive - Stack layout on tablet */
+@media (max-width: 900px) and (min-width: 769px) {
   .container {
     overflow-y: auto;
     height: auto;
@@ -180,5 +180,182 @@
   
   .orderBookWrapper {
     min-height: 250px;
+  }
+}
+
+/* ===== Mobile Layout ===== */
+@media (max-width: 768px) {
+  .container {
+    display: none;
+  }
+}
+
+.mobileContainer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px - 56px - env(safe-area-inset-bottom)); /* Header + BottomNav */
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.mobileHeader {
+  flex-shrink: 0;
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mobileTabNav {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobileTabBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.mobileTabBtn:active {
+  background: var(--surface-hover);
+}
+
+.mobileTabBtn.active {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.mobileContent {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.mobileContent > * {
+  height: 100%;
+}
+
+.mobileChartWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mobileChartWrapper > :first-child {
+  flex: 1;
+  min-height: 0;
+}
+
+.mobileChartWrapper > :last-child {
+  flex-shrink: 0;
+}
+
+.mobileAccountSummary {
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  transition: max-height var(--transition-normal);
+  max-height: 48px;
+  overflow: hidden;
+}
+
+.mobileAccountSummary.expanded {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.accountToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  gap: var(--space-2);
+}
+
+.accountToggle:active {
+  background: var(--surface-hover);
+}
+
+.mobileOrderEntry {
+  padding: var(--space-3);
+  padding-top: 0;
+}
+
+.mobileQuickOrder {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.quickOrderBtn {
+  flex: 1;
+  height: 48px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quickOrderBtn:active {
+  transform: scale(0.98);
+}
+
+.buyBtn {
+  background: var(--color-positive);
+  color: white;
+}
+
+.buyBtn:active {
+  background: var(--color-positive-hover);
+}
+
+.sellBtn {
+  background: var(--color-negative);
+  color: white;
+}
+
+.sellBtn:active {
+  background: var(--color-negative-hover);
+}
+
+/* Hide desktop layout on mobile */
+@media (max-width: 768px) {
+  .container {
+    display: none !important;
+  }
+}
+
+/* Show mobile layout only on mobile */
+@media (min-width: 769px) {
+  .mobileContainer {
+    display: none !important;
   }
 }

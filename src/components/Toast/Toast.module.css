@@ -127,11 +127,44 @@
   color: white;
 }
 
-@media (max-width: 480px) {
+/* Mobile: Full width at top, not overlapping bottom nav */
+@media (max-width: 768px) {
   .container {
+    top: calc(48px + var(--space-2)); /* Below header */
     left: var(--space-2);
     right: var(--space-2);
     max-width: none;
+  }
+  
+  .toast {
+    width: 100%;
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  .toast.exit {
+    animation: slideUp 0.3s ease-in forwards;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
   }
 }
 

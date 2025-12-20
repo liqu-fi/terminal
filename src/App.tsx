@@ -6,6 +6,7 @@ import { ToastContainer } from './components/Toast';
 import { ShortcutsHelp } from './components/ShortcutsHelp';
 import { SoundToggle } from './components/SoundToggle';
 import { TopNav, AssetSnapshot, AccountMenu } from './components/Layout';
+import { BottomNav } from './components/BottomNav';
 import { Icon } from './components/Icon';
 import { TradePage } from './pages/TradePage';
 import { MarketsPage } from './pages/MarketsPage';
@@ -121,6 +122,9 @@ export function App() {
       {/* Footer */}
       <footer className={styles.footer}>
       </footer>
+
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNav />
 
       {/* Toast Container */}
       <ToastContainer />

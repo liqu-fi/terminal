@@ -11,17 +11,17 @@ import styles from './OrdersPage.module.css';
 type TabType = 'open' | 'history' | 'trades' | 'automation' | 'analytics';
 type TimeFilter = 'all' | '1d' | '7d' | '30d';
 
-// 格式化时间
-function formatTime(timestamp: number, compact = false): string {
+// 格式化时间 - 使用传入的 locale 进行国际化
+function formatTime(timestamp: number, compact = false, locale = 'zh-CN'): string {
   if (compact) {
-    return new Date(timestamp).toLocaleString('zh-CN', {
+    return new Date(timestamp).toLocaleString(locale, {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     });
   }
-  return new Date(timestamp).toLocaleString('zh-CN', {
+  return new Date(timestamp).toLocaleString(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -148,12 +148,14 @@ function OrderTableRow({
   order, 
   onCancel, 
   onViewDetails,
-  compact = false 
+  compact = false,
+  locale = 'zh-CN',
 }: { 
   order: PaperOrder; 
   onCancel?: (id: string) => void; 
   onViewDetails?: (order: PaperOrder) => void;
   compact?: boolean;
+  locale?: string;
 }) {
   const status = getStatusConfig(order.status);
   const canCancel = ['pending', 'open', 'partial'].includes(order.status);
@@ -171,7 +173,7 @@ function OrderTableRow({
   return (
     <tr className={styles.orderRow}>
       <td className={styles.timeCell}>
-        <span className={styles.timeMain}>{formatTime(order.createdAt, true)}</span>
+        <span className={styles.timeMain}>{formatTime(order.createdAt, true, locale)}</span>
       </td>
       <td className={styles.symbolCell}>
         <div className={styles.symbolWrapper}>
@@ -246,10 +248,12 @@ function OrderTableRow({
 // 成交记录表格行
 function TradeTableRow({ 
   fill, 
-  order 
+  order,
+  locale = 'zh-CN',
 }: { 
   fill: PaperOrder['fills'][0]; 
-  order: PaperOrder; 
+  order: PaperOrder;
+  locale?: string;
 }) {
   const isBuy = order.side === 'buy';
   const value = parseFloat(fill.price) * parseFloat(fill.quantity);
@@ -257,7 +261,7 @@ function TradeTableRow({
   return (
     <tr className={styles.tradeRow}>
       <td className={styles.timeCell}>
-        <span className={styles.timeMain}>{formatTime(fill.time, true)}</span>
+        <span className={styles.timeMain}>{formatTime(fill.time, true, locale)}</span>
       </td>
       <td className={styles.symbolCell}>
         <div className={styles.symbolWrapper}>
@@ -289,10 +293,12 @@ function TradeTableRow({
 // 订单详情抽屉
 function OrderDetailDrawer({ 
   order, 
-  onClose 
+  onClose,
+  locale = 'zh-CN',
 }: { 
   order: PaperOrder | null; 
   onClose: () => void;
+  locale?: string;
 }) {
   if (!order) return null;
   
@@ -378,11 +384,11 @@ function OrderDetailDrawer({
             <h4 className={styles.sectionTitle}>Timeline</h4>
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>Created</span>
-              <span className={`${styles.detailValue} tabular-nums`}>{formatTime(order.createdAt)}</span>
+              <span className={`${styles.detailValue} tabular-nums`}>{formatTime(order.createdAt, false, locale)}</span>
             </div>
             <div className={styles.detailRow}>
               <span className={styles.detailLabel}>Updated</span>
-              <span className={`${styles.detailValue} tabular-nums`}>{formatTime(order.updatedAt)}</span>
+              <span className={`${styles.detailValue} tabular-nums`}>{formatTime(order.updatedAt, false, locale)}</span>
             </div>
           </div>
 
@@ -399,7 +405,7 @@ function OrderDetailDrawer({
                       <span className={`tabular-nums`}>{formatPrice(fill.price)}</span>
                     </div>
                     <div className={styles.fillMeta}>
-                      <span className={styles.fillTime}>{formatTime(fill.time, true)}</span>
+                      <span className={styles.fillTime}>{formatTime(fill.time, true, locale)}</span>
                       <span className={styles.fillFee}>Fee: ${parseFloat(fill.fee).toFixed(4)}</span>
                     </div>
                   </div>
@@ -591,7 +597,7 @@ function AnalyticsPanel({ orders, trades }: { orders: PaperOrder[]; trades: { fi
 }
 
 export function OrdersPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>('open');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [symbolFilter, setSymbolFilter] = useState<string>('all');
@@ -889,6 +895,7 @@ export function OrdersPage() {
                       order={order}
                       onCancel={handleCancel}
                       onViewDetails={setSelectedOrder}
+                      locale={locale}
                     />
                   ))}
                 </tbody>
@@ -927,6 +934,7 @@ export function OrdersPage() {
                       key={order.clientOrderId} 
                       order={order}
                       onViewDetails={setSelectedOrder}
+                      locale={locale}
                     />
                   ))}
                 </tbody>
@@ -962,6 +970,7 @@ export function OrdersPage() {
                       key={`${order.clientOrderId}-${fill.time}-${index}`}
                       fill={fill}
                       order={order}
+                      locale={locale}
                     />
                   ))}
                 </tbody>
@@ -1006,7 +1015,8 @@ export function OrdersPage() {
       {/* Order Detail Drawer */}
       <OrderDetailDrawer 
         order={selectedOrder} 
-        onClose={() => setSelectedOrder(null)} 
+        onClose={() => setSelectedOrder(null)}
+        locale={locale}
       />
     </div>
   );

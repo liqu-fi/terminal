@@ -182,3 +182,42 @@
   cursor: help;
 }
 
+/* Compact mode for mobile */
+.compactContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--font-size-xs);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.compactContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.compactMetric {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.compactLabel {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.compactValue {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.compactDivider {
+  color: var(--border-subtle);
+}

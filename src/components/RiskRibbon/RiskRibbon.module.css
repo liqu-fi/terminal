@@ -191,3 +191,51 @@
     border-radius: var(--radius-xs);
   }
 }
+
+/* Compact mode for mobile */
+.compactContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.compactLevel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.compactLevel.low {
+  color: var(--color-success);
+}
+
+.compactLevel.medium {
+  color: var(--color-warning);
+}
+
+.compactLevel.high {
+  color: var(--color-error);
+}
+
+.compactDivider {
+  color: var(--border-subtle);
+}
+
+.compactMetric {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.compactMetric.positive {
+  color: var(--color-price-up);
+}
+
+.compactMetric.negative {
+  color: var(--color-price-down);
+}

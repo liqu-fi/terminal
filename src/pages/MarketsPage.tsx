@@ -38,7 +38,10 @@ export function MarketsPage() {
 
   const { favorites, toggleFavorite, addSymbol } = useWatchlistStore();
 
-  const loadData = useCallback(async () => {
+  // Track if we've already loaded sparklines to avoid re-fetching
+  const [sparklinesLoaded, setSparklinesLoaded] = useState(false);
+
+  const loadData = useCallback(async (isInitial = false) => {
     try {
       const tickers = await fetchAllTickers();
       const initialMarkets: MarketData[] = tickers.map(t => ({
@@ -47,27 +50,48 @@ export function MarketsPage() {
         sparkline: null,
         indicators: null,
       }));
-      setMarkets(initialMarkets);
+      
+      // Preserve existing sparklines and indicators when refreshing
+      setMarkets(prev => {
+        if (prev.length === 0) return initialMarkets;
+        return initialMarkets.map(m => {
+          const existing = prev.find(p => p.symbol === m.symbol);
+          return {
+            ...m,
+            sparkline: existing?.sparkline ?? null,
+            indicators: existing?.indicators ?? null,
+          };
+        });
+      });
       setLoading(false);
 
-      // Async load sparklines and indicators in small batches to prevent blocking
-      // Only fetch for the top 50 symbols by volume to save rate limits
-      for (const ticker of tickers.slice(0, 50)) {
-        fetchSparkline(ticker.symbol).then(s => {
-          setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, sparkline: s } : m));
-        });
-        calculateIndicators(ticker.symbol).then(i => {
-          setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, indicators: i } : m));
-        });
+      // Only fetch sparklines and indicators on initial load to avoid rate limiting
+      if (isInitial && !sparklinesLoaded) {
+        setSparklinesLoaded(true);
+        // Fetch sparklines in batches with delay to avoid rate limits
+        const topSymbols = tickers.slice(0, 30); // Reduced from 50 to 30
+        for (let i = 0; i < topSymbols.length; i++) {
+          const ticker = topSymbols[i];
+          // Add small delay between requests to spread load
+          setTimeout(() => {
+            fetchSparkline(ticker.symbol).then(s => {
+              setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, sparkline: s } : m));
+            });
+            calculateIndicators(ticker.symbol).then(ind => {
+              setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, indicators: ind } : m));
+            });
+          }, i * 100); // 100ms delay between each request
+        }
       }
     } catch (err) {
       console.error('Market load error:', err);
     }
-  }, []);
+  }, [sparklinesLoaded]);
 
   useEffect(() => {
-    loadData();
-    const timer = setInterval(loadData, 10000);
+    loadData(true);
+    // Increase interval from 10s to 60s to avoid Binance rate limits [[memory:12434456]]
+    const timer = setInterval(() => loadData(false), 60000);
     return () => clearInterval(timer);
   }, [loadData]);
 

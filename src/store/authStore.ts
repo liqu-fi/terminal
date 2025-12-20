@@ -180,9 +180,19 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Clear wallet and trading data for privacy
+        // Import dynamically to avoid circular dependencies
+        import('./walletStore').then(({ useWalletStore }) => {
+          useWalletStore.getState().resetWallet();
+        });
+        import('./tradingStore').then(({ useTradingStore }) => {
+          useTradingStore.getState().resetAccount();
+        });
+        
         set({ 
           user: null, 
           isAuthenticated: false,
+          isInitialized: false,
           // Keep preferences and registered users for next login
         });
       },
