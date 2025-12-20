@@ -1,214 +1,139 @@
-# Paper Trading Terminal
+# 🚀 TBT Paper Terminal
 
-A professional paper trading terminal for cryptocurrency markets. Uses real market data from Binance for simulated trading without risk.
+<p align="center">
+  <img src="public/favicon.svg" width="80" height="80" alt="TBT Logo">
+</p>
 
-![Demo](https://img.shields.io/badge/status-demo-yellow) ![License](https://img.shields.io/badge/license-MIT-blue)
+<p align="center">
+  <b>A professional-grade paper trading terminal for cryptocurrency markets.</b><br>
+  Experience institutional-level data handling and professional UI with zero financial risk.
+</p>
 
-## ⚠️ Disclaimer
-
-- **NOT financial advice** - This is a learning/demo project only
-- **Paper trading only** - No real money, no real trades
-- **No affiliation with Binance** - Uses public WebSocket API only
-- **Data may be delayed** - UI indicates data freshness
-
-## Features
-
-### Real-time Market Data
-- ✅ Binance WebSocket connection with automatic reconnection
-- ✅ Order book snapshot + delta merging with sequence validation
-- ✅ Gap detection and automatic resync
-- ✅ Backpressure handling (depth not dropped, trades can be downsampled)
-- ✅ Stale data detection and UI warning
-
-### Derived Metrics (8 Indicators)
-- ✅ **Mid Price** - (bestBid + bestAsk) / 2
-- ✅ **Spread** - Absolute and basis points
-- ✅ **Bid/Ask Imbalance** - Buy/sell pressure indicator (-1 to +1)
-- ✅ **Micro Volatility** - 60s rolling standard deviation (Welford algorithm)
-- ✅ **Trade Intensity** - Trades per 10 seconds
-- ✅ **VWAP (60s)** - Volume-weighted average price
-- ✅ **Liquidity Score** - Log-normalized depth/spread ratio (0-100)
-- ✅ **Slippage Estimate** - Simulated market order impact
-
-### Paper Trading
-- ✅ Limit and Market orders
-- ✅ Order state machine (pending → submitted → open → partial/filled)
-- ✅ Simulated matching against real order book
-- ✅ Position and P&L tracking
-- ✅ Account balance management with locking
-
-### Professional UI
-- ✅ Light/Dark theme (both first-class)
-- ✅ Data Confidence Bar - Connection health always visible
-- ✅ Focus Mode - Order entry locks layout during input
-- ✅ Risk Ribbon - Visual risk assessment
-- ✅ Microstructure Lens (Depth Chart) - Visual order book depth
-- ✅ Tabular numbers, IBM Plex fonts
-- ✅ Color-blind friendly (▲▼ symbols)
-
-## Quick Start
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-```
-
-## Tech Stack
-
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Zustand** - State management with selectors
-- **Web Worker** - Data processing isolated from main thread
-- **Vite** - Fast development and builds
-- **decimal.js** - Precise financial calculations
-- **Vitest** - Unit testing
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         UI (Main Thread)                         │
-│    React + Zustand (局部订阅) + requestAnimationFrame 渲染       │
-│    - Order Book, Metrics, Trades, Order Entry, Positions         │
-│    - Focus Mode: isolate order entry from data updates           │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ postMessage (structured cloning)
-┌────────────────────────────┴────────────────────────────────────┐
-│                        Web Worker                                │
-│    - WebSocket connection management (heartbeat, reconnect)      │
-│    - Order book snapshot/delta merging with sequence validation  │
-│    - Derived metrics calculation (O(1) incremental updates)      │
-│    - Backpressure: depth not dropped, trades can be downsampled  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ WebSocket + REST
-┌────────────────────────────┴────────────────────────────────────┐
-│                  Binance Public API                              │
-│    wss://stream.binance.com:9443/ws/{symbol}@depth@100ms         │
-│    https://api.binance.com/api/v3/depth                          │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Order Book Correctness
-
-The implementation follows Binance's official documentation:
-
-1. **Initialize**: Subscribe to `depth@100ms`, fetch REST snapshot
-2. **Merge**: Apply deltas where `U <= lastUpdateId + 1 && u >= lastUpdateId + 1`
-3. **Gap Detection**: If `U > lastUpdateId + 1`, trigger resync
-4. **Resync Cooldown**: Minimum 5 seconds between resyncs
-
-### Known Limitations (Honestly Stated)
-
-| Limitation | Reason | Mitigation |
-|------------|--------|------------|
-| 100ms minimum latency | Binance depth stream batches | UI shows actual latency |
-| REST/WS time gap | Snapshot may miss some updates | Quick resync, stale marking |
-| No SLA | Public API | Latency indicators, reconnect |
-| Simulated matching | No real order queue | Document as educational |
-
-## Design System
-
-### Typography
-- **Sans**: IBM Plex Sans (UI text)
-- **Mono**: IBM Plex Mono (prices, numbers)
-- **Tabular nums**: All numeric displays
-
-### Colors
-| Element | Light | Dark |
-|---------|-------|------|
-| Price Up | `#16A34A` | `#22C55E` |
-| Price Down | `#DC2626` | `#EF4444` |
-| Background | `#FAFBFC` | `#0D1117` |
-| Card | `#FFFFFF` | `#161B22` |
-
-### Accessibility
-- WCAG AA contrast ratios
-- Color-blind friendly: ▲▼ symbols with colors
-- Keyboard navigation support
-- Focus indicators
-
-## Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-
-# Watch mode
-npm test -- --watch
-```
-
-### Test Coverage
-- Order book merging (normal, gap, resync)
-- Derived metrics calculation
-- Order state machine transitions
-- Balance locking/unlocking
-
-## Project Structure
-
-```
-src/
-├── components/          # React components
-│   ├── DataConfidenceBar/   # Connection status
-│   ├── DepthChart/          # Microstructure lens
-│   ├── MetricsPanel/        # Derived indicators
-│   ├── OpenOrders/          # Active orders
-│   ├── OrderBook/           # Bid/ask display
-│   ├── OrderEntry/          # Order form
-│   ├── Positions/           # Account & positions
-│   ├── RecentTrades/        # Trade history
-│   ├── RiskRibbon/          # Risk visualization
-│   ├── SymbolSelector/      # Symbol switching
-│   └── ThemeToggle/         # Light/dark switch
-├── store/
-│   ├── marketStore.ts       # Market data state
-│   └── tradingStore.ts      # Trading state
-├── types/
-│   ├── market.ts            # Market data types
-│   └── trading.ts           # Trading types
-├── worker/
-│   ├── marketDataWorker.ts  # WebSocket worker
-│   ├── orderbook.ts         # Order book logic
-│   └── orderbook.test.ts    # Unit tests
-└── styles/
-    ├── tokens.css           # Design tokens
-    └── global.css           # Global styles
-```
-
-## Observability
-
-### Metrics Tracked
-- `ws_connection_state` - WebSocket status
-- `ws_reconnect_count` - Reconnection attempts
-- `ws_message_rate` - Messages per second
-- `ob_gap_count` - Sequence gaps detected
-- `ob_resync_count` - Resync triggers
-- `ob_stale_duration_ms` - Time in stale state
-
-### Log Events
-- `ws.connected`, `ws.disconnected`, `ws.reconnect_start`
-- `ob.snapshot_complete`, `ob.gap_detected`, `ob.resync_start`
-- `order.created`, `order.filled`, `order.cancelled`
-
-## License
-
-MIT - Educational purposes only.
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite" alt="Vite">
+  <img src="https://img.shields.io/badge/Zustand-State-orange?style=for-the-badge" alt="Zustand">
+  <img src="https://img.shields.io/badge/Binance-API-F0B90B?style=for-the-badge&logo=binance" alt="Binance API">
+</p>
 
 ---
 
-Built as a portfolio project demonstrating:
-- Real-time data engineering (WebSocket, streaming)
-- Financial data correctness (sequence validation, decimal precision)
-- Professional trading UI/UX design
-- React performance patterns (selectors, workers, RAF)
+## ✨ Features Highlight
+
+### 📊 Market Intelligence
+*   **High-Fidelity Order Book**: Real-time snapshot + delta merging with sequence validation and auto-resync.
+*   **Microstructure Indicators**: 8 built-in real-time metrics including **Bid/Ask Imbalance**, **Micro Volatility**, and **VWAP**.
+*   **Data Confidence Bar**: Full transparency on connection health, latency (RTT), and data freshness.
+
+### ⚡ Professional Trading Engine
+*   **Focus Mode**: Intelligent layout locking during order entry for maximum precision.
+*   **Simulated Matching**: Market and Limit orders matched against real-time Binance liquidity.
+*   **Risk Ribbon**: Visual risk assessment for position sizing and P&L monitoring.
+
+### 🎨 Modern UI/UX
+*   **Dual Themes**: Professional Dark and Light modes out of the box.
+*   **Performance First**: Heavy computations (Order book merging, metrics) offloaded to **Web Workers**.
+*   **Accessibility**: Color-blind friendly indicators (▲▼) and tabular numeric fonts.
+
+---
+
+## 📸 Interface Preview
+
+| 🌓 Light Mode | 🌑 Dark Mode |
+|:---:|:---:|
+| ![Light Mode Placeholder](https://via.placeholder.com/600x350/FAFBFC/1F2328?text=Professional+Light+UI) | ![Dark Mode Placeholder](https://via.placeholder.com/600x350/0D1117/E6EDF3?text=High-Density+Dark+UI) |
+| *Clean, professional typography* | *Optimized for long-session trading* |
+
+---
+
+## 🛠 Tech Stack
+
+Designed for speed, precision, and educational clarity.
+
+*   **Core**: React 18 + TypeScript
+*   **State Management**: Zustand (Atomic subscriptions)
+*   **Data Processing**: Web Workers (Dedicated thread for streaming data)
+*   **Financial Math**: `decimal.js` for floating-point safety
+*   **Visualization**: `lightweight-charts` for high-performance price action
+
+---
+
+## 📉 The 8 Alpha Indicators
+
+The terminal calculates these metrics every 100ms in a background worker:
+
+1.  **Mid Price**: The fair market value baseline.
+2.  **Spread**: Real-time liquidity cost (Absolute & Bps).
+3.  **Bid/Ask Imbalance**: Buy/Sell pressure signal (-1 to +1).
+4.  **Micro Volatility**: 60s rolling risk assessment (Welford algorithm).
+5.  **Trade Intensity**: Market activity pulse (Trades per 10s).
+6.  **VWAP (60s)**: Volume-weighted average price.
+7.  **Liquidity Score**: Log-normalized depth/spread ratio (0-100).
+8.  **Slippage Estimate**: Projected price impact for market orders.
+
+---
+
+## 🏗 System Architecture
+
+```mermaid
+graph TD
+    subgraph "External Data"
+        B[Binance WebSocket]
+        R[Binance REST API]
+    end
+
+    subgraph "Web Worker (Data Layer)"
+        WS[WS Manager]
+        OB[Order Book Engine]
+        ME[Metrics Aggregator]
+    end
+
+    subgraph "Main Thread (UI Layer)"
+        ZS[Zustand Store]
+        RC[React Components]
+        SM[Sim Matching Engine]
+    end
+
+    B --> WS
+    R --> OB
+    WS -->|Deltas| OB
+    OB -->|Snapshot| ZS
+    OB --> ME
+    ME -->|Indicators| ZS
+    ZS --> RC
+    RC -->|New Order| SM
+    SM -->|Fills| ZS
+```
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/TheNewMikeMusic/tbt-paper-terminal.git
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+
+# Run unit tests
+npm test
+```
+
+---
+
+## ⚠️ Disclaimer
+
+- **NOT financial advice**: This is for educational and portfolio purposes only.
+- **Paper trading only**: No real money or real trades are ever executed.
+- **Data Source**: Uses public Binance API. Not affiliated with Binance.
+
+---
+
+<p align="center">
+  Built with ❤️ for the Trading Community.
+</p>
