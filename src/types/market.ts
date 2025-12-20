@@ -53,6 +53,8 @@ export interface DerivedMetrics {
   liquidityScore: number;   // 流动性评分 0-100
   slippageEst: string;      // 滑点预估
   lastUpdateTime: number;   // 最后更新时间
+  bidDepthVolume: string;   // 买盘累计深度
+  askDepthVolume: string;   // 卖盘累计深度
   // 24小时统计数据
   high24h: string;          // 24小时最高价
   low24h: string;           // 24小时最低价

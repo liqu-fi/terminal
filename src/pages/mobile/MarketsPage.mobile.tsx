@@ -151,13 +151,14 @@ export function MobileMarketsPage() {
 
   // Touch handlers for swipe detection
   const handleTouchStart = (symbol: string) => (e: React.TouchEvent) => {
+    if (!e.touches[0]) return;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     swipingItem.current = symbol;
   };
 
   const handleTouchEnd = (symbol: string) => (e: React.TouchEvent) => {
-    if (swipingItem.current !== symbol) return;
+    if (swipingItem.current !== symbol || !e.changedTouches[0]) return;
     
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
@@ -283,15 +284,18 @@ export function MobileMarketsPage() {
                 {market.sparkline && (
                   <Sparkline
                     data={market.sparkline.prices}
-                    height={32}
-                    width={80}
-                    lineWidth={2}
+                    height={60}
+                    width={200}
+                    lineWidth={1.5}
                     color={(market.ticker?.priceChangePercent ?? 0) >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}
                   />
                 )}
               </div>
 
-              {/* Price & Change */}
+              {/* Watermark Logo/Text */}
+              <div className={styles.watermark}>
+                <span className={styles.watermarkText}>{parseSymbol(market.symbol).base}</span>
+              </div>
               <div className={styles.priceCol}>
                 <span className={`${styles.price} tabular-nums`}>
                   {market.ticker ? formatPrice(market.ticker.price) : '—'}
@@ -326,7 +330,7 @@ export function MobileMarketsPage() {
           : undefined
         }
         actions={[
-          { id: 'trade', label: t.markets?.goToTrade || 'Trade', icon: 'arrow-right' },
+          { id: 'trade', label: t.markets?.goToTrade || 'Trade', icon: 'chevron-right' },
           { 
             id: 'favorite', 
             label: selectedAsset && favorites.includes(selectedAsset.symbol) 

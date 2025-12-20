@@ -173,8 +173,22 @@ export function WithdrawDrawer({ isOpen, onClose }: WithdrawDrawerProps) {
               {/* No destinations warning */}
               {!hasDestinations && (
                 <div className={styles.warningCard}>
-                  <Icon name="alert-triangle" size="sm" />
-                  <span>{t.wallet?.addDestinationFirst || 'Add a destination first'}</span>
+                  <div className={styles.warningInfo}>
+                    <Icon name="alert-triangle" size="sm" />
+                    <span>{t.wallet?.addDestinationFirst || 'Add a destination first'}</span>
+                  </div>
+                  <button 
+                    className={styles.addSourceBtn}
+                    onClick={() => {
+                      onClose();
+                      const methodsEl = document.querySelector('[class*="methodsSection"]');
+                      if (methodsEl) {
+                        methodsEl.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                  >
+                    {t.common?.confirm || 'Add Now'}
+                  </button>
                 </div>
               )}
 

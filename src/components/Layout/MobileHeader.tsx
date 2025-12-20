@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
-import { ThemeToggle } from '../ThemeToggle';
 import { AccountMenu } from './AccountMenu';
 import styles from './MobileHeader.module.css';
 
@@ -28,7 +27,9 @@ export function MobileHeader({
           </button>
         ) : (
           <Link to="/" className={styles.logo}>
-            <Icon name="activity" size="lg" strokeWidth={2.5} />
+            <div className={styles.logoIcon}>
+              <Icon name="trending-up" size="lg" strokeWidth={2.5} />
+            </div>
           </Link>
         )}
       </div>
@@ -38,10 +39,7 @@ export function MobileHeader({
       <div className={styles.right}>
         {rightAction}
         {showActions && (
-          <>
-            <ThemeToggle />
-            <AccountMenu />
-          </>
+          <AccountMenu />
         )}
       </div>
     </header>

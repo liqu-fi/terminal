@@ -9,9 +9,10 @@ import styles from './OnboardingGuide.module.css';
 interface OnboardingGuideProps {
   stage: OnboardingStage;
   onOpenDeposit?: () => void;
+  onScrollToMethods?: () => void;
 }
 
-export function OnboardingGuide({ stage, onOpenDeposit }: OnboardingGuideProps) {
+export function OnboardingGuide({ stage, onOpenDeposit, onScrollToMethods }: OnboardingGuideProps) {
   const { t } = useI18n();
   const { user } = useAuthStore();
   const createAccount = useWalletStore((state) => state.createAccount);
@@ -105,6 +106,12 @@ export function OnboardingGuide({ stage, onOpenDeposit }: OnboardingGuideProps) 
             {t.wallet?.addPaymentDesc || 'Link a bank card or crypto address to simulate deposits and withdrawals.'}
           </span>
         </div>
+        {onScrollToMethods && (
+          <button className={styles.bannerButton} onClick={onScrollToMethods}>
+            <Icon name="plus" size="sm" />
+            <span>{t.common?.confirm || 'Add'}</span>
+          </button>
+        )}
         <div className={styles.stepIndicator}>
           {t.wallet?.step || 'Step'} 2 {t.wallet?.of || 'of'} 3
         </div>

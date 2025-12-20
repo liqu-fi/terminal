@@ -60,15 +60,15 @@ function getEventClass(type: NetworkEventType): string {
     case 'resync_complete':
     case 'latency_normal':
     case 'rate_normal':
-      return styles.eventGood;
+      return styles.eventGood || '';
     case 'disconnected':
     case 'latency_spike':
     case 'gap_detected':
     case 'rate_drop':
-      return styles.eventBad;
+      return styles.eventBad || '';
     case 'reconnecting':
     case 'resync_start':
-      return styles.eventWarning;
+      return styles.eventWarning || '';
     default:
       return '';
   }
@@ -77,16 +77,16 @@ function getEventClass(type: NetworkEventType): string {
 // 获取事件类型的显示名称
 function getEventTypeName(type: NetworkEventType, t: Locale): string {
   const names: Record<NetworkEventType, string> = {
-    connected: t.networkHealth?.events?.connected || 'Connected',
-    disconnected: t.networkHealth?.events?.disconnected || 'Disconnected',
-    reconnecting: t.networkHealth?.events?.reconnecting || 'Reconnecting',
-    latency_spike: t.networkHealth?.events?.latencySpike || 'Latency Spike',
-    latency_normal: t.networkHealth?.events?.latencyNormal || 'Latency Normal',
-    gap_detected: t.networkHealth?.events?.gapDetected || 'Gap Detected',
-    resync_start: t.networkHealth?.events?.resyncStart || 'Resync Started',
-    resync_complete: t.networkHealth?.events?.resyncComplete || 'Resync Complete',
-    rate_drop: t.networkHealth?.events?.rateDrop || 'Rate Drop',
-    rate_normal: t.networkHealth?.events?.rateNormal || 'Rate Normal',
+    connected: (t as any).networkHealth?.events?.connected || 'Connected',
+    disconnected: (t as any).networkHealth?.events?.disconnected || 'Disconnected',
+    reconnecting: (t as any).networkHealth?.events?.reconnecting || 'Reconnecting',
+    latency_spike: (t as any).networkHealth?.events?.latencySpike || 'Latency Spike',
+    latency_normal: (t as any).networkHealth?.events?.latencyNormal || 'Latency Normal',
+    gap_detected: (t as any).networkHealth?.events?.gapDetected || 'Gap Detected',
+    resync_start: (t as any).networkHealth?.events?.resyncStart || 'Resync Started',
+    resync_complete: (t as any).networkHealth?.events?.resyncComplete || 'Resync Complete',
+    rate_drop: (t as any).networkHealth?.events?.rateDrop || 'Rate Drop',
+    rate_normal: (t as any).networkHealth?.events?.rateNormal || 'Rate Normal',
   };
   return names[type] || type;
 }

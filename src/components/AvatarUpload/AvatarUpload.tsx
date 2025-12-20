@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { Icon } from '../Icon';
 import { useI18n } from '../../i18n';
 import styles from './AvatarUpload.module.css';

@@ -1,15 +1,30 @@
 #!/bin/bash
 
 # 部署脚本 - TBT Paper Terminal
+
+# 加载 .env 文件（如果存在）
+if [ -f .env ]; then
+    echo "📝 加载 .env 文件..."
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # 服务器信息
-SERVER_IP="154.36.164.246"
-SERVER_USER="root"
-SERVER_PASSWORD="9tslcYSJ8ECNLYvb"
+SERVER_IP="${SERVER_IP:-154.36.164.246}"
+SERVER_USER="${SERVER_USER:-root}"
+SERVER_PASSWORD="${SERVER_PASSWORD:-}"
 APP_NAME="tbt-paper-terminal"
 APP_DIR="/var/www/$APP_NAME"
 NGINX_CONFIG="/etc/nginx/sites-available/$APP_NAME"
 
 echo "🚀 开始部署 TBT Paper Terminal 到服务器..."
+
+# 检查环境变量
+if [ -z "$SERVER_PASSWORD" ]; then
+    echo "❌ 错误: SERVER_PASSWORD 环境变量未设置。"
+    echo "   请运行: export SERVER_PASSWORD='your_password'"
+    echo "   或者在 .env 文件中定义并使用 source .env"
+    exit 1
+fi
 
 # 检查 sshpass 是否安装
 if ! command -v sshpass &> /dev/null; then
@@ -90,7 +105,21 @@ echo "📦 步骤 5: 安装依赖并构建项目..."
 remote_exec "
     cd $APP_DIR
     npm install --production=false
-    npm run build
+    npm run build:check
+"
+
+# 验证构建产物
+echo "📦 步骤 5.1: 验证构建产物..."
+remote_exec "
+    if [ ! -d \"$APP_DIR/dist\" ]; then
+        echo '❌ 错误: dist 目录不存在'
+        exit 1
+    fi
+    if [ ! -f \"$APP_DIR/dist/index.html\" ]; then
+        echo '❌ 错误: index.html 不存在'
+        exit 1
+    fi
+    echo '✅ 构建产物验证通过'
 "
 
 echo "📦 步骤 6: 配置 Nginx..."
@@ -109,10 +138,19 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
 
-    # 静态资源缓存
+    # 禁止直接访问 assets 目录
+    location = /assets/ {
+        return 404;
+    }
+    
+    # 静态资源缓存（匹配所有 assets 下的文件）
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        # 禁止目录列表
+        autoindex off;
+        # 如果请求的是目录，返回 404
+        try_files \$uri =404;
     }
 
     # Binance API 代理
@@ -172,6 +210,38 @@ remote_exec "
     ufw allow 80/tcp || true
     ufw allow 22/tcp || true
     ufw --force enable || true
+"
+
+echo "📦 步骤 8: 健康检查..."
+remote_exec "
+    # 等待 Nginx 启动
+    sleep 2
+    
+    # 检查 Nginx 状态
+    if ! systemctl is-active --quiet nginx; then
+        echo '❌ 警告: Nginx 未运行'
+        systemctl status nginx
+    else
+        echo '✅ Nginx 运行正常'
+    fi
+    
+    # 检查应用文件
+    if [ -f \"$APP_DIR/dist/index.html\" ]; then
+        echo '✅ 应用文件存在'
+    else
+        echo '❌ 错误: 应用文件不存在'
+        exit 1
+    fi
+    
+    # 测试 HTTP 响应（如果 curl 可用）
+    if command -v curl &> /dev/null; then
+        HTTP_CODE=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost/ || echo '000')
+        if [ \"\$HTTP_CODE\" = '200' ] || [ \"\$HTTP_CODE\" = '000' ]; then
+            echo '✅ HTTP 响应正常'
+        else
+            echo \"⚠️  HTTP 响应码: \$HTTP_CODE\"
+        fi
+    fi
 "
 
 echo "✅ 部署完成！"

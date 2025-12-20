@@ -298,7 +298,7 @@ export function MobileTradePage() {
         <div className={styles.infoGrid}>
           {/* Total Account Value */}
           <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{t.account?.totalValue || '总资产'}</span>
+            <span className={styles.infoLabel}>{t.account?.totalValue || 'Equity'}</span>
             <span className={`${styles.infoValue} tabular-nums`}>
               ${accountInfo.totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -306,23 +306,15 @@ export function MobileTradePage() {
 
           {/* Available USDT */}
           <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{t.account?.available || '可用'} (USDT)</span>
+            <span className={styles.infoLabel}>{t.account?.available || 'Avail'} (USDT)</span>
             <span className={`${styles.infoValue} tabular-nums`}>
               ${accountInfo.usdtAvailable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
 
-          {/* Holdings Value */}
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{baseAsset} {t.wallet?.value || '仓位市值'}</span>
-            <span className={`${styles.infoValue} tabular-nums`}>
-              ${accountInfo.baseValueInUsdt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-
           {/* Holdings Qty */}
           <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>{baseAsset} {t.wallet?.balance || '持有数量'}</span>
+            <span className={styles.infoLabel}>{baseAsset} {t.wallet?.balance || 'Bal'}</span>
             <span className={`${styles.infoValue} tabular-nums`}>
               {accountInfo.baseQty.toFixed(4)}
             </span>
@@ -331,7 +323,7 @@ export function MobileTradePage() {
           {/* Unrealized PnL */}
           {positionPnL && (
             <div className={`${styles.infoItem} ${styles.pnlItem}`}>
-              <span className={styles.infoLabel}>{t.positions?.unrealizedPnL || '未实现盈亏'}</span>
+              <span className={styles.infoLabel}>{t.positions?.unrealizedPnL || 'UPnL'}</span>
               <span className={`${styles.infoValue} tabular-nums ${positionPnL.pnl >= 0 ? styles.positive : styles.negative}`}>
                 {positionPnL.pnl >= 0 ? '+' : ''}{positionPnL.pnl.toFixed(2)} 
                 <span className={styles.pnlPercent}>

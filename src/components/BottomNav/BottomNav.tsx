@@ -1,12 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useI18n } from '../../i18n';
-import { Icon } from '../Icon';
+import { Icon, IconName } from '../Icon';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import styles from './BottomNav.module.css';
 
 interface NavItem {
   path: string;
-  icon: string;
+  icon: IconName;
   labelKey: string;
   fallback: string;
   isCenter?: boolean;
@@ -15,7 +15,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/markets', icon: 'bar-chart-3', labelKey: 'markets', fallback: 'Markets' },
   { path: '/orders', icon: 'layers', labelKey: 'orders', fallback: 'Orders' },
-  { path: '/trade', icon: 'repeat', labelKey: 'trade', fallback: 'Trade', isCenter: true },
+  { path: '/trade', icon: 'arrow-up-down', labelKey: 'trade', fallback: 'Trade', isCenter: true },
   { path: '/wallet', icon: 'wallet', labelKey: 'wallet', fallback: 'Wallet' },
   { path: '/settings', icon: 'user', labelKey: 'account', fallback: 'Account' },
 ];
@@ -42,9 +42,14 @@ export function BottomNav() {
           }
         >
           {item.isCenter ? (
-            <div className={styles.centerButton}>
-              <Icon name={item.icon} size="lg" className={styles.centerIcon} />
-            </div>
+            <>
+              <div className={styles.centerButton}>
+                <Icon name={item.icon} size="lg" className={styles.centerIcon} />
+              </div>
+              <span className={`${styles.label} ${styles.centerLabel}`}>
+                {(t.nav as Record<string, string>)?.[item.labelKey] || item.fallback}
+              </span>
+            </>
           ) : (
             <>
               <Icon name={item.icon} size="md" className={styles.icon} />

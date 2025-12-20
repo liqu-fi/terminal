@@ -22,6 +22,8 @@ const BINANCE_WS_URLS = [
 ];
 let currentWsUrlIndex = 0;
 // REST API 使用代理路径避免 CORS（在 worker 中使用相对路径）
+// Note: import.meta.env in workers requires specific Vite configuration or 
+// passing the base URL during worker initialization. For now we use the default.
 const BINANCE_REST_URL = '/binance-api/api/v3';
 const RECONNECT_BASE_DELAY_MS = 2000;  // 基础重连延迟
 const RECONNECT_MAX_DELAY_MS = 30000;  // 最大重连延迟（缩短）

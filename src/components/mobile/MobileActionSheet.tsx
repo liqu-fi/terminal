@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
-import { Icon } from '../Icon';
+import { Icon, IconName } from '../Icon';
 import styles from './MobileActionSheet.module.css';
 
 interface ActionSheetAction {
   id: string;
   label: string;
-  icon?: string;
+  icon?: IconName;
   destructive?: boolean;
   disabled?: boolean;
 }

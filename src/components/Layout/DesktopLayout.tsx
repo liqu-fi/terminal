@@ -43,7 +43,7 @@ export function DesktopLayout() {
       <header className="app-header">
         <div className={styles.logo}>
           <div className={styles.logoIcon}>
-            <Icon name="activity" size="lg" strokeWidth={2.5} />
+            <Icon name="trending-up" size="lg" strokeWidth={2.5} />
           </div>
           <span className={styles.title}>{t.header.title}</span>
         </div>

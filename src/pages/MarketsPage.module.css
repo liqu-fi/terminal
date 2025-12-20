@@ -494,6 +494,22 @@ tr:hover .tradeBtn {
   flex-direction: column;
   gap: var(--space-3);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.cardChart {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 180px;
+  height: 60%;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: linear-gradient(to top left, black 0%, transparent 85%);
+  -webkit-mask-image: linear-gradient(to top left, black 0%, transparent 85%);
+  filter: saturate(1.4) blur(0.2px);
 }
 
 .card:hover {

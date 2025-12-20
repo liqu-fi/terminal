@@ -1,9 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTradingStore } from '../store/tradingStore';
 import { useAutomationStore } from '../store/automationStore';
-import { useWatchlistStore } from '../store/watchlistStore';
 import { useI18n } from '../i18n';
-import { Icon } from '../components/Icon';
+import { Icon, IconName } from '../components/Icon';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { MobileOrdersPage } from './mobile';
 import { TriggerList, ExecutionLogList } from '../components/AutomationPanel';
@@ -58,15 +57,15 @@ function formatUSD(value: number): string {
 }
 
 // 获取状态显示
-function getStatusConfig(status: OrderStatus): { text: string; className: string; icon: string } {
-  const configs: Record<OrderStatus, { text: string; className: string; icon: string }> = {
-    pending: { text: 'Pending', className: styles.statusPending, icon: 'clock' },
-    submitted: { text: 'Submitted', className: styles.statusSubmitted, icon: 'send' },
-    open: { text: 'Open', className: styles.statusOpen, icon: 'radio' },
-    partial: { text: 'Partial', className: styles.statusPartial, icon: 'pie-chart' },
-    filled: { text: 'Filled', className: styles.statusFilled, icon: 'check-circle' },
-    cancelled: { text: 'Cancelled', className: styles.statusCancelled, icon: 'x-circle' },
-    rejected: { text: 'Rejected', className: styles.statusRejected, icon: 'alert-circle' },
+function getStatusConfig(status: OrderStatus): { text: string; className: string; icon: IconName } {
+  const configs: Record<OrderStatus, { text: string; className: string; icon: IconName }> = {
+    pending: { text: 'Pending', className: styles.statusPending || '', icon: 'clock' },
+    submitted: { text: 'Submitted', className: styles.statusSubmitted || '', icon: 'send' },
+    open: { text: 'Open', className: styles.statusOpen || '', icon: 'radio' },
+    partial: { text: 'Partial', className: styles.statusPartial || '', icon: 'pie-chart' },
+    filled: { text: 'Filled', className: styles.statusFilled || '', icon: 'check-circle' },
+    cancelled: { text: 'Cancelled', className: styles.statusCancelled || '', icon: 'x-circle' },
+    rejected: { text: 'Rejected', className: styles.statusRejected || '', icon: 'alert-circle' },
   };
   return configs[status] || { text: status, className: '', icon: 'circle' };
 }
@@ -121,7 +120,7 @@ function StatCard({
   value: string | number; 
   subValue?: string;
   trend?: 'up' | 'down' | 'neutral';
-  icon: string;
+  icon: IconName;
   sparkData?: number[];
   sparkColor?: 'green' | 'red' | 'blue';
   highlight?: boolean;
@@ -150,12 +149,12 @@ function OrderTableRow({
   order, 
   onCancel, 
   onViewDetails,
-  compact = false,
+  compact: _compact = false,
   locale = 'zh-CN',
 }: { 
   order: PaperOrder; 
   onCancel?: (id: string) => void; 
-  onViewDetails?: (order: PaperOrder) => void;
+  onViewDetails?: (order: PaperOrder) => void; 
   compact?: boolean;
   locale?: string;
 }) {
@@ -167,7 +166,6 @@ function OrderTableRow({
     return sum + parseFloat(fill.price) * parseFloat(fill.quantity);
   }, 0);
   
-  const totalFee = order.fills.reduce((sum, fill) => sum + parseFloat(fill.fee), 0);
   const fillPercent = parseFloat(order.quantity) > 0 
     ? (parseFloat(order.filledQty) / parseFloat(order.quantity)) * 100 
     : 0;
@@ -433,8 +431,6 @@ function OrderDetailDrawer({
 function AnalyticsPanel({ orders, trades }: { orders: PaperOrder[]; trades: { fill: PaperOrder['fills'][0]; order: PaperOrder }[] }) {
   // 计算各种统计数据
   const filledOrders = orders.filter(o => o.status === 'filled');
-  const buyOrders = filledOrders.filter(o => o.side === 'buy');
-  const sellOrders = filledOrders.filter(o => o.side === 'sell');
   
   // 按交易对分组
   const bySymbol = useMemo(() => {
@@ -600,7 +596,7 @@ function AnalyticsPanel({ orders, trades }: { orders: PaperOrder[]; trades: { fi
 
 export function OrdersPage() {
   const isMobile = useIsMobile();
-  const { t, locale } = useI18n();
+  const { t: _t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>('open');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [symbolFilter, setSymbolFilter] = useState<string>('all');
@@ -616,7 +612,6 @@ export function OrdersPage() {
   const orders = useTradingStore((state) => state.orders);
   const cancelOrder = useTradingStore((state) => state.cancelOrder);
   const triggers = useAutomationStore((state) => state.triggers);
-  const watchlist = useWatchlistStore((state) => state.symbols);
 
   // 时间过滤
   const filterByTime = useCallback((timestamp: number) => {

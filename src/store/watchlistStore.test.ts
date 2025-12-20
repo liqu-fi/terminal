@@ -59,7 +59,7 @@ describe('WatchlistStore', () => {
       
       const filtered = selectFilteredSymbols(useWatchlistStore.getState());
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].symbol).toBe('BTCUSDT');
+      expect(filtered[0]?.symbol).toBe('BTCUSDT');
     });
 
     it('should be case insensitive', () => {
@@ -68,7 +68,7 @@ describe('WatchlistStore', () => {
       
       const filtered = selectFilteredSymbols(useWatchlistStore.getState());
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].symbol).toBe('ETHUSDT');
+      expect(filtered[0]?.symbol).toBe('ETHUSDT');
     });
   });
 
@@ -79,7 +79,7 @@ describe('WatchlistStore', () => {
       
       const filtered = selectFilteredSymbols(useWatchlistStore.getState());
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].symbol).toBe('BTCUSDT');
+      expect(filtered[0]?.symbol).toBe('BTCUSDT');
     });
   });
 
@@ -89,7 +89,7 @@ describe('WatchlistStore', () => {
       togglePinned('BNBUSDT');
       
       const filtered = selectFilteredSymbols(useWatchlistStore.getState());
-      expect(filtered[0].symbol).toBe('BNBUSDT');
+      expect(filtered[0]?.symbol).toBe('BNBUSDT');
     });
   });
 

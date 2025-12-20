@@ -4,12 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import Decimal from 'decimal.js';
 import type {
   Trigger,
-  TriggerType,
   TriggerStatus,
-  TriggerCondition,
-  TriggerAction,
   ExecutionLog,
-  ExecutionResult,
   AutomationErrorCode,
 } from '../types/automation';
 import { useTradingStore } from './tradingStore';
@@ -17,12 +13,13 @@ import { useMarketStore } from './marketStore';
 import { useWalletStore } from './walletStore';
 
 // ===== Constants =====
-const EXECUTION_CONFIG = {
-  maxConcurrent: 3,
-  maxQueueSize: 10,
-  executionTimeoutMs: 5000,
-  retryCount: 0,
-};
+// Execution configuration (reserved for future use)
+// const EXECUTION_CONFIG = {
+//   maxConcurrent: 3,
+//   maxQueueSize: 10,
+//   executionTimeoutMs: 5000,
+//   retryCount: 0,
+// };
 
 // ===== Store State =====
 interface AutomationState {
@@ -461,7 +458,6 @@ useMarketStore.subscribe(
 );
 
 function updateAndProcess(symbol: string, source: 'last' | 'bid' | 'ask' | 'mid', current: Decimal) {
-  const key = `${symbol}:${source}`;
   if (!lastPrices[symbol]) lastPrices[symbol] = {};
   
   const previous = lastPrices[symbol][source];

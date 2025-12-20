@@ -1,12 +1,11 @@
-import React, { useMemo } from 'react';
+import { useMemo, FC } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWalletStore } from '../../store/walletStore';
-import { useMarketStore } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
 import styles from './AssetSnapshot.module.css';
 
-export const AssetSnapshot: React.FC = () => {
+export const AssetSnapshot: FC = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
   const balances = useWalletStore((state) => state.balances);

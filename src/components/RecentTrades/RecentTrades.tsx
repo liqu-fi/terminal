@@ -1,11 +1,12 @@
-import React from 'react';
+
+import { memo } from 'react';
 import { useMarketStore, selectRecentTrades } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
 import type { Trade } from '../../types/market';
 import styles from './RecentTrades.module.css';
 
-const TradeRow = React.memo(({ trade, onClick }: { trade: Trade; onClick?: (price: string) => void }) => {
+const TradeRow = memo(({ trade, onClick }: { trade: Trade; onClick?: (price: string) => void }) => {
   const isBuy = !trade.isBuyerMaker;
   const priceClass = isBuy ? 'price-up' : 'price-down';
 

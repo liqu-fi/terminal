@@ -93,7 +93,7 @@ export function AccountOverviewCard() {
           label: balance.asset,
           value: (usdValue / totalEquityNum) * 100,
           usdValue,
-          color: ASSET_COLORS[balance.asset] || ASSET_COLORS.DEFAULT,
+          color: (ASSET_COLORS[balance.asset] || ASSET_COLORS.DEFAULT) as string,
         });
       }
     }

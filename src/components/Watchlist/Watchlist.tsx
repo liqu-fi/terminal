@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
 import { 
   useWatchlistStore, 
   selectFilteredSymbols, 
@@ -11,6 +11,7 @@ import {
 } from '../../store/watchlistStore';
 import { useTradingStore, selectPositions } from '../../store/tradingStore';
 import { useI18n } from '../../i18n';
+import { Icon } from '../Icon';
 import styles from './Watchlist.module.css';
 import Decimal from 'decimal.js';
 
@@ -70,7 +71,7 @@ function WatchlistItem({
   position,
   onSelect, 
   onToggleFavorite,
-  onTogglePinned,
+  onTogglePinned: _onTogglePinned,
   isCollapsed = false,
 }: WatchlistItemProps) {
   const changeBadgeClass = useMemo(() => {
@@ -180,7 +181,7 @@ interface WatchlistProps {
   compact?: boolean;
 }
 
-export function Watchlist({ onSymbolChange, isCollapsed = false, compact = false }: WatchlistProps) {
+export function Watchlist({ onSymbolChange, isCollapsed = false, compact: _compact = false }: WatchlistProps) {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   

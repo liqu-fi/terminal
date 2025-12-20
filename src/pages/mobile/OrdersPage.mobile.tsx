@@ -34,13 +34,13 @@ function formatQuantity(qty: string): string {
 
 function getStatusConfig(status: OrderStatus) {
   const configs: Record<OrderStatus, { text: string; className: string }> = {
-    pending: { text: 'Pending', className: styles.statusPending },
-    submitted: { text: 'Submitted', className: styles.statusSubmitted },
-    open: { text: 'Open', className: styles.statusOpen },
-    partial: { text: 'Partial', className: styles.statusPartial },
-    filled: { text: 'Filled', className: styles.statusFilled },
-    cancelled: { text: 'Cancelled', className: styles.statusCancelled },
-    rejected: { text: 'Rejected', className: styles.statusRejected },
+    pending: { text: 'Pending', className: styles.statusPending || '' },
+    submitted: { text: 'Submitted', className: styles.statusSubmitted || '' },
+    open: { text: 'Open', className: styles.statusOpen || '' },
+    partial: { text: 'Partial', className: styles.statusPartial || '' },
+    filled: { text: 'Filled', className: styles.statusFilled || '' },
+    cancelled: { text: 'Cancelled', className: styles.statusCancelled || '' },
+    rejected: { text: 'Rejected', className: styles.statusRejected || '' },
   };
   return configs[status] || { text: status, className: '' };
 }

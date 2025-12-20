@@ -78,14 +78,38 @@
 
 .warningCard {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning);
   border-radius: var(--radius-md);
+}
+
+.warningInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   color: var(--color-warning);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.addSourceBtn {
+  width: 100%;
+  padding: var(--space-2);
+  background: var(--color-warning);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.addSourceBtn:active {
+  opacity: 0.9;
 }
 
 .field {

@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWalletStore, selectBalances, selectAccount } from '../store/walletStore';
 import { useTradingStore } from '../store/tradingStore';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useAutomationStore } from '../store/automationStore';
 import { useI18n } from '../i18n';
-import { Icon } from '../components/Icon';
+import { Icon, IconName } from '../components/Icon';
 import { Sparkline } from '../components/Chart/Sparkline';
 import styles from './AssetDetailPage.module.css';
 import Decimal from 'decimal.js';
@@ -90,8 +90,8 @@ function PortfolioChart({
   };
   
   const timeLabels = getTimeLabels();
-  const startValue = data[0] !== undefined ? data[0] : 0;
-  const endValue = data[data.length - 1] !== undefined ? data[data.length - 1] : 0;
+  const startValue = data.length > 0 ? (data[0] || 0) : 0;
+  const endValue = data.length > 0 ? (data[data.length - 1] || 0) : 0;
   const changeValue = endValue - startValue;
   const changePercent = startValue !== 0 ? ((changeValue / startValue) * 100).toFixed(2) : '0.00';
   
@@ -243,7 +243,7 @@ function PortfolioChart({
         )}
         
         {/* 起止点标记 */}
-        {points.length > 0 && (
+        {points.length > 0 && points[0] && points[points.length - 1] && (
           <>
             <circle
               cx={points[0].x}
@@ -252,8 +252,8 @@ function PortfolioChart({
               fill="var(--text-tertiary)"
             />
             <circle
-              cx={points[points.length - 1].x}
-              cy={points[points.length - 1].y}
+              cx={points[points.length - 1]!.x}
+              cy={points[points.length - 1]!.y}
               r="4"
               fill={color}
               stroke="var(--bg-secondary)"
@@ -285,7 +285,7 @@ function PortfolioChart({
       <div className={styles.chartStats}>
         <div className={styles.chartStatItem}>
           <span className={styles.chartStatLabel}>Start</span>
-          <span className={styles.chartStatValue}>{formatValue(startValue)}</span>
+          <span className={styles.chartStatValue}>{formatValue(startValue as number)}</span>
         </div>
         <div className={styles.chartStatItem}>
           <span className={styles.chartStatLabel}>Change</span>
@@ -295,7 +295,7 @@ function PortfolioChart({
         </div>
         <div className={styles.chartStatItem}>
           <span className={styles.chartStatLabel}>Current</span>
-          <span className={styles.chartStatValue}>{formatValue(endValue)}</span>
+          <span className={styles.chartStatValue}>{formatValue(endValue as number)}</span>
         </div>
       </div>
     </div>
@@ -396,7 +396,7 @@ function ActivityItem({
   title, 
   description, 
   time, 
-  value,
+  value, 
   isPositive 
 }: { 
   type: 'trade' | 'order' | 'trigger' | 'deposit';
@@ -406,7 +406,7 @@ function ActivityItem({
   value?: string;
   isPositive?: boolean;
 }) {
-  const iconMap = {
+  const iconMap: Record<'trade' | 'order' | 'trigger' | 'deposit', IconName> = {
     trade: 'repeat',
     order: 'check-circle',
     trigger: 'zap',
@@ -442,7 +442,7 @@ function ActivityItem({
 }
 
 export function AssetDetailPage() {
-  const { t } = useI18n();
+  const { t: _t } = useI18n();
   const navigate = useNavigate();
   
   // State
@@ -497,7 +497,7 @@ export function AssetDetailPage() {
       // Generate mock sparkline data based on price change
       const sparklineData = Array.from({ length: 24 }, (_, i) => {
         const base = parseFloat(currentPrice) || 100;
-        const trend = priceChange24h > 0 ? 1 : -1;
+        const trend = parseFloat(String(priceChange24h)) > 0 ? 1 : -1;
         return base * (1 - (trend * 0.02 * (24 - i) / 24) + (Math.random() - 0.5) * 0.01);
       });
 
@@ -580,7 +580,7 @@ export function AssetDetailPage() {
     // Calculate 24h change (weighted average)
     const totalChange24h = assetList.reduce((acc, asset) => {
       const weight = asset.value / (totalValue || 1);
-      return acc + (asset.priceChange24h * weight);
+      return acc + (parseFloat(String(asset.priceChange24h)) * weight);
     }, 0);
     
     return { 
@@ -704,7 +704,7 @@ export function AssetDetailPage() {
           type: 'trigger',
           title: `Trigger ${log.result === 'success' ? 'Executed' : 'Failed'}`,
           description: log.reason || 'Automation completed',
-          time: log.timestamp,
+          time: log.timestamp || Date.now(),
         });
       });
     
@@ -948,7 +948,7 @@ export function AssetDetailPage() {
             symbol="BTC"
             name="Bitcoin"
             price={parseFloat(marketData.btc.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            change={marketData.btc.change}
+            change={parseFloat(String(marketData.btc.change))}
             sparklineData={marketData.btc.sparkline}
             onClick={() => handleTrade('BTC')}
           />
@@ -956,7 +956,7 @@ export function AssetDetailPage() {
             symbol="ETH"
             name="Ethereum"
             price={parseFloat(marketData.eth.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            change={marketData.eth.change}
+            change={parseFloat(String(marketData.eth.change))}
             sparklineData={marketData.eth.sparkline}
             onClick={() => handleTrade('ETH')}
           />

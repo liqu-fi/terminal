@@ -32,7 +32,7 @@ export function MobileDrawer({
 
   // Handle touch start
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!draggable) return;
+    if (!draggable || !e.touches[0]) return;
     setIsDragging(true);
     startY.current = e.touches[0].clientY;
     currentY.current = e.touches[0].clientY;
@@ -40,7 +40,7 @@ export function MobileDrawer({
 
   // Handle touch move
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging || !draggable) return;
+    if (!isDragging || !draggable || !e.touches[0]) return;
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;
     // Only allow dragging down

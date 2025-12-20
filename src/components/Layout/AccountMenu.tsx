@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
@@ -10,6 +10,20 @@ export const AccountMenu: React.FC = () => {
   const { user, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark') return stored;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -40,10 +54,6 @@ export const AccountMenu: React.FC = () => {
           ) : (
             <Icon name="user" size="sm" strokeWidth={2} />
           )}
-        </div>
-        <div className={styles.userInfo}>
-          <span className={styles.username}>{user.displayName || user.username}</span>
-          <span className={styles.accountStatus}>ACTIVE</span>
         </div>
         <Icon name="chevron-down" size="xs" className={`${styles.chevron} ${isOpen ? styles.rotated : ''}`} />
       </button>
@@ -99,6 +109,21 @@ export const AccountMenu: React.FC = () => {
               <Icon name="wallet" size="xs" />
               <span>{t.accountOverview?.viewWallet || (t.common?.login === '登录' ? '钱包' : 'Wallet')}</span>
             </Link>
+
+            <button 
+              className={styles.menuItem}
+              onClick={(e) => {
+                e.preventDefault();
+                toggleTheme();
+              }}
+            >
+              <Icon name={theme === 'light' ? 'moon' : 'sun'} size="xs" />
+              <span>
+                {theme === 'light' 
+                  ? (t.common?.login === '登录' ? '深色模式' : 'Dark Mode') 
+                  : (t.common?.login === '登录' ? '日间模式' : 'Light Mode')}
+              </span>
+            </button>
             
             <div className={styles.divider} />
             

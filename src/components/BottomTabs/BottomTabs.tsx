@@ -1,5 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import { useI18n } from '../../i18n';
+import { useState, useCallback } from 'react';
 import { Positions } from '../Positions';
 import { OpenOrders } from '../OpenOrders';
 import { OrderBook } from '../OrderBook';
@@ -45,7 +44,6 @@ function AutomationStatusBar() {
 }
 
 export function BottomTabs({ onPriceClick }: BottomTabsProps) {
-  const { t } = useI18n();
   const [leftTab, setLeftTab] = useState<LeftTab>('positions');
   const [rightTab, setRightTab] = useState<RightTab>('create');
   

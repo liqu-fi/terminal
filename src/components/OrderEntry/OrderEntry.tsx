@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMarketStore, selectOrderBook, selectMetrics, selectBestBid, selectBestAsk, selectDataConfidence } from '../../store/marketStore';
 import { useTradingStore, selectFocusMode } from '../../store/tradingStore';
 import { useWalletStore, selectBalances } from '../../store/walletStore';
@@ -49,7 +49,7 @@ interface OrderEntryProps {
   compact?: boolean;
 }
 
-export function OrderEntry({ priceFromOrderBook, sideFromOrderBook, compact = false }: OrderEntryProps) {
+export function OrderEntry({ priceFromOrderBook, sideFromOrderBook, compact: _compact = false }: OrderEntryProps) {
   const { t } = useI18n();
   const [side, setSide] = useState<OrderSide>('buy');
   const [type, setType] = useState<OrderType>('limit');

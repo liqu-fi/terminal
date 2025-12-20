@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { Sparkline } from '../components/Chart';
-import { Icon } from '../components/Icon';
+import { Icon, IconName } from '../components/Icon';
 import { useWatchlistStore } from '../store/watchlistStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { MobileMarketsPage } from './mobile';
@@ -13,7 +13,6 @@ import {
   formatVolume,
   formatPrice,
   parseSymbol,
-  POPULAR_SYMBOLS,
   type MarketTicker,
   type MarketSparkline,
   type MarketIndicators,
@@ -35,10 +34,10 @@ export function MarketsPage() {
     return <MobileMarketsPage />;
   }
 
-  const { t } = useI18n();
+  const { t: _t } = useI18n();
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<MarketData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -319,7 +318,7 @@ export function MarketsPage() {
               { id: 'Gainers', label: 'Gainers', icon: 'trending-up', count: stats.up },
               { id: 'Losers', label: 'Losers', icon: 'trending-down', count: stats.down },
               { id: 'High Volume', label: 'Top Volume', icon: 'bar-chart-3', count: stats.highVolCount },
-              { id: 'Volatile', label: 'Volatile', icon: 'activity', count: stats.volatileCount },
+              { id: 'Volatile', label: 'Volatile', icon: 'activity' as IconName, count: stats.volatileCount },
             ].map(tab => (
               <button 
                 key={tab.id}
@@ -329,7 +328,7 @@ export function MarketsPage() {
                 }`}
                 onClick={() => setCategory(tab.id)}
               >
-                {tab.icon && <Icon name={tab.icon} size="xs" />}
+                {tab.icon && <Icon name={tab.icon as IconName} size="xs" />}
                 <span>{tab.label}</span>
                 <span className={styles.tabCount}>{tab.count}</span>
               </button>
@@ -421,7 +420,13 @@ export function MarketsPage() {
                     </td>
                     <td>
                       {m.sparkline ? (
-                        <Sparkline data={m.sparkline.prices} height={24} width={100} />
+                        <Sparkline 
+                          data={m.sparkline.prices} 
+                          height={24} 
+                          width={100} 
+                          lineWidth={1.5}
+                          color={(m.ticker?.priceChangePercent ?? 0) >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}
+                        />
                       ) : <div className={styles.skeletonWide} />}
                     </td>
                     <td>
@@ -443,7 +448,15 @@ export function MarketsPage() {
                   </div>
                   <div className={styles.cardPrice}>{m.ticker ? formatPrice(m.ticker.price) : '---'}</div>
                   <div className={styles.cardChart}>
-                    {m.sparkline && <Sparkline data={m.sparkline.prices} height={40} width={180} />}
+                    {m.sparkline && (
+                      <Sparkline 
+                        data={m.sparkline.prices} 
+                        height={60} 
+                        width={180} 
+                        lineWidth={1.5}
+                        color={(m.ticker?.priceChangePercent ?? 0) >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}
+                      />
+                    )}
                   </div>
                   <div className={styles.cardFooter}>
                     <span className="text-secondary">Vol: ${formatVolume(m.ticker?.quoteVolume24h ?? 0)}</span>

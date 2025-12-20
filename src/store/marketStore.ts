@@ -420,7 +420,6 @@ export const selectCanTrustMetrics = (state: MarketState) => state.dataConfidenc
 
 // 订阅 i18n 变化，当语言切换时更新 dataConfidence.reason
 useI18n.subscribe(
-  (state) => state.locale,
   () => {
     // 语言切换时，重新计算 confidence 以更新 reason
     const marketState = useMarketStore.getState();

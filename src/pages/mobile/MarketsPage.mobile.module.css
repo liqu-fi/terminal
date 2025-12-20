@@ -140,6 +140,52 @@
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.marketItem::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 60%, var(--bg-secondary) 100%);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.watermark {
+  position: absolute;
+  right: -8px;
+  bottom: -15px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  overflow: hidden;
+}
+
+.watermarkText {
+  font-size: 64px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 0.8;
+  text-transform: uppercase;
+  background: linear-gradient(
+    to top right,
+    var(--text-primary) 0%,
+    transparent 70%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.05;
+  filter: blur(0.5px);
+  transform: rotate(-5deg);
+  transition: transform 0.3s ease;
+}
+
+.marketItem:hover .watermarkText {
+  transform: rotate(-3deg) scale(1.05);
 }
 
 .marketItem:active {
@@ -153,6 +199,8 @@
   gap: 2px;
   width: 100px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .assetName {
@@ -180,13 +228,22 @@
   font-family: var(--font-mono);
 }
 
-/* Sparkline Column */
+/* Sparkline Column - Now as a faint background overlay */
 .sparklineCol {
-  flex: 1;
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 200px;
+  height: 100%;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 80px;
+  justify-content: flex-end;
+  align-items: flex-end;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: linear-gradient(to top left, black 0%, transparent 85%);
+  -webkit-mask-image: linear-gradient(to top left, black 0%, transparent 85%);
+  filter: saturate(1.4) blur(0.2px);
 }
 
 /* Price Column */
@@ -196,6 +253,8 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .price {

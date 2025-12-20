@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useI18n } from '../../i18n';
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
 import { Icon } from '../Icon';

@@ -3,6 +3,8 @@
  * Professional Terminal Edition
  */
 
+import { handleApiError, logError } from '../utils/errorHandler';
+
 export interface MarketTicker {
   symbol: string;
   price: number;
@@ -53,7 +55,7 @@ let lastFetchTime = 0;
 const CACHE_TTL = 3000;
 
 // Use proxy path for API calls (works in both dev and production)
-const API_BASE = '/binance-api/api/v3';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/binance-api') + '/api/v3';
 
 export async function fetchAllTickers(): Promise<MarketTicker[]> {
   const now = Date.now();
@@ -61,7 +63,7 @@ export async function fetchAllTickers(): Promise<MarketTicker[]> {
 
   try {
     const response = await fetch(`${API_BASE}/ticker/24hr`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw response;
     const data = await response.json();
     
     const symbolSet = new Set(POPULAR_SYMBOLS);
@@ -88,7 +90,7 @@ export async function fetchAllTickers(): Promise<MarketTicker[]> {
     lastFetchTime = now;
     return tickers.sort((a, b) => b.quoteVolume24h - a.quoteVolume24h);
   } catch (error) {
-    console.error('Fetch error:', error);
+    logError(handleApiError(error));
     return Array.from(tickerCache.values());
   }
 }

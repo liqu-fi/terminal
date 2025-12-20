@@ -1,4 +1,3 @@
-import { useI18n } from '../../i18n';
 import styles from './QuantitySlider.module.css';
 
 interface QuantitySliderProps {
@@ -8,8 +7,6 @@ interface QuantitySliderProps {
 }
 
 export function QuantitySlider({ value, onChange, estimatedQty }: QuantitySliderProps) {
-  const { t } = useI18n();
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(parseInt(e.target.value, 10));
   };

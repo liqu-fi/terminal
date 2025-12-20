@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createChart, IChartApi, ColorType, UTCTimestamp, LineSeries, CandlestickSeries, HistogramSeries, CrosshairMode } from 'lightweight-charts';
+import { handleApiError, logError } from '../../utils/errorHandler';
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
 import { useAutomationStore } from '../../store/automationStore';
 import { useTradingStore } from '../../store/tradingStore';
@@ -131,9 +132,7 @@ export function PriceChart() {
   const { t } = useI18n();
   const isMobile = useIsMobile();
   const mainChartRef = useRef<HTMLDivElement>(null);
-  const volumeChartRef = useRef<HTMLDivElement>(null);
   const mainChartApiRef = useRef<IChartApi | null>(null);
-  const volumeChartApiRef = useRef<IChartApi | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mainSeriesRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -192,7 +191,7 @@ export function PriceChart() {
       const url = `/binance-api/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=500`;
       const response = await fetch(url);
       
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) throw response;
       
       const data = await response.json();
       const formattedData: KlineData[] = data.map((k: (string | number)[]) => ({
@@ -211,7 +210,8 @@ export function PriceChart() {
       setError(null);
       setLoading(false);
     } catch (err) {
-      console.error('Failed to fetch klines:', err);
+      const appError = handleApiError(err);
+      logError(appError);
       
       // 有缓存数据时使用过期缓存
       if (cached) {
@@ -227,7 +227,7 @@ export function PriceChart() {
         return;
       }
       
-      setError('无法加载数据');
+      setError(appError.message);
       setLoading(false);
     }
   }, [klines.length]);
@@ -466,94 +466,54 @@ export function PriceChart() {
     }
   }, [klines, chartReady, chartType]);
 
-  // 初始化成交量图表
+  // 初始化成交量
   useEffect(() => {
-    if (!volumeChartRef.current || !activeIndicators.has('VOL')) {
-      if (volumeChartApiRef.current) {
-        volumeChartApiRef.current.remove();
-        volumeChartApiRef.current = null;
+    const chart = mainChartApiRef.current;
+    if (!chart || !chartReady || !activeIndicators.has('VOL')) {
+      if (volumeSeriesRef.current) {
+        try { chart?.removeSeries(volumeSeriesRef.current); } catch { /* ignore */ }
         volumeSeriesRef.current = null;
       }
       return;
     }
 
-    const containerWidth = volumeChartRef.current.clientWidth || volumeChartRef.current.offsetWidth || 400;
-
-    const chart = createChart(volumeChartRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: CHART_COLORS.text,
-        attributionLogo: false,
-      },
-      width: containerWidth,
-      height: 80,
-      grid: {
-        vertLines: { color: CHART_COLORS.grid, style: 1 },
-        horzLines: { visible: false },
-      },
-      timeScale: {
-        visible: false,
-        borderColor: CHART_COLORS.border,
-      },
-      rightPriceScale: {
-        borderColor: CHART_COLORS.border,
-        scaleMargins: { top: 0.1, bottom: 0 },
-      },
-      crosshair: {
-        mode: CrosshairMode.Normal,
-        vertLine: { visible: false },
-        horzLine: { visible: false },
-      },
-    });
-
-    volumeChartApiRef.current = chart;
-
-    // 创建成交量 series
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'right',
-    });
-    volumeSeriesRef.current = volumeSeries;
-
-    // 同步时间轴
-    if (mainChartApiRef.current) {
-      mainChartApiRef.current.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-        if (range && volumeChartApiRef.current) {
-          volumeChartApiRef.current.timeScale().setVisibleLogicalRange(range);
-        }
+    try {
+      // 在主图表上添加成交量作为叠加层
+      const volumeSeries = chart.addSeries(HistogramSeries, {
+        color: CHART_COLORS.volumeUp,
+        priceFormat: { type: 'volume' },
+        priceScaleId: '', // 叠加模式
       });
+      
+      // 设置成交量在底部的边距
+      volumeSeries.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.8, // 成交量占底部 20%
+          bottom: 0,
+        },
+      });
+
+      volumeSeriesRef.current = volumeSeries;
+
+      if (klines.length > 0) {
+        const volumeData = klines.map(k => ({
+          time: k.time,
+          value: k.volume,
+          color: k.close >= k.open ? CHART_COLORS.volumeUp : CHART_COLORS.volumeDown,
+        }));
+        volumeSeries.setData(volumeData);
+      }
+    } catch (err) {
+      console.error('Failed to init volume series:', err);
     }
 
-    // 使用 ResizeObserver 监听容器大小变化
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (volumeChartApiRef.current && entry.target === volumeChartRef.current) {
-          const { width } = entry.contentRect;
-          if (width > 0) {
-            volumeChartApiRef.current.applyOptions({ width: Math.floor(width) });
-          }
-        }
-      }
-    });
-
-    resizeObserver.observe(volumeChartRef.current);
-
-    const handleResize = () => {
-      if (volumeChartRef.current && volumeChartApiRef.current) {
-        volumeChartApiRef.current.applyOptions({ width: volumeChartRef.current.clientWidth });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
     return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
-      volumeSeriesRef.current = null;
-      volumeChartApiRef.current = null;
-      chart.remove();
+      if (volumeSeriesRef.current) {
+        try { chart.removeSeries(volumeSeriesRef.current); } catch { /* ignore */ }
+        volumeSeriesRef.current = null;
+      }
     };
-  }, [activeIndicators]);
+  }, [activeIndicators, chartReady, klines.length]);
 
   // 更新成交量数据
   useEffect(() => {
@@ -706,7 +666,6 @@ export function PriceChart() {
   // 重置图表视图
   const handleReset = useCallback(() => {
     mainChartApiRef.current?.timeScale().fitContent();
-    volumeChartApiRef.current?.timeScale().fitContent();
   }, []);
 
   // 切换全屏
@@ -777,47 +736,49 @@ export function PriceChart() {
       </div>
 
       {/* OHLC 信息栏 */}
-      <div className={styles.ohlcBar}>
-        <div className={styles.symbolInfo}>
-          <span className={styles.symbolName}>{selectedSymbol}</span>
-          {priceInfo && (
-            <>
-              <span className={styles.currentPrice}>
-                {priceInfo.current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span className={`${styles.priceChange} ${priceInfo.change >= 0 ? styles.up : styles.down}`}>
-                {priceInfo.change >= 0 ? '+' : ''}{priceInfo.changePercent.toFixed(2)}%
-              </span>
-            </>
-          )}
+      {(!isMobile || crosshairData) && (
+        <div className={styles.ohlcBar}>
+          <div className={styles.symbolInfo}>
+            {!isMobile && <span className={styles.symbolName}>{selectedSymbol}</span>}
+            {priceInfo && (
+              <>
+                <span className={styles.currentPrice}>
+                  {priceInfo.current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className={`${styles.priceChange} ${priceInfo.change >= 0 ? styles.up : styles.down}`}>
+                  {priceInfo.change >= 0 ? '+' : ''}{priceInfo.changePercent.toFixed(2)}%
+                </span>
+              </>
+            )}
+          </div>
+          
+          {/* OHLCV 数据 */}
+          <div className={styles.ohlcData}>
+            {crosshairData ? (
+              <>
+                <span className={styles.ohlcItem}><label>O</label>{crosshairData.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className={styles.ohlcItem}><label>H</label>{crosshairData.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className={styles.ohlcItem}><label>L</label>{crosshairData.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className={`${styles.ohlcItem} ${crosshairData.change >= 0 ? styles.up : styles.down}`}>
+                  <label>C</label>{crosshairData.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className={styles.ohlcItem}><label>V</label>{(crosshairData.volume / 1000).toFixed(2)}K</span>
+              </>
+            ) : priceInfo && (
+              <>
+                <span className={styles.ohlcItem}><label>{isMobile ? 'H' : '24H High'}</label>{priceInfo.high24h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className={styles.ohlcItem}><label>{isMobile ? 'L' : '24H Low'}</label>{priceInfo.low24h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                {!isMobile && (
+                  <>
+                    <span className={styles.ohlcItem}><label>24H Vol</label>{(priceInfo.volume / 1000000).toFixed(2)}M</span>
+                    <span className={styles.ohlcItem}><label>Amp</label>{priceInfo.amplitude.toFixed(2)}%</span>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
-        
-        {/* OHLCV 数据 */}
-        <div className={styles.ohlcData}>
-          {crosshairData ? (
-            <>
-              <span className={styles.ohlcItem}><label>O</label>{crosshairData.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className={styles.ohlcItem}><label>H</label>{crosshairData.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className={styles.ohlcItem}><label>L</label>{crosshairData.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className={`${styles.ohlcItem} ${crosshairData.change >= 0 ? styles.up : styles.down}`}>
-                <label>C</label>{crosshairData.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span className={styles.ohlcItem}><label>V</label>{(crosshairData.volume / 1000).toFixed(2)}K</span>
-            </>
-          ) : priceInfo && (
-            <>
-              <span className={styles.ohlcItem}><label>{isMobile ? 'H' : '24H High'}</label>{priceInfo.high24h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className={styles.ohlcItem}><label>{isMobile ? 'L' : '24H Low'}</label>{priceInfo.low24h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              {!isMobile && (
-                <>
-                  <span className={styles.ohlcItem}><label>24H Vol</label>{(priceInfo.volume / 1000000).toFixed(2)}M</span>
-                  <span className={styles.ohlcItem}><label>Amp</label>{priceInfo.amplitude.toFixed(2)}%</span>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* 指标图例 */}
       {(activeIndicators.has('MA') || activeIndicators.has('EMA') || activeIndicators.has('BOLL')) && (
@@ -859,14 +820,6 @@ export function PriceChart() {
           </div>
         )}
       </div>
-
-      {/* 成交量图表 */}
-      {activeIndicators.has('VOL') && (
-        <div className={styles.volumeChart}>
-          <div className={styles.volumeLabel}>VOL</div>
-          <div className={styles.volumeChartInner} ref={volumeChartRef} />
-        </div>
-      )}
     </div>
   );
 }

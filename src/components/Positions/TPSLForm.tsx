@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useI18n } from '../../i18n';
 import { useAutomationStore } from '../../store/automationStore';
 import { toast } from '../Toast';
 import { Icon } from '../Icon';
-import { Trigger } from '../../types/automation';
 import styles from './TPSLForm.module.css';
 
 interface TPSLFormProps {
@@ -15,7 +14,7 @@ interface TPSLFormProps {
   onClose: () => void;
 }
 
-export function TPSLForm({ symbol, currentPrice, avgEntryPrice, quantity, onClose }: TPSLFormProps) {
+export function TPSLForm({ symbol, onClose }: TPSLFormProps) {
   const { t } = useI18n();
   const addTrigger = useAutomationStore((state) => state.addTrigger);
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n';
-import { Icon, type IconName } from '../../components/Icon';
+import { Icon } from '../../components/Icon';
 import { MobileHeader } from '../../components/Layout';
 import { MobileActionSheet, MobileDrawer } from '../../components/mobile';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
@@ -24,24 +24,6 @@ export function MobileAccountPage() {
     trigger('heavy');
     logout();
     navigate('/auth');
-  };
-
-  const tools: { id: string; label: string; icon: IconName; path: string }[] = [
-    { id: 'automation', label: t.automation?.title || 'Automation', icon: 'zap', path: '/orders' },
-    { id: 'analytics', label: t.account?.toolAnalytics || 'Analytics', icon: 'pie-chart', path: '/orders' },
-    { id: 'security', label: t.settings?.categories?.security || 'Security', icon: 'lock', path: '/settings' },
-    { id: 'referral', label: t.account?.toolReferral || 'Referral', icon: 'users', path: '#' },
-    { id: 'reward', label: t.account?.toolRewards || 'Rewards', icon: 'gift', path: '#' },
-    { id: 'support', label: t.account?.toolSupport || 'Support', icon: 'headphones', path: '#' },
-    { id: 'announcement', label: t.account?.toolNews || 'News', icon: 'bell', path: '#' },
-    { id: 'more', label: t.common?.more || 'More', icon: 'grid', path: '#' },
-  ];
-
-  const handleItemClick = (path: string) => {
-    trigger('light');
-    if (path !== '#') {
-      navigate(path);
-    }
   };
 
   const toggleTheme = (theme: 'light' | 'dark' | 'system') => {
@@ -104,25 +86,6 @@ export function MobileAccountPage() {
               <p className={styles.uid}>{t.account?.uid || 'UID'}: {user.id.slice(0, 8)}</p>
             </div>
             <Icon name="chevron-right" size="sm" className={styles.arrow} />
-          </div>
-        </div>
-
-        {/* Tools Grid */}
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>{t.account?.tools || 'Tools'}</h3>
-          <div className={styles.toolsGrid}>
-            {tools.map((tool) => (
-              <button 
-                key={tool.id} 
-                className={styles.toolBtn}
-                onClick={() => handleItemClick(tool.path)}
-              >
-                <div className={styles.toolIcon}>
-                  <Icon name={tool.icon} size="md" />
-                </div>
-                <span className={styles.toolLabel}>{tool.label}</span>
-              </button>
-            ))}
           </div>
         </div>
 

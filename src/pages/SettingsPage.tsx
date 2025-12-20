@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore, type UserPreferences } from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
 import { AvatarUpload } from '../components/AvatarUpload';

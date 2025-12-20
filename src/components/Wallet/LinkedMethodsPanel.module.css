@@ -43,6 +43,23 @@
   gap: var(--space-4);
 }
 
+@media (max-width: 480px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  
+  .bankCard {
+    aspect-ratio: 1.6;
+    padding: var(--space-4);
+  }
+
+  .cardNumber {
+    font-size: var(--font-size-md);
+    margin: var(--space-2) 0;
+  }
+}
+
 .bankCard {
   position: relative;
   background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);

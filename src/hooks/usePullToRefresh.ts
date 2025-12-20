@@ -27,14 +27,14 @@ export function usePullToRefresh({
   const currentY = useRef(0);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (containerRef.current && containerRef.current.scrollTop === 0) {
+    if (containerRef.current && containerRef.current.scrollTop === 0 && e.touches[0]) {
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
     }
   }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPulling || isRefreshing) return;
+    if (!isPulling || isRefreshing || !e.touches[0]) return;
 
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;

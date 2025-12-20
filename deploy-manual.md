@@ -6,7 +6,7 @@
 
 ```bash
 ssh root@154.36.164.246
-# 密码: 9tslcYSJ8ECNLYvb
+# 密码: 请参考您的安全凭据
 ```
 
 ## 2. 安装 Node.js

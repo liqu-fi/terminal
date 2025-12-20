@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useWalletStore } from '../store/walletStore';
@@ -12,7 +12,7 @@ import styles from './AuthPage.module.css';
 type AuthMode = 'login' | 'register';
 
 export const AuthPage: React.FC = () => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { login, register, isAuthenticated, isLoading, isInitialized, markAsInitialized } = useAuthStore();
@@ -109,95 +109,40 @@ export const AuthPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <div className={styles.decor}>
+        <div className={styles.grid} />
+      </div>
       <div className={styles.overlay} />
       
-      {/* Quick Settings Bar */}
-      <div className={styles.settingsBar}>
-        <LanguageToggle />
-        <ThemeToggle />
-      </div>
+      {/* Quick Settings Bar - Desktop Only */}
+      {!isMobile && (
+        <div className={styles.settingsBar}>
+          <LanguageToggle />
+          <div className={styles.settingsDivider} />
+          <ThemeToggle />
+        </div>
+      )}
 
       <div className={styles.card}>
         <div className={styles.header}>
           <div className={styles.logo}>
-            <Icon name="activity" size={isMobile ? "lg" : "xl"} strokeWidth={2.5} />
-            <span className={styles.title}>TBT TRADING</span>
+            <Icon name="activity" size={isMobile ? "lg" : "xl"} strokeWidth={3} />
           </div>
+          <span className={styles.title}>TBT TRADING</span>
           <p className={styles.subtitle}>{t.header.title}</p>
         </div>
 
-        {/* Enhanced Welcome Banner with Features */}
+        {/* Enhanced Welcome Banner */}
         <div className={styles.welcomeBanner}>
-          <div className={styles.welcomeHeader}>
-            <Icon name="star" size="sm" className={styles.welcomeIcon} />
-            <h3 className={styles.welcomeTitle}>Welcome to TBT Trading</h3>
-          </div>
-          
-          {!isMobile ? (
-            <div className={styles.welcomeContent}>
-              <div className={styles.welcomeTextZh}>
-                <p className={styles.welcomeParagraph}>
-                  {t.auth?.welcomeMessageZh}
-                </p>
-              </div>
-              <div className={styles.welcomeDivider} />
-              <div className={styles.welcomeTextEn}>
-                <p className={styles.welcomeParagraph}>
-                  {t.auth?.welcomeMessageEn}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className={styles.welcomeContentMobile}>
-              <p className={styles.welcomeTextCompact}>
-                专业数字资产交易终端 • 虚拟赠金 30 万美元
-              </p>
-            </div>
-          )}
-
-          {/* Feature Highlights - Grid on Desktop, Scrolling on Mobile if needed, but here we just simplify */}
-          {!isMobile && (
-            <div className={styles.featuresGrid}>
-              <div className={styles.featureItem}>
-                <Icon name="shield" size="xs" />
-                <span>Bank-Grade Security</span>
-              </div>
-              <div className={styles.featureItem}>
-                <Icon name="zap" size="xs" />
-                <span>Real-Time Trading</span>
-              </div>
-              <div className={styles.featureItem}>
-                <Icon name="trending-up" size="xs" />
-                <span>Advanced Analytics</span>
-              </div>
-              <div className={styles.featureItem}>
-                <Icon name="smartphone" size="xs" />
-                <span>Multi-Platform</span>
-              </div>
-            </div>
-          )}
-
-          {/* Account Benefits */}
-          <div className={styles.benefitsCard}>
-            <div className={styles.benefitItem}>
-              <div className={styles.benefitIcon}>
-                <Icon name="dollar-sign" size="sm" />
-              </div>
-              <div className={styles.benefitContent}>
-                <span className={styles.benefitValue}>$300,000</span>
-                {!isMobile && <span className={styles.benefitLabel}>Virtual Trading Capital</span>}
-              </div>
-            </div>
-            <div className={styles.benefitDivider} />
-            <div className={styles.benefitItem}>
-              <div className={styles.benefitIcon}>
-                <Icon name="credit-card" size="sm" />
-              </div>
-              <div className={styles.benefitContent}>
-                <span className={styles.benefitValue}>{isMobile ? "UNLIMITED" : "Unlimited"}</span>
-                {!isMobile && <span className={styles.benefitLabel}>Bank Card Support</span>}
-              </div>
-            </div>
+          <h3 className={styles.welcomeTitle}>
+            {mode === 'login' ? t.auth?.welcomeTitle || 'Welcome' : t.auth?.signUp || 'Sign Up'}
+          </h3>
+          <div className={styles.welcomeContent}>
+            <p className={styles.welcomeParagraph}>
+              {isMobile 
+                ? t.auth?.welcomeMessageMobile 
+                : (locale === 'zh-CN' ? t.auth?.welcomeMessageZh : t.auth?.welcomeMessageEn)}
+            </p>
           </div>
         </div>
 
@@ -268,16 +213,16 @@ export const AuthPage: React.FC = () => {
               <Icon name="loader" className={styles.spinner} />
             ) : (
               mode === 'register' 
-                ? (t.auth?.createAccount || 'Create Account')
-                : (t.auth?.signIn || 'Sign In')
+                ? (t.auth?.createAccount || 'Get Started')
+                : (t.auth?.signIn || 'Login Now')
             )}
           </button>
 
           <div className={styles.modeSwitch}>
             <span className={styles.modeSwitchText}>
               {mode === 'login' 
-                ? (t.auth?.noAccount || "Don't have an account?")
-                : (t.auth?.haveAccount || 'Already have an account?')
+                ? (t.auth?.noAccount || "New to TBT?")
+                : (t.auth?.haveAccount || 'Already a member?')
               }
             </span>
             <button 
@@ -286,70 +231,92 @@ export const AuthPage: React.FC = () => {
               onClick={toggleMode}
             >
               {mode === 'login' 
-                ? (t.auth?.switchToRegister || 'Sign Up')
+                ? (t.auth?.switchToRegister || 'Create Account')
                 : (t.auth?.switchToLogin || 'Sign In')
               }
             </button>
           </div>
         </form>
 
-        {/* Enhanced Footer with Security & Status */}
-        <div className={styles.footer}>
-          {!isMobile && (
+        {/* Enhanced Footer - Desktop */}
+        {!isMobile && (
+          <div className={styles.footer}>
             <div className={styles.securityBadges}>
               <div className={styles.badge}>
                 <Icon name="shield-check" size="xs" />
-                <span>SSL Encrypted</span>
+                <span>SSL SECURE</span>
               </div>
               <div className={styles.badge}>
                 <Icon name="lock" size="xs" />
-                <span>2FA Ready</span>
-              </div>
-              <div className={styles.badge}>
-                <Icon name="shield" size="xs" />
-                <span>Privacy First</span>
+                <span>2FA READY</span>
               </div>
             </div>
-          )}
-          
-          <div className={styles.systemStatus}>
-            <div className={styles.statusHeader}>
-              <Icon name="activity" size="xs" />
-              <span>{isMobile ? "Network Status" : "System Status"}</span>
-              {isMobile && <span className={styles.statusBadge}>Online</span>}
-            </div>
-            {!isMobile && (
+            
+            <div className={styles.systemStatus}>
+              <div className={styles.statusHeader}>
+                <Icon name="activity" size="xs" />
+                <span>Real-Time Engine Status</span>
+              </div>
               <div className={styles.statusGrid}>
                 <div className={styles.statusItem}>
                   <span className={`${styles.dot} ${styles[systemCheck.ws]}`} />
                   <div className={styles.statusInfo}>
                     <span className={styles.statusLabel}>WebSocket</span>
-                    <span className={styles.statusValue}>{systemCheck.ws === 'ok' ? 'Connected' : 'Connecting...'}</span>
+                    <span className={styles.statusValue}>{systemCheck.ws === 'ok' ? 'Connected' : '...'}</span>
                   </div>
                 </div>
                 <div className={styles.statusItem}>
                   <span className={`${styles.dot} ${styles[systemCheck.engine]}`} />
                   <div className={styles.statusInfo}>
-                    <span className={styles.statusLabel}>Matching Engine</span>
-                    <span className={styles.statusValue}>{systemCheck.engine === 'ok' ? 'Operational' : 'Initializing...'}</span>
+                    <span className={styles.statusLabel}>Matching</span>
+                    <span className={styles.statusValue}>{systemCheck.engine === 'ok' ? 'Active' : '...'}</span>
                   </div>
                 </div>
                 <div className={styles.statusItem}>
                   <span className={`${styles.dot} ${styles[systemCheck.security]}`} />
                   <div className={styles.statusInfo}>
-                    <span className={styles.statusLabel}>Security Layer</span>
-                    <span className={styles.statusValue}>{systemCheck.security === 'ok' ? 'Active' : 'Loading...'}</span>
+                    <span className={styles.statusLabel}>Security</span>
+                    <span className={styles.statusValue}>{systemCheck.security === 'ok' ? 'Active' : '...'}</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className={styles.decor}>
-        <div className={styles.line} />
-        <div className={styles.grid} />
+        {/* Mobile Footer - Compact System Status & Security */}
+        {isMobile && (
+          <div className={styles.mobileFooter}>
+            <div className={styles.mobileSystemStatus}>
+              <div className={styles.mobileStatusItem}>
+                <span className={`${styles.mobileStatusDot} ${systemCheck.ws === 'ok' ? styles.ok : systemCheck.ws === 'pending' ? styles.pending : ''}`} />
+                <span>WS</span>
+              </div>
+              <div className={styles.mobileStatusItem}>
+                <span className={`${styles.mobileStatusDot} ${systemCheck.engine === 'ok' ? styles.ok : systemCheck.engine === 'pending' ? styles.pending : ''}`} />
+                <span>Engine</span>
+              </div>
+              <div className={styles.mobileStatusItem}>
+                <span className={`${styles.mobileStatusDot} ${systemCheck.security === 'ok' ? styles.ok : systemCheck.security === 'pending' ? styles.pending : ''}`} />
+                <span>Security</span>
+              </div>
+            </div>
+            <div className={styles.mobileSecurityBadges}>
+              <div className={styles.mobileSecurityBadge}>
+                <Icon name="shield-check" size="xs" />
+                <span>SSL</span>
+              </div>
+              <div className={styles.mobileSecurityBadge}>
+                <Icon name="lock" size="xs" />
+                <span>2FA</span>
+              </div>
+            </div>
+            {/* Mobile Language Toggle Only */}
+            <div className={styles.mobileLanguageToggle}>
+              <LanguageToggle />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

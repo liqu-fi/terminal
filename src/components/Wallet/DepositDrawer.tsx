@@ -121,8 +121,24 @@ export function DepositDrawer({ isOpen, onClose }: DepositDrawerProps) {
               {/* No sources warning */}
               {!hasSources && (
                 <div className={styles.warningCard}>
-                  <Icon name="alert-triangle" size="sm" />
-                  <span>{t.wallet?.addPaymentFirst || 'Add a payment method to deposit funds'}</span>
+                  <div className={styles.warningInfo}>
+                    <Icon name="alert-triangle" size="sm" />
+                    <span>{t.wallet?.addPaymentFirst || 'Add a payment method to deposit funds'}</span>
+                  </div>
+                  <button 
+                    className={styles.addSourceBtn}
+                    onClick={() => {
+                      onClose();
+                      // On mobile, this will scroll to methods if we're on the wallet page
+                      // On desktop, it will also be visible
+                      const methodsEl = document.querySelector('[class*="methodsSection"]');
+                      if (methodsEl) {
+                        methodsEl.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                  >
+                    {t.common?.confirm || 'Add Now'}
+                  </button>
                 </div>
               )}
 

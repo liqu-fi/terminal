@@ -172,6 +172,9 @@
   --card-bg: var(--color-bg-secondary);
   --card-border: var(--color-border-secondary);
   --card-shadow: var(--shadow-xs);
+
+  /* Semi-transparent backgrounds for overlays */
+  --bg-secondary-90: rgba(255, 255, 255, 0.9);
 }
 
 /* ===== Dark Theme ===== */
@@ -272,4 +275,7 @@
   --card-bg: var(--color-bg-secondary);
   --card-border: var(--color-border-secondary);
   --card-shadow: var(--shadow-xs);
+
+  /* Semi-transparent backgrounds for overlays */
+  --bg-secondary-90: rgba(22, 27, 34, 0.9);
 }

@@ -12,6 +12,9 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   server: {
     proxy: {
       '/binance-api': {

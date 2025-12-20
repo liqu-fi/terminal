@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMarketStore, selectMetrics, selectOrderBook, selectDataConfidence, selectCanTrustMetrics } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
@@ -110,7 +110,7 @@ export function MetricsPanel({ compact = false }: MetricsPanelProps) {
         <span className={styles.compactDivider}>|</span>
         <span className={styles.compactMetric}>
           <span className={styles.compactLabel}>Vol</span>
-          <span className={styles.compactValue}>{formatVolume(metrics.bidDepthVolume + metrics.askDepthVolume)}</span>
+          <span className={styles.compactValue}>{formatVolume(parseFloat(metrics.bidDepthVolume) + parseFloat(metrics.askDepthVolume))}</span>
         </span>
       </div>
     );

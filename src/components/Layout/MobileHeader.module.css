@@ -7,7 +7,7 @@
   min-height: 48px;
   padding: 0 var(--space-4);
   padding-top: env(safe-area-inset-top);
-  background: var(--bg-secondary-90, rgba(28, 30, 34, 0.9));
+  background: var(--bg-secondary-90);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
@@ -33,10 +33,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  text-decoration: none;
+}
+
+.logoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 32px;
   height: 32px;
+  background: var(--accent-alpha);
+  border-radius: var(--radius-md);
   color: var(--accent);
-  text-decoration: none;
 }
 
 .backBtn {

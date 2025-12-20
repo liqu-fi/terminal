@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, memo } from 'react';
 import { useMarketStore, selectOrderBook, selectMetrics, selectDataConfidence } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
@@ -13,7 +13,7 @@ interface PriceLevelProps {
   onPriceClick?: (price: string, side: 'buy' | 'sell') => void;
 }
 
-const PriceLevel = React.memo(({ level, side, maxQuantity, prevPrice, onPriceClick }: PriceLevelProps) => {
+const PriceLevel = memo(({ level, side, maxQuantity, prevPrice, onPriceClick }: PriceLevelProps) => {
   const depthPercent = Math.min((parseFloat(level.quantity) / maxQuantity) * 100, 100);
   const priceChanged = prevPrice && prevPrice !== level.price;
   const priceUp = priceChanged && parseFloat(level.price) > parseFloat(prevPrice);

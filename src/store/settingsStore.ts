@@ -240,7 +240,7 @@ const defaultAdvancedSettings: AdvancedSettings = {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Initial state
       security: defaultSecuritySettings,
       devices: [
@@ -251,7 +251,7 @@ export const useSettingsStore = create<SettingsState>()(
           os: getOSName(),
           lastActive: Date.now(),
           isCurrent: true,
-          ip: '127.0.0.1',
+          ip: '',
         },
       ],
       apiKeys: [],

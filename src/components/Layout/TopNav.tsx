@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { useI18n } from '../../i18n';
-import { Icon } from '../Icon';
 import styles from './TopNav.module.css';
 
 export function TopNav() {

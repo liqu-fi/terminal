@@ -11,7 +11,6 @@ import type {
   Deposit,
   DepositStatus,
   Withdraw,
-  WithdrawStatus,
   LedgerEntry,
   LedgerType,
   ReferenceType,
@@ -23,10 +22,11 @@ import type {
 // ===== Constants =====
 const WITHDRAW_FEE_RATE = 0.001; // 0.1%
 const MIN_WITHDRAW_FEE = 1; // 1 USDT minimum
-const DEPOSIT_CONFIRM_MIN_MS = 3000;
-const DEPOSIT_CONFIRM_MAX_MS = 10000;
-const WITHDRAW_PROCESS_MIN_MS = 5000;
-const WITHDRAW_PROCESS_MAX_MS = 15000;
+// Deposit/Withdraw timing constants (reserved for future use)
+// const DEPOSIT_CONFIRM_MIN_MS = 3000;
+// const DEPOSIT_CONFIRM_MAX_MS = 10000;
+// const WITHDRAW_PROCESS_MIN_MS = 5000;
+// const WITHDRAW_PROCESS_MAX_MS = 15000;
 
 const SUPPORTED_ASSETS = [
   'USDT', 'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'AVAX', 'DOT', 'LINK',

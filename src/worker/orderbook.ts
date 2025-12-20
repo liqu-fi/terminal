@@ -377,6 +377,17 @@ export class OrderBookManager {
     // Slippage estimate (for 0.1 BTC market order)
     const slippageEst = this.estimateSlippage(orderBook, '0.1', mid);
 
+    // Depth volumes
+    let bidDepthVolume = new Decimal(0);
+    for (const b of orderBook.bids) {
+      bidDepthVolume = bidDepthVolume.plus(b.quantity);
+    }
+    
+    let askDepthVolume = new Decimal(0);
+    for (const a of orderBook.asks) {
+      askDepthVolume = askDepthVolume.plus(a.quantity);
+    }
+
     return {
       mid: mid.toFixed(8),
       spread: spread.toFixed(8),
@@ -388,6 +399,8 @@ export class OrderBookManager {
       liquidityScore,
       slippageEst,
       lastUpdateTime: now,
+      bidDepthVolume: bidDepthVolume.toFixed(8),
+      askDepthVolume: askDepthVolume.toFixed(8),
       // 24h ticker data
       high24h: this.ticker24h.high24h,
       low24h: this.ticker24h.low24h,
@@ -526,6 +539,8 @@ export class OrderBookManager {
       liquidityScore: 0,
       slippageEst: 'N/A',
       lastUpdateTime: now,
+      bidDepthVolume: '0',
+      askDepthVolume: '0',
       // 24h ticker data (may still have valid data even without orderbook)
       high24h: this.ticker24h.high24h,
       low24h: this.ticker24h.low24h,
