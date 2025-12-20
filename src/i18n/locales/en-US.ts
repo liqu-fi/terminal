@@ -23,8 +23,36 @@ export const enUS: Locale = {
     username: 'Username',
     password: 'Password',
     login: 'Login',
-    usernamePlaceholder: 'Enter terminal ID',
+    usernamePlaceholder: 'Enter username',
     passwordPlaceholder: '••••••••',
+    delete: 'Delete',
+    edit: 'Edit',
+  },
+
+  // Auth
+  auth: {
+    welcomeTitle: 'Welcome',
+    welcomeMessageZh: '尊敬的各位徐培原（Mike）的朋友们，欢迎来到我设计的比特币模拟交易所。\n\n为方便各位体验，我们已为你准备价值 30 万美元 的虚拟资金账户，并默认绑定一张"中国人名很行"无限额银行卡。\n\n祝你玩得开心，也玩得明白。',
+    welcomeMessageEn: "Dear friends of Peiyuan 'Mike' Xu, welcome to my paper trading simulator.\n\nFor your convenience, we have prepared a virtual account worth $300,000 USD, with an unlimited credit card from the prestigious 'Chinese Renming Henxing Bank' pre-linked.\n\nHave fun, and trade wisely.",
+    login: 'Sign In',
+    register: 'Register',
+    createAccount: 'Create Account',
+    haveAccount: 'Already have an account?',
+    noAccount: "Don't have an account?",
+    confirmPassword: 'Confirm Password',
+    passwordMismatch: 'Passwords do not match',
+    userExists: 'Username already exists',
+    invalidCredentials: 'Invalid username or password',
+    initialGrant: 'Welcome Bonus',
+    signIn: 'Sign In',
+    signUp: 'Sign Up',
+    switchToLogin: 'Sign In',
+    switchToRegister: 'Sign Up',
+    loginSuccess: 'Login successful',
+    registerSuccess: 'Registration successful',
+    passwordRequired: 'Password is required',
+    usernameRequired: 'Username is required',
+    passwordTooShort: 'Password must be at least 6 characters',
   },
 
   // Header
@@ -620,6 +648,7 @@ export const enUS: Locale = {
       FEE: 'Fee',
       TRANSFER_IN: 'Transfer In',
       TRANSFER_OUT: 'Transfer Out',
+      INITIAL_GRANT: 'Welcome Bonus',
     },
     createAccount: 'Initialize Wallet',
     createAccountTitle: 'Enable Simulated Wallet',
@@ -1061,5 +1090,27 @@ export const enUS: Locale = {
     dataStale: 'Data Stale',
     dataDelayed: 'Data Delayed',
     resyncing: 'Resyncing...',
+  },
+
+  // Account Overview Panel
+  accountOverview: {
+    title: 'Account Overview',
+    totalEquity: 'Total Equity',
+    available: 'Available',
+    frozen: 'Frozen',
+    todayPnl: "Today's P&L",
+    notLoggedIn: 'Not Signed In',
+    signInPrompt: 'Sign in to view your account',
+    noFunds: 'No Funds',
+    depositPrompt: 'Deposit to start trading',
+    quickActions: 'Quick Actions',
+    viewWallet: 'View Wallet',
+    viewOrders: 'View Orders',
+    accountSettings: 'Account Settings',
+  },
+
+  // Wallet Ledger Types Extension
+  walletLedgerTypes: {
+    INITIAL_GRANT: 'Welcome Bonus',
   },
 };

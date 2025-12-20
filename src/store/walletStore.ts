@@ -52,6 +52,7 @@ interface WalletState {
   ledger: LedgerEntry[];
   performanceMetrics: PerformanceMetrics;
   _pendingTimers: Map<string, ReturnType<typeof setTimeout>>;
+  hasReceivedInitialGrant: boolean;
   
   // Actions
   createAccount: () => Account;
@@ -63,6 +64,9 @@ interface WalletState {
   createDeposit: (asset: string, amount: string, sourceType: 'bank' | 'crypto', sourceId: string) => Deposit;
   confirmDeposit: (depositId: string) => void;
   createWithdraw: (asset: string, amount: string, destinationType: 'bank' | 'crypto', destinationId: string) => Withdraw | null;
+  
+  // Initial Grant (only once per account)
+  grantInitialFunds: () => boolean;
   
   // Strict Balance Actions
   freezeBalance: (asset: string, amount: string, referenceId: string, referenceType: ReferenceType) => boolean;
@@ -99,6 +103,7 @@ export const useWalletStore = create<WalletState>()(
           totalRealizedPnl: '0',
         },
         _pendingTimers: new Map(),
+        hasReceivedInitialGrant: false,
 
         createAccount: () => {
           const account: Account = {
@@ -125,6 +130,79 @@ export const useWalletStore = create<WalletState>()(
         },
 
         removeCryptoAddress: (id) => set((state) => ({ cryptoAddresses: state.cryptoAddresses.filter((a) => a.id !== id) })),
+
+        grantInitialFunds: () => {
+          const state = get();
+          
+          // Prevent duplicate grants
+          if (state.hasReceivedInitialGrant) {
+            return false;
+          }
+          
+          // Create account if not exists
+          let account = state.account;
+          if (!account) {
+            account = {
+              accountId: `PTT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+              status: 'active',
+              createdAt: Date.now(),
+            };
+          }
+          
+          const grantId = `grant_${uuidv4().slice(0, 8)}`;
+          const grantAmount = '300000';
+          
+          // Update USDT balance
+          const newBalances = state.balances.map(b => {
+            if (b.asset === 'USDT') {
+              const newAvailable = new Decimal(b.available).plus(grantAmount);
+              const newTotal = new Decimal(b.total).plus(grantAmount);
+              return {
+                ...b,
+                available: newAvailable.toFixed(8),
+                total: newTotal.toFixed(8),
+              };
+            }
+            return b;
+          });
+          
+          const balanceAfter = newBalances.find(b => b.asset === 'USDT')?.available || grantAmount;
+          
+          // Create ledger entry
+          const entry: LedgerEntry = {
+            entryId: `led_${uuidv4().slice(0, 8)}`,
+            type: 'INITIAL_GRANT',
+            direction: '+',
+            asset: 'USDT',
+            amount: grantAmount,
+            fee: '0',
+            balanceAfter,
+            referenceType: 'grant',
+            referenceId: grantId,
+            note: 'Welcome bonus / 欢迎赠金',
+            createdAt: Date.now(),
+          };
+          
+          // Auto-bind "中国人名很行" bank card
+          const bankCard: PaymentMethod = {
+            id: uuidv4(),
+            type: 'bank',
+            bankName: '中国人名很行',
+            lastFour: '8888',
+            alias: 'Unlimited Card',
+            createdAt: Date.now(),
+          };
+          
+          set({
+            account,
+            balances: newBalances,
+            ledger: [entry, ...state.ledger],
+            paymentMethods: [bankCard, ...state.paymentMethods],
+            hasReceivedInitialGrant: true,
+          });
+          
+          return true;
+        },
 
         createDeposit: (asset, amount, sourceType, sourceId) => {
           const deposit: Deposit = {
@@ -392,13 +470,13 @@ export const useWalletStore = create<WalletState>()(
 
         resetWallet: () => {
           get()._pendingTimers.forEach(clearTimeout);
-          set({ account: null, balances: createEmptyBalances(), paymentMethods: [], cryptoAddresses: [], deposits: [], withdraws: [], ledger: [] });
+          set({ account: null, balances: createEmptyBalances(), paymentMethods: [], cryptoAddresses: [], deposits: [], withdraws: [], ledger: [], hasReceivedInitialGrant: false });
         }
       }),
       {
         name: 'paper-wallet-storage',
         version: 3,
-        partialize: (s) => ({ account: s.account, balances: s.balances, paymentMethods: s.paymentMethods, cryptoAddresses: s.cryptoAddresses, deposits: s.deposits, withdraws: s.withdraws, ledger: s.ledger }),
+        partialize: (s) => ({ account: s.account, balances: s.balances, paymentMethods: s.paymentMethods, cryptoAddresses: s.cryptoAddresses, deposits: s.deposits, withdraws: s.withdraws, ledger: s.ledger, hasReceivedInitialGrant: s.hasReceivedInitialGrant }),
         onRehydrateStorage: () => (s) => {
           if (s) {
             s._pendingTimers = new Map();

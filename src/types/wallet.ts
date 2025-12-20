@@ -78,9 +78,10 @@ export type LedgerType =
   | 'FILL' 
   | 'FEE'
   | 'TRANSFER_IN'
-  | 'TRANSFER_OUT';
+  | 'TRANSFER_OUT'
+  | 'INITIAL_GRANT';
 
-export type ReferenceType = 'deposit' | 'withdraw' | 'order' | 'fill' | 'transfer';
+export type ReferenceType = 'deposit' | 'withdraw' | 'order' | 'fill' | 'transfer' | 'grant';
 
 export interface LedgerEntry {
   entryId: string;

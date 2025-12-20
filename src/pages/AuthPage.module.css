@@ -20,8 +20,10 @@
 .card {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  padding: var(--space-10) var(--space-8);
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-8);
   background: var(--surface-primary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
@@ -32,7 +34,7 @@
 
 .header {
   text-align: center;
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .logo {
@@ -58,10 +60,207 @@
   letter-spacing: 0.2em;
 }
 
+/* Enhanced Welcome Banner */
+.welcomeBanner {
+  margin-bottom: var(--space-6);
+  padding: var(--space-6);
+  background: linear-gradient(135deg, 
+    var(--surface-secondary) 0%, 
+    color-mix(in srgb, var(--brand-500) 3%, var(--surface-secondary)) 50%,
+    var(--surface-tertiary) 100%);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.welcomeBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    var(--brand-500) 0%, 
+    var(--brand-400) 50%, 
+    var(--brand-500) 100%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.welcomeBanner::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, 
+    color-mix(in srgb, var(--brand-500) 5%, transparent) 0%, 
+    transparent 70%);
+  pointer-events: none;
+}
+
+.welcomeHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  position: relative;
+  z-index: 1;
+}
+
+.welcomeIcon {
+  color: var(--brand-500);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.welcomeTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.welcomeContent {
+  position: relative;
+  z-index: 1;
+  margin-bottom: var(--space-4);
+}
+
+.welcomeTextZh,
+.welcomeTextEn {
+  margin: 0;
+}
+
+.welcomeParagraph {
+  font-size: var(--font-size-sm);
+  line-height: 1.8;
+  color: var(--text-primary);
+  white-space: pre-line;
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+.welcomeTextEn .welcomeParagraph {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.welcomeDivider {
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--border-secondary) 50%, 
+    transparent);
+  margin: var(--space-4) 0;
+}
+
+/* Features Grid */
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-secondary);
+  position: relative;
+  z-index: 1;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--brand-500) 5%, var(--surface-secondary));
+  border: 1px solid color-mix(in srgb, var(--brand-500) 10%, transparent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.featureItem svg {
+  color: var(--brand-500);
+  flex-shrink: 0;
+}
+
+.featureItem:hover {
+  background: color-mix(in srgb, var(--brand-500) 10%, var(--surface-secondary));
+  border-color: color-mix(in srgb, var(--brand-500) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Benefits Card */
+.benefitsCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--brand-500) 8%, var(--surface-secondary)),
+    color-mix(in srgb, var(--brand-400) 5%, var(--surface-tertiary)));
+  border: 1px solid color-mix(in srgb, var(--brand-500) 15%, transparent);
+  border-radius: var(--radius-md);
+  position: relative;
+  z-index: 1;
+}
+
+.benefitItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.benefitIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-400));
+  color: white;
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--brand-500) 25%, transparent);
+}
+
+.benefitContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.benefitValue {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.benefitLabel {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.benefitDivider {
+  width: 1px;
+  height: 40px;
+  background: var(--border-secondary);
+}
+
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .inputGroup {
@@ -115,6 +314,18 @@
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--status-danger);
+  font-size: var(--font-size-sm);
+}
+
 .submitBtn {
   height: 48px;
   background: var(--brand-600);
@@ -151,43 +362,167 @@
   animation: spin 1s linear infinite;
 }
 
-.footer {
-  margin-top: var(--space-8);
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--border-secondary);
+.modeSwitch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
+.modeSwitchText {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+.modeSwitchBtn {
+  background: none;
+  border: none;
+  color: var(--brand-500);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.modeSwitchBtn:hover {
+  color: var(--brand-400);
+  text-decoration: underline;
+}
+
+.footer {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Security Badges */
+.securityBadges {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--status-success) 10%, var(--surface-secondary));
+  border: 1px solid color-mix(in srgb, var(--status-success) 20%, transparent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge svg {
+  color: var(--status-success);
+  flex-shrink: 0;
+}
+
+/* Enhanced System Status */
 .systemStatus {
   display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+}
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusHeader svg {
+  color: var(--brand-500);
+}
+
+.statusGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .statusItem {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: 10px;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.statusItem:hover {
+  background: var(--surface-tertiary);
+}
+
+.statusInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.statusLabel {
+  font-size: var(--font-size-xs);
   font-family: var(--font-mono);
   color: var(--text-tertiary);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusValue {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--neutral-300);
+  flex-shrink: 0;
+  position: relative;
 }
 
 .dot.ok {
   background: var(--status-success);
-  box-shadow: 0 0 6px var(--status-success);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--status-success) 50%, transparent);
+}
+
+.dot.ok::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--status-success);
+  opacity: 0.3;
+  animation: ripple 2s ease-out infinite;
 }
 
 .dot.pending {
   background: var(--status-warning);
   animation: pulse 1s infinite;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--status-warning) 50%, transparent);
 }
 
 .decor {
@@ -233,3 +568,57 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .card {
+    max-width: 100%;
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .welcomeBanner {
+    padding: var(--space-4);
+  }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .benefitsCard {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .benefitDivider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .securityBadges {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .badge {
+    justify-content: center;
+  }
+
+  .statusGrid {
+    gap: var(--space-3);
+  }
+}

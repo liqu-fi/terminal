@@ -21,8 +21,36 @@ export const zhCN = {
     username: '用户名',
     password: '密码',
     login: '登录',
-    usernamePlaceholder: '输入终端 ID',
+    usernamePlaceholder: '输入用户名',
     passwordPlaceholder: '••••••••',
+    delete: '删除',
+    edit: '编辑',
+  },
+
+  // 认证
+  auth: {
+    welcomeTitle: '欢迎',
+    welcomeMessageZh: '尊敬的各位徐培原（Mike）的朋友们，欢迎来到我设计的比特币模拟交易所。\n\n为方便各位体验，我们已为你准备价值 30 万美元 的虚拟资金账户，并默认绑定一张"中国人名很行"无限额银行卡。\n\n祝你玩得开心，也玩得明白。',
+    welcomeMessageEn: "Dear friends of Peiyuan 'Mike' Xu, welcome to my paper trading simulator.\n\nFor your convenience, we have prepared a virtual account worth $300,000 USD, with an unlimited credit card from the prestigious 'Chinese Renming Henxing Bank' pre-linked.\n\nHave fun, and trade wisely.",
+    login: '登录',
+    register: '注册',
+    createAccount: '创建账户',
+    haveAccount: '已有账户？',
+    noAccount: '没有账户？',
+    confirmPassword: '确认密码',
+    passwordMismatch: '两次输入的密码不一致',
+    userExists: '用户名已存在',
+    invalidCredentials: '用户名或密码错误',
+    initialGrant: '初始赠金',
+    signIn: '登录',
+    signUp: '注册',
+    switchToLogin: '去登录',
+    switchToRegister: '去注册',
+    loginSuccess: '登录成功',
+    registerSuccess: '注册成功',
+    passwordRequired: '请输入密码',
+    usernameRequired: '请输入用户名',
+    passwordTooShort: '密码长度至少 6 位',
   },
 
   // 顶部栏
@@ -619,6 +647,7 @@ export const zhCN = {
       FEE: '手续费',
       TRANSFER_IN: '转入',
       TRANSFER_OUT: '转出',
+      INITIAL_GRANT: '初始赠金',
     },
     createAccount: '初始化钱包',
     createAccountTitle: '开通模拟钱包',
@@ -1050,6 +1079,28 @@ export const zhCN = {
     dataStale: '数据已过期',
     dataDelayed: '数据延迟',
     resyncing: '重建中...',
+  },
+
+  // 账户总览面板
+  accountOverview: {
+    title: '账户总览',
+    totalEquity: '总资产',
+    available: '可用',
+    frozen: '冻结',
+    todayPnl: '今日盈亏',
+    notLoggedIn: '未登录',
+    signInPrompt: '登录以查看您的账户信息',
+    noFunds: '暂无资金',
+    depositPrompt: '充值以开始交易',
+    quickActions: '快捷操作',
+    viewWallet: '查看钱包',
+    viewOrders: '查看订单',
+    accountSettings: '账户设置',
+  },
+
+  // 钱包账本类型扩展
+  walletLedgerTypes: {
+    INITIAL_GRANT: '初始赠金',
   },
 };
 

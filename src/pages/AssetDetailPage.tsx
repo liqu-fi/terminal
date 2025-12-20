@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWalletStore, selectBalances, selectAccount } from '../store/walletStore';
 import { useTradingStore } from '../store/tradingStore';
@@ -39,6 +39,7 @@ function PortfolioChart({
   timeRange: TimeRange;
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   
   if (data.length < 2) return null;
   
@@ -47,6 +48,7 @@ function PortfolioChart({
   const range = max - min || 1;
   const padding = { top: 8, right: 60, bottom: 24, left: 8 };
   const chartWidth = 560;
+  // 使用一个合理的默认高度，SVG 会通过 CSS 自适应容器
   const chartHeight = height;
   const graphWidth = chartWidth - padding.left - padding.right;
   const graphHeight = chartHeight - padding.top - padding.bottom;
@@ -105,8 +107,9 @@ function PortfolioChart({
   return (
     <div className={styles.portfolioChart}>
       <svg 
+        ref={svgRef}
         width="100%" 
-        height={chartHeight} 
+        height="100%"
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
         preserveAspectRatio="xMidYMid meet"
         className={styles.chartSvg}
@@ -447,6 +450,8 @@ export function AssetDetailPage() {
   // Store data
   const balances = useWalletStore(selectBalances);
   const account = useWalletStore(selectAccount);
+  const performanceMetrics = useWalletStore((state) => state.performanceMetrics);
+  const ledger = useWalletStore((state) => state.ledger);
   const positions = useTradingStore((state) => state.positions);
   const orders = useTradingStore((state) => state.orders);
   const triggers = useAutomationStore((state) => state.triggers);
@@ -525,10 +530,47 @@ export function AssetDetailPage() {
     });
   }, [assetList, searchQuery, sortField, sortOrder]);
 
-  // Portfolio totals
+  // Portfolio totals with enhanced metrics
   const totals = useMemo(() => {
     const totalValue = assetList.reduce((acc, asset) => acc + asset.value, 0);
-    const totalPnl = assetList.reduce((acc, asset) => acc + asset.unrealizedPnl, 0);
+    const totalUnrealizedPnl = assetList.reduce((acc, asset) => acc + asset.unrealizedPnl, 0);
+    
+    // Calculate realized P&L from all positions
+    let totalRealizedPnl = 0;
+    if (positions instanceof Map) {
+      positions.forEach((pos) => {
+        if (pos && pos.realizedPnl) {
+          totalRealizedPnl += parseFloat(pos.realizedPnl);
+        }
+      });
+    } else if (typeof positions === 'object' && positions !== null) {
+      Object.values(positions).forEach((pos: any) => {
+        if (pos && pos.realizedPnl) {
+          totalRealizedPnl += parseFloat(pos.realizedPnl);
+        }
+      });
+    }
+    
+    // Total P&L (realized + unrealized)
+    const totalPnl = totalRealizedPnl + totalUnrealizedPnl;
+    
+    // Available balance (USDT)
+    const usdtBalance = balances?.find(b => b.asset === 'USDT');
+    const availableBalance = parseFloat(usdtBalance?.available || '0');
+    
+    // Position value (total value minus USDT)
+    const usdtValue = parseFloat(usdtBalance?.total || '0');
+    const positionValue = totalValue - usdtValue;
+    
+    // Calculate initial capital from ledger (sum of all deposits)
+    const initialCapital = ledger
+      .filter(entry => entry.type === 'DEPOSIT' && entry.asset === 'USDT')
+      .reduce((sum, entry) => sum + parseFloat(entry.amount), 0);
+    // Fallback to 400000 if no deposits found (initial grant)
+    const baseCapital = initialCapital > 0 ? initialCapital : 400000;
+    const roi = baseCapital > 0 ? ((totalValue - baseCapital) / baseCapital) * 100 : 0;
+    
+    // P&L percentage
     const pnlPercent = totalValue > 0 ? (totalPnl / (totalValue - totalPnl)) * 100 : 0;
     
     // Calculate 24h change (weighted average)
@@ -537,8 +579,18 @@ export function AssetDetailPage() {
       return acc + (asset.priceChange24h * weight);
     }, 0);
     
-    return { totalValue, totalPnl, pnlPercent, totalChange24h };
-  }, [assetList]);
+    return { 
+      totalValue, 
+      totalUnrealizedPnl,
+      totalRealizedPnl,
+      totalPnl, 
+      pnlPercent, 
+      totalChange24h,
+      availableBalance,
+      positionValue,
+      roi,
+    };
+  }, [assetList, positions, balances]);
 
   // Portfolio history data (simulated)
   const portfolioHistoryData = useMemo(() => {
@@ -737,7 +789,102 @@ export function AssetDetailPage() {
               <span className={`${styles.pnlValue} ${totals.totalPnl >= 0 ? styles.positive : styles.negative}`}>
                 {totals.totalPnl >= 0 ? '+' : ''}${totals.totalPnl.toFixed(2)}
               </span>
-              <span className={styles.pnlLabel}>Unrealized P&L</span>
+              <span className={styles.pnlLabel}>Total P&L</span>
+            </div>
+            <div className={styles.roiIndicator}>
+              <span className={`${styles.roiValue} ${totals.roi >= 0 ? styles.positive : styles.negative}`}>
+                {totals.roi >= 0 ? '+' : ''}{totals.roi.toFixed(2)}%
+              </span>
+              <span className={styles.roiLabel}>ROI</span>
+            </div>
+          </div>
+          
+          {/* Enhanced Metrics Grid */}
+          <div className={styles.metricsGrid}>
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="wallet" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={styles.metricValue}>${totals.availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className={styles.metricLabel}>Available Balance</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="layers" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={styles.metricValue}>${totals.positionValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className={styles.metricLabel}>Position Value</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="check-circle" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={`${styles.metricValue} ${totals.totalRealizedPnl >= 0 ? styles.positive : styles.negative}`}>
+                  {totals.totalRealizedPnl >= 0 ? '+' : ''}${totals.totalRealizedPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className={styles.metricLabel}>Realized P&L</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="activity" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={`${styles.metricValue} ${totals.totalUnrealizedPnl >= 0 ? styles.positive : styles.negative}`}>
+                  {totals.totalUnrealizedPnl >= 0 ? '+' : ''}${totals.totalUnrealizedPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className={styles.metricLabel}>Unrealized P&L</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="target" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={styles.metricValue}>{tradingStats.winRate.toFixed(1)}%</span>
+                <span className={styles.metricLabel}>Win Rate</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="bar-chart-2" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={styles.metricValue}>{performanceMetrics.profitFactor.toFixed(2)}</span>
+                <span className={styles.metricLabel}>Profit Factor</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="trending-down" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={`${styles.metricValue} ${performanceMetrics.maxDrawdown > 0 ? styles.negative : ''}`}>
+                  {performanceMetrics.maxDrawdown.toFixed(2)}%
+                </span>
+                <span className={styles.metricLabel}>Max Drawdown</span>
+              </div>
+            </div>
+            
+            <div className={styles.metricItem}>
+              <div className={styles.metricIcon}>
+                <Icon name="repeat" size="xs" />
+              </div>
+              <div className={styles.metricContent}>
+                <span className={styles.metricValue}>{tradingStats.totalTrades}</span>
+                <span className={styles.metricLabel}>Total Trades</span>
+              </div>
             </div>
           </div>
         </div>
@@ -761,7 +908,7 @@ export function AssetDetailPage() {
             <PortfolioChart 
               data={portfolioHistoryData} 
               color={totals.totalPnl >= 0 ? 'var(--color-success)' : 'var(--color-error)'}
-              height={100}
+              height={120}
               timeRange={timeRange}
             />
           </div>

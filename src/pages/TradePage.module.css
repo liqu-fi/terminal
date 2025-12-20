@@ -77,6 +77,10 @@
 }
 
 /* Right Content Overrides */
+.accountOverviewWrapper {
+  flex-shrink: 0;
+}
+
 .orderEntryWrapper {
   flex-shrink: 0;
 }

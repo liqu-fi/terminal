@@ -10,6 +10,7 @@ import { PriceChart } from '../components/Chart';
 import { Watchlist } from '../components/Watchlist';
 import { BottomTabs } from '../components/BottomTabs';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { AccountOverviewPanel } from '../components/AccountOverviewPanel';
 import { useMarketStore, selectOrderBook } from '../store/marketStore';
 import { useTradingStore } from '../store/tradingStore';
 import { useWatchlistStore, selectSelectedSymbol } from '../store/watchlistStore';
@@ -114,9 +115,14 @@ export function TradePage() {
 
         <ResizeHandle />
 
-        {/* Right Sidebar: Order Entry + OrderBook */}
+        {/* Right Sidebar: Account Overview + Order Entry + OrderBook */}
         <Panel defaultSize={18} minSize={12} className={styles.rightPanel}>
           <div className={styles.rightContent}>
+            <div className={styles.accountOverviewWrapper}>
+              <ErrorBoundary name="AccountOverview" fallback={<PanelFallback name="ACCOUNT" />}>
+                <AccountOverviewPanel />
+              </ErrorBoundary>
+            </div>
             <ErrorBoundary name="Risk" fallback={<PanelFallback name="RISK" />}>
               <RiskRibbon />
             </ErrorBoundary>
