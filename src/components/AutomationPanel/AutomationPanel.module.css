@@ -121,11 +121,11 @@
 }
 
 .scrollArea::-webkit-scrollbar-thumb {
-  background: var(--border, #30363D);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
 }
 
 .scrollArea::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.12);
 }
 

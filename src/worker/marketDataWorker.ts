@@ -1001,20 +1001,5 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
 sendConnectionStatus();
 log('info', 'system', 'worker.initialized', {});
 
-// 测试网络连接（诊断用）
-async function testNetworkAccess(): Promise<void> {
-  try {
-    const response = await fetch(`${BINANCE_REST_URL}/ping`);
-    if (response.ok) {
-      log('info', 'system', 'network.binance_api_ok', {});
-    } else {
-      log('warn', 'system', 'network.binance_api_error', { status: response.status });
-    }
-  } catch (err) {
-    log('error', 'system', 'network.binance_api_unreachable', { error: String(err) });
-  }
-}
-
-// 启动时测试网络
-testNetworkAccess();
+// 移除启动时的网络测试，减少 API 请求
 

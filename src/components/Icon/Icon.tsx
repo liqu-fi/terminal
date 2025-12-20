@@ -9,7 +9,17 @@ import {
   CreditCard, ExternalLink, ChevronDown, ChevronUp, Filter, Clock,
   Sun, Moon, List, Inbox, Archive, Play,
   // Chart icons
-  Maximize2, Minimize2, Target, Crosshair
+  Maximize2, Minimize2, Target, Crosshair, Shield,
+  // View toggle icons
+  LayoutGrid, LayoutList,
+  // Orders page icons
+  Layers, Percent, Repeat, PieChart, Send, Radio, XCircle, Eye, Scroll, Banknote, Layout,
+  // Settings page icons
+  User, Lock, Key, Smartphone, Monitor, Volume2, VolumeX, BellRing, BellOff,
+  Languages, Palette, Database, FileText, LogOut, HardDrive, Server, Fingerprint,
+  ShieldCheck, ShieldAlert, UserCheck, Mail, MessageSquare, ToggleLeft, ToggleRight,
+  Sliders, Timer, Gauge, Binary, QrCode, Scan, KeyRound, UserCog, BellPlus,
+  MonitorSmartphone, CloudOff, Cloud, Cpu, MemoryStick, CircleDot, Eraser
 } from 'lucide-react';
 import { CSSProperties } from 'react';
 
@@ -73,7 +83,63 @@ export type IconName =
   | 'maximize-2'
   | 'minimize-2'
   | 'target'
-  | 'crosshair';
+  | 'shield'
+  | 'crosshair'
+  | 'layout-grid'
+  | 'layout-list'
+  // Orders page icons
+  | 'layers'
+  | 'percent'
+  | 'repeat'
+  | 'pie-chart'
+  | 'send'
+  | 'radio'
+  | 'x-circle'
+  | 'eye'
+  | 'scroll'
+  | 'banknote'
+  | 'layout'
+  // Settings page icons
+  | 'user'
+  | 'lock'
+  | 'key'
+  | 'smartphone'
+  | 'monitor'
+  | 'volume-2'
+  | 'volume-x'
+  | 'bell-ring'
+  | 'bell-off'
+  | 'languages'
+  | 'palette'
+  | 'database'
+  | 'file-text'
+  | 'log-out'
+  | 'hard-drive'
+  | 'server'
+  | 'fingerprint'
+  | 'shield-check'
+  | 'shield-alert'
+  | 'user-check'
+  | 'mail'
+  | 'message-square'
+  | 'toggle-left'
+  | 'toggle-right'
+  | 'sliders'
+  | 'timer'
+  | 'gauge'
+  | 'binary'
+  | 'qr-code'
+  | 'scan'
+  | 'key-round'
+  | 'user-cog'
+  | 'bell-plus'
+  | 'monitor-smartphone'
+  | 'cloud-off'
+  | 'cloud'
+  | 'cpu'
+  | 'memory-stick'
+  | 'circle-dot'
+  | 'eraser';
 
 const iconMap: Record<IconName, typeof BarChart3> = {
   'bar-chart-2': BarChart2,
@@ -135,7 +201,63 @@ const iconMap: Record<IconName, typeof BarChart3> = {
   'maximize-2': Maximize2,
   'minimize-2': Minimize2,
   'target': Target,
+  'shield': Shield,
   'crosshair': Crosshair,
+  'layout-grid': LayoutGrid,
+  'layout-list': LayoutList,
+  // Orders page icons
+  'layers': Layers,
+  'percent': Percent,
+  'repeat': Repeat,
+  'pie-chart': PieChart,
+  'send': Send,
+  'radio': Radio,
+  'x-circle': XCircle,
+  'eye': Eye,
+  'scroll': Scroll,
+  'banknote': Banknote,
+  'layout': Layout,
+  // Settings page icons
+  'user': User,
+  'lock': Lock,
+  'key': Key,
+  'smartphone': Smartphone,
+  'monitor': Monitor,
+  'volume-2': Volume2,
+  'volume-x': VolumeX,
+  'bell-ring': BellRing,
+  'bell-off': BellOff,
+  'languages': Languages,
+  'palette': Palette,
+  'database': Database,
+  'file-text': FileText,
+  'log-out': LogOut,
+  'hard-drive': HardDrive,
+  'server': Server,
+  'fingerprint': Fingerprint,
+  'shield-check': ShieldCheck,
+  'shield-alert': ShieldAlert,
+  'user-check': UserCheck,
+  'mail': Mail,
+  'message-square': MessageSquare,
+  'toggle-left': ToggleLeft,
+  'toggle-right': ToggleRight,
+  'sliders': Sliders,
+  'timer': Timer,
+  'gauge': Gauge,
+  'binary': Binary,
+  'qr-code': QrCode,
+  'scan': Scan,
+  'key-round': KeyRound,
+  'user-cog': UserCog,
+  'bell-plus': BellPlus,
+  'monitor-smartphone': MonitorSmartphone,
+  'cloud-off': CloudOff,
+  'cloud': Cloud,
+  'cpu': Cpu,
+  'memory-stick': MemoryStick,
+  'circle-dot': CircleDot,
+  'eraser': Eraser,
 };
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';

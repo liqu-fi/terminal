@@ -4,34 +4,111 @@
   height: 100%;
   min-height: 0;
   background: var(--card-bg);
-  border-top: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
-.tabsHeader {
+/* Two Column Layout */
+.columns {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 1px;
+  background: var(--border-subtle);
+}
+
+.leftColumn {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--card-bg);
+}
+
+.rightColumn {
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
+  min-width: 280px;
+  max-width: 380px;
+  background: var(--card-bg);
+}
+
+.columnHeader {
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.columnContent {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Status Bar (matches Positions balanceRow height) */
+.statusBar {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 0 var(--space-3);
-  height: 36px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 16px;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-subtle);
   flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
-.tabsHeader::-webkit-scrollbar {
-  display: none;
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.statusValue {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.statusDot.active {
+  background: var(--color-price-up);
+  box-shadow: 0 0 4px var(--color-price-up);
+}
+
+.statusDot.paused {
+  background: var(--text-tertiary);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  height: 26px;
 }
 
 .tab {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 4px;
   height: 100%;
-  padding: 0 var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-tertiary);
   background: none;
   border: none;
@@ -39,11 +116,12 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
-  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .tab:hover {
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .tab.active {
@@ -51,45 +129,47 @@
   border-bottom-color: var(--accent);
 }
 
-/* OrderBook tab - 只在低分辨率时显示 */
-.orderBookTab {
+.badge {
+  font-size: 9px;
+  padding: 0 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  color: var(--text-tertiary);
+  min-width: 14px;
+  text-align: center;
+}
+
+.active .badge {
+  background: var(--accent-alpha);
+  color: var(--accent);
+}
+
+/* OrderBook tab - only show on smaller screens */
+.orderbookTab {
   display: none;
 }
 
 @media (max-height: 900px) {
-  .orderBookTab {
+  .orderbookTab {
     display: flex;
   }
 }
 
 @media (max-width: 1400px) {
-  .orderBookTab {
+  .orderbookTab {
     display: flex;
   }
 }
 
-.tabCount {
-  font-size: var(--font-size-2xs);
-  padding: 1px 5px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-full);
-  color: var(--text-tertiary);
+/* Responsive: Stack on smaller screens */
+@media (max-width: 1200px) {
+  .columns {
+    flex-direction: column;
+  }
+  
+  .rightColumn {
+    max-width: none;
+    min-width: 0;
+    border-top: 1px solid var(--border-subtle);
+  }
 }
-
-.active .tabCount {
-  background: var(--accent-alpha);
-  color: var(--accent);
-}
-
-.tabContent {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.tabPanel {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-

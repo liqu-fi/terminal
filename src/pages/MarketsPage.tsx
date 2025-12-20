@@ -51,7 +51,8 @@ export function MarketsPage() {
       setLoading(false);
 
       // Async load sparklines and indicators in small batches to prevent blocking
-      for (const ticker of tickers) {
+      // Only fetch for the top 50 symbols by volume to save rate limits
+      for (const ticker of tickers.slice(0, 50)) {
         fetchSparkline(ticker.symbol).then(s => {
           setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, sparkline: s } : m));
         });
@@ -71,13 +72,42 @@ export function MarketsPage() {
   }, [loadData]);
 
   const filteredMarkets = useMemo(() => {
-    return markets.filter(m => {
+    // First filter by search term
+    let filtered = markets.filter(m => {
       const matchesSearch = m.symbol.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = category === 'All' || category === 'Favorites' ? true : m.symbol.includes(category);
-      const isFav = favorites.includes(m.symbol);
-      if (category === 'Favorites' && !isFav) return false;
-      return matchesSearch && matchesCategory;
-    }).sort((a, b) => {
+      return matchesSearch && m.ticker;
+    });
+
+    // Apply category filter
+    switch (category) {
+      case 'Favorites':
+        filtered = filtered.filter(m => favorites.includes(m.symbol));
+        break;
+      case 'Gainers':
+        filtered = filtered.filter(m => (m.ticker?.priceChangePercent ?? 0) > 0);
+        break;
+      case 'Losers':
+        filtered = filtered.filter(m => (m.ticker?.priceChangePercent ?? 0) < 0);
+        break;
+      case 'High Volume':
+        // Get top 20% by volume
+        const sortedByVol = [...filtered].sort((a, b) => 
+          (b.ticker?.quoteVolume24h ?? 0) - (a.ticker?.quoteVolume24h ?? 0)
+        );
+        const topCount = Math.max(20, Math.floor(sortedByVol.length * 0.2));
+        const topSymbols = new Set(sortedByVol.slice(0, topCount).map(m => m.symbol));
+        filtered = filtered.filter(m => topSymbols.has(m.symbol));
+        break;
+      case 'Volatile':
+        // Show assets with >5% absolute change
+        filtered = filtered.filter(m => Math.abs(m.ticker?.priceChangePercent ?? 0) >= 5);
+        break;
+      default: // 'All'
+        break;
+    }
+
+    // Sort
+    return filtered.sort((a, b) => {
       if (!a.ticker || !b.ticker) return 0;
       const vA = a.ticker[sortField] as number;
       const vB = b.ticker[sortField] as number;
@@ -87,10 +117,44 @@ export function MarketsPage() {
 
   const stats = useMemo(() => {
     const active = markets.filter(m => m.ticker);
-    const up = active.filter(m => (m.ticker?.priceChangePercent ?? 0) > 0).length;
-    const down = active.length - up;
+    const gainers = active.filter(m => (m.ticker?.priceChangePercent ?? 0) > 0);
+    const losers = active.filter(m => (m.ticker?.priceChangePercent ?? 0) < 0);
+    const neutral = active.length - gainers.length - losers.length;
+    const volatile = active.filter(m => Math.abs(m.ticker?.priceChangePercent ?? 0) >= 5);
     const totalVol = active.reduce((acc, m) => acc + (m.ticker?.quoteVolume24h ?? 0), 0);
-    return { up, down, totalVol };
+    const avgChange = active.length > 0 
+      ? active.reduce((acc, m) => acc + (m.ticker?.priceChangePercent ?? 0), 0) / active.length 
+      : 0;
+    
+    // High volume count (top 20%)
+    const highVolCount = Math.max(20, Math.floor(active.length * 0.2));
+    
+    // Find top gainer
+    const topGainer = active.length > 0 ? active.reduce((best, current) => {
+      if (!best?.ticker) return current;
+      if (!current?.ticker) return best;
+      return current.ticker.priceChangePercent > best.ticker.priceChangePercent ? current : best;
+    }, active[0]) : null;
+    
+    // Find volume leader
+    const volumeLeader = active.length > 0 ? active.reduce((best, current) => {
+      if (!best?.ticker) return current;
+      if (!current?.ticker) return best;
+      return current.ticker.quoteVolume24h > best.ticker.quoteVolume24h ? current : best;
+    }, active[0]) : null;
+    
+    return { 
+      up: gainers.length, 
+      down: losers.length, 
+      neutral, 
+      volatileCount: volatile.length,
+      highVolCount,
+      totalVol, 
+      avgChange, 
+      topGainer, 
+      volumeLeader, 
+      totalPairs: active.length 
+    };
   }, [markets]);
 
   const handleSelect = (symbol: string) => {
@@ -108,46 +172,129 @@ export function MarketsPage() {
     <div className={styles.container}>
       {/* Header Intelligence Dashboard */}
       <div className={styles.dashboard}>
+        {/* Card 1: Market Sentiment */}
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>Market Breadth</span>
+          <div className={styles.statHeader}>
+            <span className={styles.statLabel}>Market Sentiment</span>
+            <span className={`${styles.sentimentBadge} ${stats.avgChange >= 0 ? styles.bullish : styles.bearish}`}>
+              {stats.avgChange >= 0 ? 'BULLISH' : 'BEARISH'}
+            </span>
+          </div>
           <div className={styles.breadthBar}>
-            <div className={styles.breadthUp} style={{ width: `${(stats.up / (stats.up + stats.down || 1)) * 100}%` }} />
+            <div className={styles.breadthUp} style={{ width: `${(stats.up / (stats.totalPairs || 1)) * 100}%` }} />
           </div>
-          <div className={styles.statValueRow}>
-            <span className="price-up">{stats.up} UP</span>
-            <span className="price-down">{stats.down} DOWN</span>
+          <div className={styles.breadthLegend}>
+            <div className={styles.legendItem}>
+              <span className={styles.legendDot} style={{ background: 'var(--color-price-up)' }} />
+              <span className={styles.legendValue}>{stats.up}</span>
+              <span className={styles.legendLabel}>Gainers</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendDot} style={{ background: 'var(--text-tertiary)' }} />
+              <span className={styles.legendValue}>{stats.neutral}</span>
+              <span className={styles.legendLabel}>Neutral</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendDot} style={{ background: 'var(--color-price-down)' }} />
+              <span className={styles.legendValue}>{stats.down}</span>
+              <span className={styles.legendLabel}>Decliners</span>
+            </div>
           </div>
         </div>
+
+        {/* Card 2: 24h Trading Volume */}
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>24h Aggregate Volume</span>
+          <div className={styles.statHeader}>
+            <span className={styles.statLabel}>24h Trading Volume</span>
+            <span className={styles.pairCount}>{stats.totalPairs} pairs</span>
+          </div>
           <span className={styles.statValue}>${formatVolume(stats.totalVol)}</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>Market Status</span>
-          <div className={styles.statusIndicator}>
-            <div className="dot dot-live" />
-            <span>REAL-TIME FEED ACTIVE</span>
+          <div className={styles.volumeSubtext}>
+            <span>Aggregate USDT Volume</span>
           </div>
         </div>
-        <div className={styles.statCard} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <button className="btn-secondary" onClick={() => navigate('/assets')}>
-            <Icon name="layout" size="sm" />
-            {t.wallet?.overview || 'Details'}
-          </button>
+
+        {/* Card 3: Top Performer */}
+        <div 
+          className={`${styles.statCard} ${styles.clickableCard}`}
+          onClick={() => stats.topGainer && handleSelect(stats.topGainer.symbol)}
+        >
+          <div className={styles.statHeader}>
+            <span className={styles.statLabel}>Top Performer</span>
+            <span className={styles.timeframe}>24H</span>
+          </div>
+          {stats.topGainer?.ticker ? (
+            <div className={styles.assetHighlight}>
+              <div className={styles.assetMain}>
+                <span className={styles.assetSymbol}>{parseSymbol(stats.topGainer.symbol).base}</span>
+                <span className={styles.assetQuote}>/ USDT</span>
+              </div>
+              <div className={styles.assetMetrics}>
+                <span className={`${styles.changeValue} price-up`}>
+                  +{stats.topGainer.ticker.priceChangePercent.toFixed(2)}%
+                </span>
+                <span className={styles.priceValue}>
+                  ${formatPrice(stats.topGainer.ticker.price)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.skeletonLarge} />
+          )}
+        </div>
+
+        {/* Card 4: Volume Leader */}
+        <div 
+          className={`${styles.statCard} ${styles.clickableCard}`}
+          onClick={() => stats.volumeLeader && handleSelect(stats.volumeLeader.symbol)}
+        >
+          <div className={styles.statHeader}>
+            <span className={styles.statLabel}>Volume Leader</span>
+            <span className={styles.timeframe}>24H</span>
+          </div>
+          {stats.volumeLeader?.ticker ? (
+            <div className={styles.assetHighlight}>
+              <div className={styles.assetMain}>
+                <span className={styles.assetSymbol}>{parseSymbol(stats.volumeLeader.symbol).base}</span>
+                <span className={styles.assetQuote}>/ USDT</span>
+              </div>
+              <div className={styles.assetMetrics}>
+                <span className={styles.volumeValue}>
+                  ${formatVolume(stats.volumeLeader.ticker.quoteVolume24h)}
+                </span>
+                <span className={`${styles.priceValue} ${(stats.volumeLeader.ticker.priceChangePercent ?? 0) >= 0 ? 'price-up' : 'price-down'}`}>
+                  {stats.volumeLeader.ticker.priceChangePercent > 0 ? '+' : ''}{stats.volumeLeader.ticker.priceChangePercent.toFixed(2)}%
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.skeletonLarge} />
+          )}
         </div>
       </div>
 
       <div className={`card ${styles.mainCard}`}>
         <div className={styles.toolbar}>
           <div className={styles.tabs}>
-            {['All', 'Favorites', 'Main', 'DeFi', 'AI', 'Meme'].map(cat => (
+            {[
+              { id: 'All', label: 'All', icon: null, count: stats.totalPairs },
+              { id: 'Favorites', label: 'Favorites', icon: 'star', count: favorites.length },
+              { id: 'Gainers', label: 'Gainers', icon: 'trending-up', count: stats.up },
+              { id: 'Losers', label: 'Losers', icon: 'trending-down', count: stats.down },
+              { id: 'High Volume', label: 'Top Volume', icon: 'bar-chart-3', count: stats.highVolCount },
+              { id: 'Volatile', label: 'Volatile', icon: 'activity', count: stats.volatileCount },
+            ].map(tab => (
               <button 
-                key={cat}
-                className={`${styles.tab} ${category === cat ? styles.activeTab : ''}`}
-                onClick={() => setCategory(cat)}
+                key={tab.id}
+                className={`${styles.tab} ${category === tab.id ? styles.activeTab : ''} ${
+                  tab.id === 'Gainers' ? styles.tabGainer : 
+                  tab.id === 'Losers' ? styles.tabLoser : ''
+                }`}
+                onClick={() => setCategory(tab.id)}
               >
-                {cat === 'Favorites' && <Icon name="star" size="xs" />}
-                {cat}
+                {tab.icon && <Icon name={tab.icon} size="xs" />}
+                <span>{tab.label}</span>
+                <span className={styles.tabCount}>{tab.count}</span>
               </button>
             ))}
           </div>
@@ -161,11 +308,19 @@ export function MarketsPage() {
             />
           </div>
           <div className={styles.viewToggle}>
-            <button className={`${styles.toggleBtn} ${viewMode === 'table' ? styles.activeMode : ''}`} onClick={() => setViewMode('table')}>
-              <Icon name="clipboard-list" size="sm" />
+            <button 
+              className={`${styles.toggleBtn} ${viewMode === 'table' ? styles.activeMode : ''}`} 
+              onClick={() => setViewMode('table')}
+              title="Table View"
+            >
+              <Icon name="layout-list" size="sm" />
             </button>
-            <button className={`${styles.toggleBtn} ${viewMode === 'grid' ? styles.activeMode : ''}`} onClick={() => setViewMode('grid')}>
-              <Icon name="bar-chart-3" size="sm" />
+            <button 
+              className={`${styles.toggleBtn} ${viewMode === 'grid' ? styles.activeMode : ''}`} 
+              onClick={() => setViewMode('grid')}
+              title="Grid View"
+            >
+              <Icon name="layout-grid" size="sm" />
             </button>
           </div>
         </div>

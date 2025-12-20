@@ -52,7 +52,7 @@ export function DepositDrawer({ isOpen, onClose }: DepositDrawerProps) {
 
   const handleSubmit = () => {
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0 || numAmount > 100000) return;
+    if (isNaN(numAmount) || numAmount <= 0 || numAmount > 10000000) return;
     if (!sourceId) return;
 
     const deposit = createDeposit(asset, amount, sourceType, sourceId);
@@ -77,7 +77,7 @@ export function DepositDrawer({ isOpen, onClose }: DepositDrawerProps) {
 
   const isValid = useMemo(() => {
     const numAmount = parseFloat(amount);
-    return !isNaN(numAmount) && numAmount > 0 && numAmount <= 100000 && sourceId;
+    return !isNaN(numAmount) && numAmount > 0 && numAmount <= 10000000 && sourceId;
   }, [amount, sourceId]);
 
   const hasSources = paymentMethods.length > 0 || cryptoAddresses.length > 0;
@@ -160,12 +160,12 @@ export function DepositDrawer({ isOpen, onClose }: DepositDrawerProps) {
                     placeholder="0.00"
                     className={styles.input}
                     min="1"
-                    max="100000"
+                    max="10000000"
                   />
                   <span className={styles.amountSuffix}>{asset}</span>
                 </div>
                 <div className={styles.hint}>
-                  {t.wallet?.maxAmount || 'Max amount per deposit: 100,000'}
+                  {t.wallet?.maxAmount || 'Max amount per deposit: 10,000,000'}
                 </div>
               </div>
 

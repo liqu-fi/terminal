@@ -12,7 +12,7 @@ export interface SymbolInfo {
   sparkline?: number[]; // 24h price points for sparkline
 }
 
-// 默认交易对列表（扩展版 - 30个热门币种）
+// 默认交易对列表（扩展版 - 热门币种）
 const DEFAULT_SYMBOLS: SymbolInfo[] = [
   // 主流币
   { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
@@ -25,31 +25,57 @@ const DEFAULT_SYMBOLS: SymbolInfo[] = [
   { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT' },
   { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT' },
   { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT' },
+  { symbol: 'TRXUSDT', baseAsset: 'TRX', quoteAsset: 'USDT' },
+  { symbol: 'LTCUSDT', baseAsset: 'LTC', quoteAsset: 'USDT' },
+  { symbol: 'BCHUSDT', baseAsset: 'BCH', quoteAsset: 'USDT' },
+  { symbol: 'SHIBUSDT', baseAsset: 'SHIB', quoteAsset: 'USDT' },
+  { symbol: 'ETCUSDT', baseAsset: 'ETC', quoteAsset: 'USDT' },
   // Layer2 & 新兴
   { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT' },
   { symbol: 'ARBUSDT', baseAsset: 'ARB', quoteAsset: 'USDT' },
   { symbol: 'OPUSDT', baseAsset: 'OP', quoteAsset: 'USDT' },
   { symbol: 'APTUSDT', baseAsset: 'APT', quoteAsset: 'USDT' },
   { symbol: 'SUIUSDT', baseAsset: 'SUI', quoteAsset: 'USDT' },
+  { symbol: 'TIAUSDT', baseAsset: 'TIA', quoteAsset: 'USDT' },
+  { symbol: 'STRKUSDT', baseAsset: 'STRK', quoteAsset: 'USDT' },
+  { symbol: 'ZKUSDT', baseAsset: 'ZK', quoteAsset: 'USDT' },
   // DeFi
   { symbol: 'UNIUSDT', baseAsset: 'UNI', quoteAsset: 'USDT' },
   { symbol: 'AAVEUSDT', baseAsset: 'AAVE', quoteAsset: 'USDT' },
   { symbol: 'LDOUSDT', baseAsset: 'LDO', quoteAsset: 'USDT' },
-  // AI
+  { symbol: 'MKRUSDT', baseAsset: 'MKR', quoteAsset: 'USDT' },
+  { symbol: 'CRVUSDT', baseAsset: 'CRV', quoteAsset: 'USDT' },
+  { symbol: 'DYDXUSDT', baseAsset: 'DYDX', quoteAsset: 'USDT' },
+  // AI & Depin
   { symbol: 'FETUSDT', baseAsset: 'FET', quoteAsset: 'USDT' },
   { symbol: 'RENDERUSDT', baseAsset: 'RENDER', quoteAsset: 'USDT' },
   { symbol: 'WLDUSDT', baseAsset: 'WLD', quoteAsset: 'USDT' },
+  { symbol: 'ARKMUSDT', baseAsset: 'ARKM', quoteAsset: 'USDT' },
+  { symbol: 'TAOUSDT', baseAsset: 'TAO', quoteAsset: 'USDT' },
+  { symbol: 'FILUSDT', baseAsset: 'FIL', quoteAsset: 'USDT' },
+  { symbol: 'ARUSDT', baseAsset: 'AR', quoteAsset: 'USDT' },
+  // Meme
+  { symbol: 'PEPEUSDT', baseAsset: 'PEPE', quoteAsset: 'USDT' },
+  { symbol: 'WIFUSDT', baseAsset: 'WIF', quoteAsset: 'USDT' },
+  { symbol: 'BONKUSDT', baseAsset: 'BONK', quoteAsset: 'USDT' },
+  { symbol: 'FLOKIUSDT', baseAsset: 'FLOKI', quoteAsset: 'USDT' },
+  { symbol: 'NOTUSDT', baseAsset: 'NOT', quoteAsset: 'USDT' },
   // GameFi
   { symbol: 'AXSUSDT', baseAsset: 'AXS', quoteAsset: 'USDT' },
   { symbol: 'SANDUSDT', baseAsset: 'SAND', quoteAsset: 'USDT' },
   { symbol: 'MANAUSDT', baseAsset: 'MANA', quoteAsset: 'USDT' },
+  { symbol: 'GALAUSDT', baseAsset: 'GALA', quoteAsset: 'USDT' },
   // 其他热门
-  { symbol: 'LTCUSDT', baseAsset: 'LTC', quoteAsset: 'USDT' },
-  { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT' },
   { symbol: 'NEARUSDT', baseAsset: 'NEAR', quoteAsset: 'USDT' },
-  { symbol: 'FILUSDT', baseAsset: 'FIL', quoteAsset: 'USDT' },
+  { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT' },
   { symbol: 'INJUSDT', baseAsset: 'INJ', quoteAsset: 'USDT' },
-  { symbol: 'PEPEUSDT', baseAsset: 'PEPE', quoteAsset: 'USDT' },
+  { symbol: 'STXUSDT', baseAsset: 'STX', quoteAsset: 'USDT' },
+  { symbol: 'SEIUSDT', baseAsset: 'SEI', quoteAsset: 'USDT' },
+  { symbol: 'ORDIUSDT', baseAsset: 'ORDI', quoteAsset: 'USDT' },
+  { symbol: 'IMXUSDT', baseAsset: 'IMX', quoteAsset: 'USDT' },
+  { symbol: 'JUPUSDT', baseAsset: 'JUP', quoteAsset: 'USDT' },
+  { symbol: 'PYTHUSDT', baseAsset: 'PYTH', quoteAsset: 'USDT' },
+  { symbol: 'RUNEUSDT', baseAsset: 'RUNE', quoteAsset: 'USDT' },
 ];
 
 interface WatchlistState {
@@ -157,6 +183,21 @@ export const useWatchlistStore = create<WatchlistState>()(
     }),
     {
       name: 'watchlist_state',
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2) {
+          // If version is older than 2, merge new default symbols that aren't already in the list
+          const currentSymbols = (persistedState as any).symbols || [];
+          const missingDefaults = DEFAULT_SYMBOLS.filter(
+            ds => !currentSymbols.find((s: any) => s.symbol === ds.symbol)
+          );
+          return {
+            ...persistedState,
+            symbols: [...currentSymbols, ...missingDefaults],
+          };
+        }
+        return persistedState;
+      },
       partialize: (state) => ({
         symbols: state.symbols,
         favorites: state.favorites,

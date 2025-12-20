@@ -9,29 +9,39 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+/* Combined header row: side + type toggles */
+.headerRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
 }
 
 .sideToggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-1);
-  padding: var(--space-1);
+  display: flex;
+  gap: 2px;
+  padding: 2px;
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
+  flex: 1;
 }
 
 .sideBtn {
-  padding: var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: calc(var(--radius-sm) - 1px);
   cursor: pointer;
   transition: all var(--transition-fast);
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .sideBtn.buyBtn.active {
@@ -46,71 +56,79 @@
 
 .sideBtn:hover:not(.active) {
   background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
 }
 
 .typeToggle {
   display: flex;
-  gap: var(--space-2);
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
 }
 
 .typeBtn {
-  flex: 1;
-  padding: var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
   background: transparent;
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .typeBtn.active {
-  background: var(--color-bg-hover);
-  border-color: var(--color-info);
+  background: var(--color-bg-secondary);
   color: var(--color-info);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .typeBtn:hover:not(.active) {
-  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .label {
-  font-size: var(--font-size-xs);
+  font-size: 10px;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  font-weight: var(--font-weight-medium);
 }
 
 .inputWrapper {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .input {
   flex: 1;
-  padding-right: 60px;
+  padding: 6px 48px 6px 8px !important;
+  font-size: 13px !important;
+  height: 32px;
 }
 
 .stepBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
@@ -124,28 +142,31 @@
 
 .inputSuffix {
   position: absolute;
-  right: calc(28px + var(--space-1) + var(--space-2));
-  font-size: var(--font-size-sm);
+  right: calc(24px + 4px + 8px);
+  font-size: 10px;
   color: var(--color-text-tertiary);
   pointer-events: none;
   z-index: 1;
+  font-weight: var(--font-weight-medium);
 }
 
 .quickFillButtons {
   display: flex;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .quickFillBtn {
   flex: 1;
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
+  padding: 4px 6px;
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
   background: transparent;
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  text-transform: uppercase;
 }
 
 .quickFillBtn:hover {
@@ -154,26 +175,102 @@
   color: var(--color-text-primary);
 }
 
+/* Compact slider row with percentage buttons inline */
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sliderContainer {
+  flex: 1;
+}
+
 .percentButtons {
   display: flex;
-  gap: var(--space-1);
+  gap: 2px;
 }
 
 .percentBtn {
-  flex: 1;
-  padding: var(--space-1);
-  font-size: var(--font-size-xs);
+  padding: 4px 6px;
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
   background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .percentBtn:hover {
   background: var(--color-bg-hover);
-  border-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+}
+
+/* TP/SL Compact Row */
+.tpslContainer {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.inputGroupSmall {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.labelSmall {
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: var(--font-weight-medium);
+}
+
+.inputSmall {
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+  height: 28px;
+}
+
+/* Compact info section */
+.estimatedInfo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 8px;
+  padding: 6px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.estimatedRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.estimatedLabel {
+  font-size: 8px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.estimatedValue {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* Total & Balance compact row */
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid var(--color-border-secondary);
 }
 
 .totalRow,
@@ -181,36 +278,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-2) 0;
+  padding: 4px 0;
 }
 
 .totalRow {
   border-top: 1px solid var(--color-border-secondary);
-  border-bottom: 1px solid var(--color-border-secondary);
 }
 
 .totalLabel,
 .balanceLabel {
-  font-size: var(--font-size-sm);
+  font-size: 10px;
   color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .totalValue {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
 
 .balanceValue {
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   color: var(--color-text-secondary);
 }
 
+/* Submit button */
 .submitBtn {
   width: 100%;
-  height: 44px;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
+  height: 36px;
+  font-size: 12px;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .buySubmit {
@@ -239,52 +340,142 @@
 }
 
 .focusBadge {
-  margin-left: var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  margin-left: var(--space-1);
+  font-size: 8px;
+  font-weight: var(--font-weight-bold);
   color: var(--color-info);
   background: var(--color-info-bg);
-  padding: 2px 6px;
+  padding: 1px 4px;
   border-radius: var(--radius-sm);
+  text-transform: uppercase;
 }
 
-.estimatedInfo {
+/* 数据状态提示 */
+.confidenceWarning {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-sm);
-}
-
-.estimatedRow {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--space-1);
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
-.estimatedLabel {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+.confidenceWarning.degraded {
+  background: var(--color-warning-bg);
 }
 
-.estimatedValue {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+.confidenceWarning.resyncing {
+  background: rgba(249, 115, 22, 0.1);
 }
 
+.confidenceWarning.stale {
+  background: var(--color-negative-bg);
+}
+
+.warningBar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+
+.confidenceWarning.degraded .warningBar {
+  background: var(--color-warning);
+}
+
+.confidenceWarning.resyncing .warningBar {
+  background: #f97316;
+  animation: barPulse 1.5s ease-in-out infinite;
+}
+
+.confidenceWarning.stale .warningBar {
+  background: var(--color-negative);
+}
+
+@keyframes barPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.warningText {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.submitBtn.degraded {
+  border-color: var(--color-warning) !important;
+}
+
+.submitBtn.resyncing,
+.submitBtn.stale {
+  background: var(--color-bg-tertiary) !important;
+  border-color: var(--color-border-primary) !important;
+  color: var(--color-text-tertiary) !important;
+  cursor: not-allowed !important;
+}
+
+/* 快捷操作按钮 */
+.quickActions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.quickBtn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.quickBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.allInBuyBtn {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.04));
+  border-color: rgba(34, 197, 94, 0.3);
+  color: var(--color-price-up);
+}
+
+.allInBuyBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.08));
+  border-color: var(--color-price-up);
+}
+
+.allInSellBtn {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.04));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--color-price-down);
+}
+
+.allInSellBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.08));
+  border-color: var(--color-price-down);
+}
+
+/* 确认弹窗 */
 .degradedConfirm {
-  padding: var(--space-3);
+  padding: var(--space-2);
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning);
   border-radius: var(--radius-sm);
 }
 
 .confirmText {
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   color: var(--color-text-primary);
   margin: 0 0 var(--space-2);
+  line-height: 1.4;
 }
 
 .confirmActions {
@@ -295,9 +486,9 @@
 .confirmBtn,
 .cancelBtn {
   flex: 1;
-  padding: var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  padding: 6px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -323,117 +514,7 @@
   background: var(--color-bg-hover);
 }
 
-/* 数据状态提示 - 用视觉语言代替文字 */
-.confidenceWarning {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.confidenceWarning.degraded {
-  background: var(--color-warning-bg);
-}
-
-.confidenceWarning.resyncing {
-  background: rgba(249, 115, 22, 0.1);
-}
-
-.confidenceWarning.stale {
-  background: var(--color-negative-bg);
-}
-
-.warningBar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-}
-
-.confidenceWarning.degraded .warningBar {
-  background: var(--color-warning);
-}
-
-.confidenceWarning.resyncing .warningBar {
-  background: #f97316;
-  animation: barPulse 1.5s ease-in-out infinite;
-}
-
-.confidenceWarning.stale .warningBar {
-  background: var(--color-negative);
-}
-
-@keyframes barPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.warningText {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-}
-
-.submitBtn.degraded {
-  border-color: var(--color-warning) !important;
-}
-
-.submitBtn.resyncing,
-.submitBtn.stale {
-  background: var(--color-bg-tertiary) !important;
-  border-color: var(--color-border-primary) !important;
-  color: var(--color-text-tertiary) !important;
-  cursor: not-allowed !important;
-}
-
-/* 快捷操作按钮 */
-.quickActions {
-  display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.quickBtn {
-  flex: 1;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border: 1px solid transparent;
-}
-
-.quickBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.allInBuyBtn {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
-  border-color: var(--color-price-up);
-  color: var(--color-price-up);
-}
-
-.allInBuyBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.1));
-}
-
-.allInSellBtn {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
-  border-color: var(--color-price-down);
-  color: var(--color-price-down);
-}
-
-.allInSellBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.1));
-}
-
-/* 确认弹窗 */
+/* Modal styles */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -458,7 +539,7 @@
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  width: 360px;
+  width: 320px;
   max-width: 90vw;
   animation: slideIn 0.2s ease-out;
 }
@@ -477,8 +558,8 @@
 .modalHeader {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
   border-bottom: 1px solid var(--color-border-secondary);
 }
 
@@ -491,29 +572,29 @@
 }
 
 .modalTitle {
-  font-size: var(--font-size-lg);
+  font-size: 14px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
 }
 
 .modalBody {
-  padding: var(--space-4);
+  padding: var(--space-3);
 }
 
 .modalMessage {
-  font-size: var(--font-size-sm);
+  font-size: 12px;
   color: var(--color-text-secondary);
   margin: 0 0 var(--space-2);
   line-height: 1.5;
 }
 
 .modalDetail {
-  font-size: var(--font-size-md);
+  font-size: 13px;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
-  padding: var(--space-3);
+  padding: var(--space-2);
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
   text-align: center;
@@ -522,15 +603,15 @@
 
 .modalActions {
   display: flex;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
   border-top: 1px solid var(--color-border-secondary);
 }
 
 .modalCancelBtn {
   flex: 1;
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-sm);
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   background: var(--color-bg-tertiary);
@@ -547,8 +628,8 @@
 
 .modalConfirmBtn {
   flex: 1;
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--font-size-sm);
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
   border: none;
   border-radius: var(--radius-sm);

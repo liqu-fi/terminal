@@ -4,13 +4,21 @@ import { useTradingStore } from '../../store/tradingStore';
 import { useWalletStore, selectBalances } from '../../store/walletStore';
 import { useMarketStore, selectMetrics, selectOrderBook } from '../../store/marketStore';
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
+
+// Helper to get price from watchlist
+const selectSymbolPrices = (state: { symbols: Array<{ symbol: string; price?: string }> }) => {
+  const priceMap = new Map<string, string>();
+  state.symbols.forEach(s => {
+    if (s.price) priceMap.set(s.symbol, s.price);
+  });
+  return priceMap;
+};
 import { useI18n } from '../../i18n';
 import { toast } from '../Toast';
 import { Icon } from '../Icon';
 import { TPSLForm } from './TPSLForm';
 import styles from './Positions.module.css';
 
-// 确认弹窗组件
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
@@ -25,12 +33,11 @@ interface ConfirmModalProps {
 
 function ConfirmModal({ isOpen, title, message, detail, confirmText, cancelText, onConfirm, onCancel, type = 'danger' }: ConfirmModalProps) {
   if (!isOpen) return null;
-  
   return (
     <div className={styles.modalOverlay} onClick={onCancel}>
       <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <Icon name="alert-triangle" size="md" className={styles[type]} />
+          <Icon name="alert-triangle" size="sm" className={styles[type]} />
           <h3 className={styles.modalTitle}>{title}</h3>
         </div>
         <div className={styles.modalBody}>
@@ -38,28 +45,20 @@ function ConfirmModal({ isOpen, title, message, detail, confirmText, cancelText,
           {detail && <p className={styles.modalDetail}>{detail}</p>}
         </div>
         <div className={styles.modalActions}>
-          <button className={styles.cancelBtn} onClick={onCancel}>
-            {cancelText}
-          </button>
-          <button className={`${styles.confirmBtn} ${styles[type]}`} onClick={onConfirm}>
-            {confirmText}
-          </button>
+          <button className={styles.cancelBtn} onClick={onCancel}>{cancelText}</button>
+          <button className={`${styles.confirmBtn} ${styles[type]}`} onClick={onConfirm}>{confirmText}</button>
         </div>
       </div>
     </div>
   );
 }
 
-// 格式化金额显示（避免浮点数精度问题）
 function formatUSDT(value: string | number): string {
-  const d = new Decimal(value);
-  return d.toFixed(2);
+  return new Decimal(value).toFixed(2);
 }
 
 function formatCrypto(value: string | number): string {
-  const d = new Decimal(value);
-  // 去掉尾部多余的零
-  return d.toFixed(8).replace(/\.?0+$/, '') || '0';
+  return new Decimal(value).toFixed(6).replace(/\.?0+$/, '') || '0';
 }
 
 export function Positions() {
@@ -71,9 +70,9 @@ export function Positions() {
   const orderBook = useMarketStore(selectOrderBook);
   const selectedSymbol = useWatchlistStore(selectSelectedSymbol);
   const setSelectedSymbol = useWatchlistStore((state) => state.setSelectedSymbol);
+  const symbolPrices = useWatchlistStore(selectSymbolPrices);
   const resetAccount = useTradingStore((state) => state.resetAccount);
 
-  // 平仓确认状态
   const [closeConfirm, setCloseConfirm] = useState<{
     isOpen: boolean;
     symbol: string;
@@ -88,17 +87,12 @@ export function Positions() {
     quantity: string;
   } | null>(null);
 
-  // 当前选中币种的 mid 价格
   const currentSymbolMidPrice = metrics ? new Decimal(metrics.mid) : new Decimal(0);
   const currentSymbol = orderBook?.symbol || selectedSymbol;
   
-  // Get USDT balance（使用 Decimal 避免精度问题）
   const usdtBalance = balances.find(b => b.asset === 'USDT');
   const usdtTotal = new Decimal(usdtBalance?.total ?? '0');
 
-  // Calculate position values
-  // 注意：只有当前选中币种的持仓才能计算实时盈亏
-  // 其他币种的持仓使用入场价作为参考（因为没有实时价格）
   let positionEntries: [string, any][] = [];
   if (positions instanceof Map) {
     positionEntries = Array.from(positions.entries());
@@ -110,40 +104,40 @@ export function Positions() {
   let totalUnrealizedPnl = new Decimal(0);
 
   const positionsWithPnl = positionEntries
-    .filter(([_, pos]) => {
-      // 防御性检查：确保 position 数据完整
-      if (!pos || pos.quantity === undefined || pos.avgEntryPrice === undefined) {
-        return false;
-      }
-      return pos.side === 'long' && new Decimal(pos.quantity).gt(0);
-    })
+    .filter(([_, pos]) => pos && pos.quantity !== undefined && pos.avgEntryPrice !== undefined && pos.side === 'long' && new Decimal(pos.quantity).gt(0))
     .map(([symbol, pos]) => {
       const qty = new Decimal(pos.quantity || '0');
       const avgEntry = new Decimal(pos.avgEntryPrice || '0');
-      
-      // 只有当前选中的币种才使用实时价格计算盈亏
       const isCurrentSymbol = symbol === currentSymbol;
-      const currentPrice = isCurrentSymbol ? currentSymbolMidPrice : avgEntry;
-      const hasRealTimePrice = isCurrentSymbol && currentSymbolMidPrice.gt(0);
+      
+      // 优先使用当前选中币种的实时价格，否则使用 watchlist 中的价格
+      let currentPrice: Decimal;
+      let hasRealTimePrice = false;
+      
+      if (isCurrentSymbol && currentSymbolMidPrice.gt(0)) {
+        currentPrice = currentSymbolMidPrice;
+        hasRealTimePrice = true;
+      } else {
+        const watchlistPrice = symbolPrices.get(symbol);
+        if (watchlistPrice) {
+          currentPrice = new Decimal(watchlistPrice);
+          hasRealTimePrice = true;
+        } else {
+          currentPrice = avgEntry;
+        }
+      }
       
       const value = qty.times(currentPrice);
       const unrealizedPnl = hasRealTimePrice ? qty.times(currentPrice.minus(avgEntry)) : new Decimal(0);
-      const pnlPercent = hasRealTimePrice && avgEntry.gt(0) 
-        ? currentPrice.minus(avgEntry).div(avgEntry).times(100) 
-        : new Decimal(0);
+      const pnlPercent = hasRealTimePrice && avgEntry.gt(0) ? currentPrice.minus(avgEntry).div(avgEntry).times(100) : new Decimal(0);
 
-      // 只有有实时价格的持仓才计入总盈亏
+      totalPositionValue = totalPositionValue.plus(value);
       if (hasRealTimePrice) {
-        totalPositionValue = totalPositionValue.plus(value);
         totalUnrealizedPnl = totalUnrealizedPnl.plus(unrealizedPnl);
-      } else {
-        // 没有实时价格的持仓，使用入场价估算价值
-        totalPositionValue = totalPositionValue.plus(qty.times(avgEntry));
       }
 
       return {
-        ...pos,
-        symbol,
+        ...pos, symbol,
         currentPrice: currentPrice.toNumber(),
         value: value.toNumber(),
         unrealizedPnl: unrealizedPnl.toNumber(),
@@ -153,8 +147,6 @@ export function Positions() {
     });
 
   const totalAccountValue = usdtTotal.plus(totalPositionValue);
-  // Calculate total deposits for PnL reference (simplified: just use current total as we can't track initial deposits without ledger access here)
-  // For now, just show unrealized PnL based on positions
   const accountPnlPercent = totalUnrealizedPnl.div(totalAccountValue.gt(0) ? totalAccountValue : 1).times(100).toNumber();
 
   const handleReset = () => {
@@ -162,192 +154,156 @@ export function Positions() {
     toast.info(t.common.reset);
   };
 
-  // 显示平仓确认弹窗
   const handleClosePositionClick = (symbol: string, quantity: string, value: number) => {
     setCloseConfirm({ isOpen: true, symbol, quantity, value });
   };
 
-  // 确认平仓
   const confirmClosePosition = () => {
     if (!closeConfirm) return;
-    
     const { symbol, quantity } = closeConfirm;
     
-    // 如果当前不是这个币种，先切换
     if (currentSymbol !== symbol) {
       setSelectedSymbol(symbol);
-      toast.info(t.positions?.switchingSymbol || `切换到 ${symbol}...`);
-      // 延迟执行，等待市场数据加载
+      toast.info(t.positions?.switchingSymbol || `Switching to ${symbol}...`);
       setTimeout(() => {
         const currentMetrics = useMarketStore.getState().metrics;
         if (currentMetrics) {
-          const order = createOrder({
-            symbol,
-            side: 'sell',
-            type: 'market',
-            quantity,
-          }, currentMetrics.mid);
-          
-          if (order) {
-            toast.success(t.positions?.closeOrderSubmitted || '平仓订单已提交');
-          } else {
-            toast.error(t.orderEntry?.insufficientBalance || '余额不足');
-          }
+          const order = createOrder({ symbol, side: 'sell', type: 'market', quantity }, currentMetrics.mid);
+          if (order) toast.success(t.positions?.closeOrderSubmitted || 'Close order submitted');
+          else toast.error(t.orderEntry?.insufficientBalance || 'Insufficient balance');
         }
       }, 2000);
     } else {
-      // 当前币种，直接平仓
       if (metrics) {
-        const order = createOrder({
-          symbol,
-          side: 'sell',
-          type: 'market',
-          quantity,
-        }, metrics.mid);
-        
-        if (order) {
-          toast.success(t.positions?.closeOrderSubmitted || '平仓订单已提交');
-        } else {
-          toast.error(t.orderEntry?.insufficientBalance || '余额不足');
-        }
+        const order = createOrder({ symbol, side: 'sell', type: 'market', quantity }, metrics.mid);
+        if (order) toast.success(t.positions?.closeOrderSubmitted || 'Close order submitted');
+        else toast.error(t.orderEntry?.insufficientBalance || 'Insufficient balance');
       } else {
-        toast.error(t.positions?.noMarketData || '无市场数据，请稍后重试');
+        toast.error(t.positions?.noMarketData || 'No market data');
       }
     }
-    
     setCloseConfirm(null);
   };
 
+  const activeBalances = balances.filter(b => new Decimal(b.total).gt(0) || b.asset === 'USDT');
+
   return (
-    <div className={`card ${styles.container}`}>
-      <div className={`card-header ${styles.header}`}>
-        <span>{t.account.title}</span>
-        <button className={styles.resetBtn} onClick={handleReset}>
-          {t.common.reset}
-        </button>
+    <div className={styles.container}>
+      {/* Compact Header */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <span className={styles.headerTitle}>{t.account.title}</span>
+          <div className={styles.headerStats}>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Total</span>
+              <span className={styles.statValue}>${formatUSDT(totalAccountValue.toString())}</span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>PnL</span>
+              <span className={`${styles.statValue} ${accountPnlPercent >= 0 ? 'price-up' : 'price-down'}`}>
+                {accountPnlPercent >= 0 ? '+' : ''}{accountPnlPercent.toFixed(2)}%
+              </span>
+            </div>
+          </div>
+        </div>
+        <button className={styles.resetBtn} onClick={handleReset}>{t.common.reset}</button>
       </div>
       
       <div className={styles.body}>
-        {/* Account Summary */}
-        <div className={styles.summary}>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>{t.account.totalValue}</span>
-            <span className={`${styles.summaryValue} tabular-nums`}>
-              ${formatUSDT(totalAccountValue.toString())}
-            </span>
-          </div>
-          <div className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>{t.positions.unrealizedPnL}</span>
-            <span className={`${styles.summaryValue} tabular-nums ${accountPnlPercent >= 0 ? 'price-up' : 'price-down'}`}>
-              {accountPnlPercent >= 0 ? '+' : ''}{accountPnlPercent.toFixed(2)}%
-            </span>
-          </div>
-        </div>
-
-        {/* Balances */}
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>{t.account.balance}</div>
-          <div className={styles.balanceList}>
-            {balances
-              .filter(b => new Decimal(b.total).gt(0) || b.asset === 'USDT')
-              .map((balance) => (
-                <div key={balance.asset} className={styles.balanceRow}>
-                  <span className={styles.asset}>{balance.asset}</span>
-                  <div className={styles.balanceValues}>
-                    <span className={`${styles.balanceTotal} tabular-nums`}>
-                      {balance.asset === 'USDT' ? formatUSDT(balance.total) : formatCrypto(balance.total)}
-                    </span>
-                    {new Decimal(balance.frozen).gt(0) && (
-                      <span className={`${styles.balanceLocked} tabular-nums`}>
-                        ({balance.asset === 'USDT' ? formatUSDT(balance.frozen) : formatCrypto(balance.frozen)} {t.account.locked})
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* Positions */}
-        {positionsWithPnl.length > 0 && (
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>{t.positions.title}</div>
-            <div className={styles.positionList}>
-              {positionsWithPnl.map((pos) => (
-                <div key={pos.symbol} className={styles.positionRow}>
-                  <div className={styles.positionMain}>
-                    <div className={styles.positionInfo}>
-                      <span className={styles.positionSymbol}>{pos.symbol}</span>
-                      <span className={`${styles.positionSide} ${styles.long}`}>{t.positions.long}</span>
-                    </div>
-                    <div className={styles.positionActions}>
-                      <button 
-                        className={styles.tpslBtn}
-                        onClick={() => setTpslTarget({
-                          symbol: pos.symbol,
-                          currentPrice: pos.currentPrice,
-                          avgEntryPrice: parseFloat(pos.avgEntryPrice),
-                          quantity: pos.quantity
-                        })}
-                        title="TP/SL"
-                      >
-                        <Icon name="target" size="xs" />
-                        TP/SL
-                      </button>
-                      <button 
-                        className={styles.closePositionBtn}
-                        onClick={() => handleClosePositionClick(pos.symbol, pos.quantity, pos.value)}
-                        title={t.positions?.closePosition || '市价全平'}
-                      >
-                        <Icon name="external-link" size="sm" />
-                        {t.positions?.marketClose || '市价全平'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.positionDetails}>
-                    <div className={styles.positionDetail}>
-                      <span className={styles.detailLabel}>{t.positions.amount}</span>
-                      <span className={`${styles.detailValue} tabular-nums`}>
-                        {formatCrypto(pos.quantity)}
-                      </span>
-                    </div>
-                    <div className={styles.positionDetail}>
-                      <span className={styles.detailLabel}>{t.positions.avgPrice}</span>
-                      <span className={`${styles.detailValue} tabular-nums`}>
-                        ${formatUSDT(pos.avgEntryPrice)}
-                      </span>
-                    </div>
-                    <div className={styles.positionDetail}>
-                      <span className={styles.detailLabel}>{t.positions.unrealizedPnL}</span>
+        {/* Positions Table */}
+        {positionsWithPnl.length > 0 ? (
+          <div className={styles.tableContainer}>
+            <table className={styles.table}>
+              <thead className={styles.tableHead}>
+                <tr>
+                  <th>Symbol</th>
+                  <th>Size</th>
+                  <th>Entry</th>
+                  <th>Mark</th>
+                  <th>PnL</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody className={styles.tableBody}>
+                {positionsWithPnl.map((pos) => (
+                  <tr key={pos.symbol}>
+                    <td>
+                      <div className={styles.symbolCell}>
+                        <span className={styles.symbol}>{pos.symbol.replace('USDT', '')}</span>
+                        <span className={`${styles.sideBadge} ${styles.long}`}>L</span>
+                      </div>
+                    </td>
+                    <td className={styles.numericCell}>{formatCrypto(pos.quantity)}</td>
+                    <td className={styles.numericCell}>${formatUSDT(pos.avgEntryPrice)}</td>
+                    <td className={styles.numericCell}>
+                      {pos.hasRealTimePrice ? `$${formatUSDT(pos.currentPrice)}` : '—'}
+                    </td>
+                    <td className={`${styles.pnlCell} ${pos.hasRealTimePrice ? (pos.unrealizedPnl >= 0 ? styles.positive : styles.negative) : styles.pending}`}>
                       {pos.hasRealTimePrice ? (
-                        <span className={`${styles.detailValue} tabular-nums ${pos.unrealizedPnl >= 0 ? 'price-up' : 'price-down'}`}>
+                        <>
                           {pos.unrealizedPnl >= 0 ? '+' : ''}${pos.unrealizedPnl.toFixed(2)}
-                          <span className={styles.pnlPercent}>
-                            ({pos.pnlPercent >= 0 ? '+' : ''}{pos.pnlPercent.toFixed(2)}%)
+                          <span style={{ opacity: 0.7, marginLeft: 4, fontSize: 9 }}>
+                            ({pos.pnlPercent >= 0 ? '+' : ''}{pos.pnlPercent.toFixed(1)}%)
                           </span>
-                        </span>
-                      ) : (
-                        <span className={`${styles.detailValue} tabular-nums ${styles.pendingPrice}`}>
-                          --
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                        </>
+                      ) : '—'}
+                    </td>
+                    <td>
+                      <div className={styles.actionsCell}>
+                        <button 
+                          className={styles.actionBtn}
+                          onClick={() => setTpslTarget({
+                            symbol: pos.symbol,
+                            currentPrice: pos.currentPrice,
+                            avgEntryPrice: parseFloat(pos.avgEntryPrice),
+                            quantity: pos.quantity
+                          })}
+                        >
+                          <Icon name="target" size="xs" />
+                          TP/SL
+                        </button>
+                        <button 
+                          className={`${styles.actionBtn} ${styles.closeBtn}`}
+                          onClick={() => handleClosePositionClick(pos.symbol, pos.quantity, pos.value)}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        ) : (
+          <div className={styles.empty}>No open positions</div>
         )}
       </div>
 
-      {/* 平仓确认弹窗 */}
+      {/* Balance Footer */}
+      <div className={styles.balanceRow}>
+        {activeBalances.map((balance) => (
+          <div key={balance.asset} className={styles.balanceItem}>
+            <span className={styles.balanceAsset}>{balance.asset}</span>
+            <span className={styles.balanceValue}>
+              {balance.asset === 'USDT' ? formatUSDT(balance.total) : formatCrypto(balance.total)}
+            </span>
+            {new Decimal(balance.frozen).gt(0) && (
+              <span className={styles.balanceLocked}>
+                ({balance.asset === 'USDT' ? formatUSDT(balance.frozen) : formatCrypto(balance.frozen)} locked)
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
       <ConfirmModal
         isOpen={!!closeConfirm?.isOpen}
-        title={t.positions?.confirmCloseTitle || '确认平仓'}
-        message={t.positions?.confirmCloseMessage || `确定要市价卖出全部 ${closeConfirm?.symbol?.replace('USDT', '')} 吗？`}
+        title={t.positions?.confirmCloseTitle || 'Confirm Close'}
+        message={t.positions?.confirmCloseMessage || `Close all ${closeConfirm?.symbol?.replace('USDT', '')} at market price?`}
         detail={closeConfirm ? `${formatCrypto(closeConfirm.quantity)} ${closeConfirm.symbol.replace('USDT', '')} ≈ $${closeConfirm.value.toFixed(2)}` : undefined}
-        confirmText={t.positions?.confirmClose || '确认平仓'}
-        cancelText={t.common?.cancel || '取消'}
+        confirmText={t.positions?.confirmClose || 'Close Position'}
+        cancelText={t.common?.cancel || 'Cancel'}
         onConfirm={confirmClosePosition}
         onCancel={() => setCloseConfirm(null)}
         type="danger"

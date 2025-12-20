@@ -9,28 +9,57 @@ import styles from './TriggerList.module.css';
 interface TriggerListProps {
   filterSymbol?: string;
   showHistory?: boolean;
+  compact?: boolean;
 }
 
-export function TriggerList({ filterSymbol, showHistory = false }: TriggerListProps) {
+export function TriggerList({ filterSymbol, showHistory = false, compact = false }: TriggerListProps) {
   const { t } = useI18n();
   const triggers = useAutomationStore((state) => state.triggers);
   const removeTrigger = useAutomationStore((state) => state.removeTrigger);
   const pauseTrigger = useAutomationStore((state) => state.pauseTrigger);
   const resumeTrigger = useAutomationStore((state) => state.resumeTrigger);
 
-  const filteredTriggers = triggers.filter((t) => {
-    const symbolMatch = !filterSymbol || t.symbol === filterSymbol;
+  const filteredTriggers = triggers.filter((tr) => {
+    const symbolMatch = !filterSymbol || tr.symbol === filterSymbol;
     const historyMatch = showHistory 
-      ? ['completed', 'failed', 'cancelled', 'expired'].includes(t.status)
-      : ['armed', 'paused', 'blocked', 'triggered'].includes(t.status);
+      ? ['completed', 'failed', 'cancelled', 'expired'].includes(tr.status)
+      : ['armed', 'paused', 'blocked', 'triggered'].includes(tr.status);
     return symbolMatch && historyMatch;
   });
 
   if (filteredTriggers.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <Icon name="activity" size="lg" />
-        <span>{showHistory ? t.automation.hints.noLogs : t.automation.hints.noTriggers}</span>
+      <div className={`${styles.emptyState} ${compact ? styles.compactEmpty : ''}`}>
+        <Icon name="zap" size={compact ? 'sm' : 'lg'} />
+        <span>{showHistory ? (t.automation?.hints?.noLogs || 'No logs') : (t.automation?.hints?.noTriggers || 'No active triggers')}</span>
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className={styles.compactContainer}>
+        <table className={styles.compactTable}>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Condition</th>
+              <th>Action</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTriggers.map((trigger) => (
+              <CompactTriggerRow
+                key={trigger.id}
+                trigger={trigger}
+                onDelete={() => removeTrigger(trigger.id)}
+                onToggle={() => trigger.status === 'paused' ? resumeTrigger(trigger.id) : pauseTrigger(trigger.id)}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   }
@@ -55,10 +84,49 @@ interface TriggerItemProps {
   onToggle: () => void;
 }
 
+function CompactTriggerRow({ trigger, onDelete, onToggle }: TriggerItemProps) {
+  const isBuy = trigger.action.side === 'buy';
+  const baseAsset = trigger.symbol.replace('USDT', '');
+
+  return (
+    <tr className={styles.compactRow}>
+      <td>
+        <span className={styles.compactSymbol}>{baseAsset}</span>
+      </td>
+      <td>
+        <span className={styles.compactCondition}>
+          {trigger.condition.operator === 'gte' ? '≥' : '≤'} {parseFloat(trigger.condition.threshold).toLocaleString()}
+        </span>
+      </td>
+      <td>
+        <span className={`${styles.compactAction} ${isBuy ? styles.buy : styles.sell}`}>
+          {isBuy ? 'Buy' : 'Sell'} {trigger.action.quantityValue}{trigger.action.quantityMode === 'percent' ? '%' : ''}
+        </span>
+      </td>
+      <td>
+        <span className={`${styles.compactStatus} ${styles[`status-${trigger.status}`]}`}>
+          {trigger.status}
+        </span>
+      </td>
+      <td>
+        <div className={styles.compactActions}>
+          {['armed', 'paused', 'blocked'].includes(trigger.status) && (
+            <button className={styles.compactActionBtn} onClick={onToggle}>
+              <Icon name={trigger.status === 'paused' ? 'play' : 'pause'} size="xs" />
+            </button>
+          )}
+          <button className={`${styles.compactActionBtn} ${styles.deleteBtn}`} onClick={onDelete}>
+            <Icon name="x" size="xs" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 function TriggerItem({ trigger, onDelete, onToggle }: TriggerItemProps) {
   const { t } = useI18n();
 
-  // Defensive check for i18n sections
   const automationStrings = t.automation || {
     status: {},
     type: {},
@@ -100,7 +168,7 @@ function TriggerItem({ trigger, onDelete, onToggle }: TriggerItemProps) {
             {isBuy ? automationStrings.form.buy : automationStrings.form.sell}
           </span>
           {' '}
-          <span>{trigger.action.orderType === 'market' ? t.orderEntry.market : t.orderEntry.limit}</span>
+          <span>{trigger.action.orderType === 'market' ? (t.orderEntry?.market || 'Market') : (t.orderEntry?.limit || 'Limit')}</span>
           {' '}
           <span>
             {trigger.action.quantityValue}
@@ -125,4 +193,3 @@ function TriggerItem({ trigger, onDelete, onToggle }: TriggerItemProps) {
     </div>
   );
 }
-

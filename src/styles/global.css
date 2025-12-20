@@ -282,23 +282,69 @@ h1, h2, h3, h4, h5, h6 {
   visibility: visible;
 }
 
-/* ===== Scrollbar ===== */
+/* ===== Scrollbar - Subtle Dark Theme ===== */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-bg-tertiary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border-primary);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+/* ===== Custom Checkbox - Dark Theme ===== */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--text-tertiary);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-alpha);
 }
 
 /* ===== Layout ===== */

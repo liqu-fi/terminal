@@ -22,73 +22,59 @@ function OrderRow({ order }: { order: PaperOrder }) {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return t.orderStatus.pending;
-      case 'submitted': return t.orderStatus.submitted;
-      case 'open': return t.orderStatus.open;
-      case 'partial': return t.orderStatus.partial;
-      case 'filled': return t.orderStatus.filled;
-      case 'cancelled': return t.orderStatus.cancelled;
-      case 'rejected': return t.orderStatus.rejected;
+      case 'pending': return 'Pending';
+      case 'submitted': return 'Submitted';
+      case 'open': return 'Open';
+      case 'partial': return 'Partial';
+      case 'filled': return 'Filled';
+      case 'cancelled': return 'Cancelled';
+      case 'rejected': return 'Rejected';
       default: return status;
     }
   };
 
   return (
-    <div className={`${styles.row} ${styles[order.status]}`}>
-      <div className={styles.mainInfo}>
-        <div className={styles.sideType}>
-          <span className={`${styles.side} ${isBuy ? styles.buy : styles.sell}`}>
-            {isBuy ? t.orderEntry.buy : t.orderEntry.sell}
+    <tr className={`${styles[order.status] || ''}`}>
+      <td>
+        <div className={styles.sideCell}>
+          <span className={`${styles.sideBadge} ${isBuy ? styles.buy : styles.sell}`}>
+            {isBuy ? 'B' : 'S'}
           </span>
-          <span className={styles.type}>
-            {order.type === 'limit' ? t.orderEntry.limit : t.orderEntry.market}
-          </span>
-        </div>
-        <div className={styles.symbol}>{order.symbol}</div>
-      </div>
-
-      <div className={styles.details}>
-        <div className={styles.detailItem}>
-          <span className={styles.detailLabel}>{t.orderEntry.price}</span>
-          <span className={`${styles.detailValue} tabular-nums`}>
-            {order.price ? parseFloat(order.price).toFixed(2) : t.orderEntry.market}
+          <span className={styles.typeBadge}>
+            {order.type === 'limit' ? 'LMT' : 'MKT'}
           </span>
         </div>
-        <div className={styles.detailItem}>
-          <span className={styles.detailLabel}>{t.orderEntry.amount}</span>
-          <span className={`${styles.detailValue} tabular-nums`}>
-            {parseFloat(order.quantity).toFixed(6)}
-          </span>
-        </div>
-        <div className={styles.detailItem}>
-          <span className={styles.detailLabel}>{t.openOrders.filled}</span>
-          <span className={`${styles.detailValue} tabular-nums`}>
-            {filledPercent.toFixed(1)}%
-          </span>
-        </div>
-      </div>
-
-      {order.status === 'partial' && (
-        <div className={styles.progressBar}>
-          <div 
-            className={`${styles.progressFill} ${isBuy ? styles.buyFill : styles.sellFill}`}
-            style={{ width: `${filledPercent}%` }}
-          />
-        </div>
-      )}
-
-      <div className={styles.statusRow}>
-        <span className={`${styles.status} ${styles[`status_${order.status}`]}`}>
+      </td>
+      <td>
+        <span className={styles.symbol}>{order.symbol.replace('USDT', '')}</span>
+      </td>
+      <td className={styles.numericCell}>
+        {order.price ? parseFloat(order.price).toFixed(2) : '—'}
+      </td>
+      <td className={styles.numericCell}>
+        {parseFloat(order.quantity).toFixed(6)}
+      </td>
+      <td className={styles.statusCell}>
+        <span className={`${styles.statusBadge} ${styles[`status_${order.status}`]}`}>
           {getStatusText(order.status)}
         </span>
-        
+        {order.status === 'partial' && (
+          <div className={styles.filledBar}>
+            <div 
+              className={`${styles.filledBarInner} ${isBuy ? styles.buy : styles.sell}`}
+              style={{ width: `${filledPercent}%` }}
+            />
+          </div>
+        )}
+      </td>
+      <td style={{ textAlign: 'right' }}>
         {canCancel && (
           <button className={styles.cancelBtn} onClick={handleCancel}>
-            {t.openOrders.cancel}
+            Cancel
           </button>
         )}
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 }
 
@@ -97,16 +83,35 @@ export function OpenOrders() {
   const orders = useTradingStore((state) => state.getOpenOrders());
 
   return (
-    <div className={`card ${styles.container}`}>
-      <div className="card-header">{t.openOrders.title} ({orders.length})</div>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <span className={styles.headerTitle}>
+          {t.openOrders.title}
+          <span className={styles.orderCount}>({orders.length})</span>
+        </span>
+      </div>
       
       <div className={styles.body}>
         {orders.length === 0 ? (
           <div className={styles.empty}>{t.openOrders.noOrders}</div>
         ) : (
-          orders.map((order) => (
-            <OrderRow key={order.clientOrderId} order={order} />
-          ))
+          <table className={styles.table}>
+            <thead className={styles.tableHead}>
+              <tr>
+                <th>Side</th>
+                <th>Symbol</th>
+                <th>Price</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody className={styles.tableBody}>
+              {orders.map((order) => (
+                <OrderRow key={order.clientOrderId} order={order} />
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

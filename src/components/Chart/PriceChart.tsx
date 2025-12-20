@@ -150,10 +150,28 @@ export function PriceChart() {
     });
   }, []);
 
-  // 获取历史K线数据
-  const fetchKlines = useCallback(async (symbol: string, interval: string) => {
-    setLoading(true);
-    setError(null);
+  // K线数据缓存
+  const klinesCacheRef = useRef<Map<string, { data: KlineData[]; timestamp: number }>>(new Map());
+  const CACHE_TTL = 60000; // 60秒缓存
+
+  // 获取历史K线数据（带缓存和重试）
+  const fetchKlines = useCallback(async (symbol: string, interval: string, retryCount = 0) => {
+    const cacheKey = `${symbol}-${interval}`;
+    const cached = klinesCacheRef.current.get(cacheKey);
+    const now = Date.now();
+    
+    // 有效缓存直接使用
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      setKlines(cached.data);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+    
+    // 首次加载显示 loading
+    if (klines.length === 0) {
+      setLoading(true);
+    }
     
     try {
       const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=500`;
@@ -171,24 +189,43 @@ export function PriceChart() {
         volume: parseFloat(k[5] as string),
       }));
       
+      // 更新缓存
+      klinesCacheRef.current.set(cacheKey, { data: formattedData, timestamp: now });
+      
       setKlines(formattedData);
+      setError(null);
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch klines:', err);
+      
+      // 有缓存数据时使用过期缓存
+      if (cached) {
+        setKlines(cached.data);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+      
+      // 重试最多3次
+      if (retryCount < 3) {
+        setTimeout(() => fetchKlines(symbol, interval, retryCount + 1), 2000 * (retryCount + 1));
+        return;
+      }
+      
       setError('无法加载数据');
       setLoading(false);
     }
-  }, []);
+  }, [klines.length]);
 
   // 数据获取
   useEffect(() => {
     if (selectedSymbol) fetchKlines(selectedSymbol, INTERVAL_MAP[timeRange]);
   }, [selectedSymbol, timeRange, fetchKlines]);
 
-  // 定时刷新
+  // 定时刷新（60秒间隔，避免速率限制）
   useEffect(() => {
     if (!selectedSymbol) return;
-    const interval = setInterval(() => fetchKlines(selectedSymbol, INTERVAL_MAP[timeRange]), 10000);
+    const interval = setInterval(() => fetchKlines(selectedSymbol, INTERVAL_MAP[timeRange]), 60000);
     return () => clearInterval(interval);
   }, [selectedSymbol, timeRange, fetchKlines]);
 
@@ -425,13 +462,15 @@ export function PriceChart() {
       return;
     }
 
+    const containerWidth = volumeChartRef.current.clientWidth || volumeChartRef.current.offsetWidth || 400;
+
     const chart = createChart(volumeChartRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: CHART_COLORS.text,
         attributionLogo: false,
       },
-      width: volumeChartRef.current.clientWidth,
+      width: containerWidth,
       height: 80,
       grid: {
         vertLines: { color: CHART_COLORS.grid, style: 1 },
@@ -470,6 +509,20 @@ export function PriceChart() {
       });
     }
 
+    // 使用 ResizeObserver 监听容器大小变化
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (volumeChartApiRef.current && entry.target === volumeChartRef.current) {
+          const { width } = entry.contentRect;
+          if (width > 0) {
+            volumeChartApiRef.current.applyOptions({ width: Math.floor(width) });
+          }
+        }
+      }
+    });
+
+    resizeObserver.observe(volumeChartRef.current);
+
     const handleResize = () => {
       if (volumeChartRef.current && volumeChartApiRef.current) {
         volumeChartApiRef.current.applyOptions({ width: volumeChartRef.current.clientWidth });
@@ -479,6 +532,7 @@ export function PriceChart() {
     window.addEventListener('resize', handleResize);
 
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       volumeSeriesRef.current = null;
       volumeChartApiRef.current = null;

@@ -4,23 +4,7 @@ import { useI18n } from '../../i18n';
 import { formatLastUpdateTime } from '../../utils/timeFormat';
 import { DiagnosticsDrawer } from './DiagnosticsDrawer';
 import { Icon } from '../Icon';
-import type { DataConfidenceLevel } from '../../types/market';
 import styles from './DataConfidenceBar.module.css';
-
-function ConfidenceIcon({ level }: { level: DataConfidenceLevel }) {
-  switch (level) {
-    case 'live':
-      return <Icon name="activity" size="sm" className={styles.pulse} />;
-    case 'degraded':
-      return <Icon name="alert-triangle" size="sm" />;
-    case 'resyncing':
-      return <Icon name="refresh-cw" size="sm" className={styles.spinning} />;
-    case 'stale':
-      return <Icon name="wifi-off" size="sm" />;
-    default:
-      return null;
-  }
-}
 
 export function DataConfidenceBar() {
   const { t } = useI18n();
@@ -64,12 +48,9 @@ export function DataConfidenceBar() {
     <>
       <div className={`${styles.bar} ${styles[level]} animate-fade`}>
         <div className={styles.statusSection}>
-          <div className={styles.iconWrapper}>
-            <ConfidenceIcon level={level} />
-          </div>
           <div className={styles.statusInfo}>
             <span className={styles.statusText}>{getStatusText()}</span>
-            <span className={styles.statusReason}>{reason}</span>
+            {reason && <span className={styles.statusReason}>{reason}</span>}
           </div>
         </div>
 

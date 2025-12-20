@@ -1,15 +1,9 @@
+/* Original Form Styles */
 .container {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-}
-
-.title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
 }
 
 .form {
@@ -75,13 +69,13 @@
 }
 
 .buyActive.active {
-  background: rgba(63, 185, 80, 0.2);
-  color: var(--buy-color);
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--color-price-up);
 }
 
 .sellActive.active {
-  background: rgba(248, 81, 73, 0.2);
-  color: var(--sell-color);
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-price-down);
 }
 
 .checkboxGroup {
@@ -117,12 +111,12 @@
 }
 
 .buySubmit {
-  background: var(--buy-color);
+  background: var(--color-price-up);
   color: white;
 }
 
 .sellSubmit {
-  background: var(--sell-color);
+  background: var(--color-price-down);
   color: white;
 }
 
@@ -141,3 +135,179 @@
   cursor: pointer;
 }
 
+/* Compact Form Styles */
+.compactContainer {
+  padding: 8px 10px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.compactForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.compactRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.compactField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compactLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.compactToggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.compactBtn {
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.compactBtn.active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.compactBtn.buyBtn.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--color-price-up);
+}
+
+.compactBtn.sellBtn.active {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--color-price-down);
+}
+
+.compactInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.compactInput {
+  width: 100%;
+  padding: 5px 32px 5px 8px;
+  font-size: 11px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.compactInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.compactInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.compactSuffix {
+  position: absolute;
+  right: 6px;
+  font-size: 9px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.compactSelect {
+  padding: 5px 6px;
+  font-size: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 50px;
+}
+
+.compactSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.compactOptions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.compactCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.compactCheckbox:hover {
+  color: var(--text-secondary);
+}
+
+.compactCheckbox input {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.compactCheckbox input:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.compactSubmit {
+  margin-top: auto;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.compactSubmit:hover {
+  filter: brightness(1.1);
+}
+
+.compactSubmit:active {
+  transform: scale(0.98);
+}

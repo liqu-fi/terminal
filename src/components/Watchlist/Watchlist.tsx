@@ -193,32 +193,17 @@ export function Watchlist({ onSymbolChange, isCollapsed = false }: WatchlistProp
   const symbols = useWatchlistStore(state => state.symbols);
   const updateSymbolPrice = useWatchlistStore(state => state.updateSymbolPrice);
   
-  // 获取所有 symbols 的价格数据
+  // 获取所有 symbols 的价格数据（优化：减少请求频率）
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // 使用 Binance 24hr ticker API 获取所有价格
+        // 使用 Binance 24hr ticker API 批量获取所有价格
         const symbolList = symbols.map(s => s.symbol).join(',');
         const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolList.split(',').map(s => `"${s}"`).join(',')}]`);
         
         if (!response.ok) {
-          // 如果批量请求失败，逐个获取
-          for (const sym of symbols) {
-            try {
-              const singleResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym.symbol}`);
-              if (singleResponse.ok) {
-                const data = await singleResponse.json();
-                updateSymbolPrice(
-                  sym.symbol, 
-                  data.lastPrice, 
-                  parseFloat(data.priceChangePercent)
-                );
-              }
-            } catch {
-              // 忽略单个请求失败
-            }
-          }
-          return;
+          console.warn('Watchlist fetch failed:', response.status);
+          return; // 不回退到单个请求，避免触发速率限制
         }
         
         const data = await response.json();
@@ -236,13 +221,16 @@ export function Watchlist({ onSymbolChange, isCollapsed = false }: WatchlistProp
       }
     };
 
-    // 立即获取一次
-    fetchPrices();
+    // 延迟首次请求
+    const initialDelay = setTimeout(fetchPrices, 500);
 
-    // 每 5 秒更新一次
-    const interval = setInterval(fetchPrices, 5000);
+    // 每 60 秒更新一次（避免速率限制）
+    const interval = setInterval(fetchPrices, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialDelay);
+      clearInterval(interval);
+    };
   }, [symbols, updateSymbolPrice]);
   
   const getPosition = useCallback((symbol: string) => {

@@ -41,15 +41,24 @@
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
 }
 
 .scrollContent::-webkit-scrollbar {
   width: 4px;
 }
 
+.scrollContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .scrollContent::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
+}
+
+.scrollContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .asksSection {
@@ -275,15 +284,24 @@
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
 }
 
 .embeddedScrollContent::-webkit-scrollbar {
   width: 3px;
 }
 
+.embeddedScrollContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .embeddedScrollContent::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
+}
+
+.embeddedScrollContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .embeddedSpread {

@@ -128,6 +128,16 @@ export function RiskRibbon() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.header}>
+        <div className={styles.titleGroup}>
+          <Icon name="shield" size="xs" className={styles.riskIcon} />
+          <span className={styles.title}>{t.riskRibbon.title}</span>
+        </div>
+        <div className={`${styles.level} ${styles[riskLevel]}`}>
+          {getRiskLabel(riskLevel)}
+        </div>
+      </div>
+
       <div className={styles.ribbon}>
         <div 
           className={`${styles.segmentFill} ${
@@ -140,13 +150,13 @@ export function RiskRibbon() {
       <div className={styles.perfGrid}>
         <div className={styles.perfItem} title={t.riskRibbon.positionRatio}>
           <span className={styles.perfLabel}>Pos</span>
-          <span className={`${styles.perfValue} tabular-nums`}>
+          <span className={styles.perfValue}>
             {riskMetrics.positionSizePercent.toFixed(1)}%
           </span>
         </div>
         <div className={styles.perfItem} title={t.riskRibbon.unrealizedPnL}>
           <span className={styles.perfLabel}>PnL</span>
-          <span className={`${styles.perfValue} tabular-nums ${
+          <span className={`${styles.perfValue} ${
             riskMetrics.unrealizedPnlPercent >= 0 ? styles.positive : styles.negative
           }`}>
             {riskMetrics.unrealizedPnlPercent >= 0 ? '+' : ''}
@@ -155,25 +165,25 @@ export function RiskRibbon() {
         </div>
         <div className={styles.perfItem} title={t.riskRibbon.winRate}>
           <span className={styles.perfLabel}>Win</span>
-          <span className={`${styles.perfValue} tabular-nums`}>
+          <span className={styles.perfValue}>
             {(performanceMetrics.winRate * 100).toFixed(0)}%
           </span>
         </div>
         <div className={styles.perfItem} title={t.riskRibbon.profitFactor}>
           <span className={styles.perfLabel}>PF</span>
-          <span className={`${styles.perfValue} tabular-nums`}>
+          <span className={styles.perfValue}>
             {performanceMetrics.profitFactor.toFixed(2)}
           </span>
         </div>
         <div className={styles.perfItem} title={t.riskRibbon.maxDrawdown}>
           <span className={styles.perfLabel}>DD</span>
-          <span className={`${styles.perfValue} ${styles.negative} tabular-nums`}>
+          <span className={`${styles.perfValue} ${styles.negative}`}>
             -{performanceMetrics.maxDrawdown.toFixed(0)}%
           </span>
         </div>
         <div className={styles.perfItem} title={t.riskRibbon.totalRealizedPnl}>
           <span className={styles.perfLabel}>Real</span>
-          <span className={`${styles.perfValue} ${parseFloat(performanceMetrics.totalRealizedPnl) >= 0 ? styles.positive : styles.negative} tabular-nums`}>
+          <span className={`${styles.perfValue} ${parseFloat(performanceMetrics.totalRealizedPnl) >= 0 ? styles.positive : styles.negative}`}>
             {parseFloat(performanceMetrics.totalRealizedPnl) >= 0 ? '+' : ''}{performanceMetrics.totalRealizedPnl}
           </span>
         </div>

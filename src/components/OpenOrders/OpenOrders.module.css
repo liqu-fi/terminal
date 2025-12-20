@@ -6,41 +6,100 @@
   overflow: hidden;
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.orderCount {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: 6px;
+}
+
 .body {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
 }
 
 .body::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .body::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
 }
 
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border-secondary);
-  transition: background-color var(--transition-fast);
+.body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.row:hover {
-  background: var(--color-bg-hover);
+/* Table Layout */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
 }
 
-.row.pending {
-  opacity: 0.7;
+.tableHead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 1;
 }
 
-.row.submitted {
-  opacity: 0.8;
-  animation: pulse 1s infinite;
+.tableHead th {
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.tableHead th:last-child {
+  text-align: right;
+}
+
+.tableBody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--transition-fast);
+}
+
+.tableBody tr:hover {
+  background: var(--surface-hover);
+}
+
+.tableBody tr.pending {
+  opacity: 0.6;
+}
+
+.tableBody tr.submitted {
+  animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
@@ -48,106 +107,67 @@
   50% { opacity: 0.5; }
 }
 
-.mainInfo {
+.tableBody td {
+  padding: 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.sideCell {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
 }
 
-.sideType {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.sideBadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
 }
 
-.side {
-  padding: 2px 6px;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-sm);
-}
-
-.side.buy {
-  background: var(--color-price-up-bg);
+.sideBadge.buy {
+  background: rgba(34, 197, 94, 0.15);
   color: var(--color-price-up);
 }
 
-.side.sell {
-  background: var(--color-price-down-bg);
+.sideBadge.sell {
+  background: rgba(239, 68, 68, 0.15);
   color: var(--color-price-down);
 }
 
-.type {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+.typeBadge {
+  font-size: 9px;
+  color: var(--text-tertiary);
   text-transform: uppercase;
 }
 
 .symbol {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-.details {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-2);
+.numericCell {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
 }
 
-.detailItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.statusCell {
+  text-align: center;
 }
 
-.detailLabel {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
-.detailValue {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.progressBar {
-  height: 4px;
-  background: var(--color-bg-tertiary);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  transition: width var(--transition-normal);
-}
-
-.progressFill.buyFill {
-  background: var(--color-price-up);
-}
-
-.progressFill.sellFill {
-  background: var(--color-price-down);
-}
-
-.statusRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.status {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+.statusBadge {
+  font-size: 9px;
+  font-weight: 600;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
+  text-transform: uppercase;
 }
 
 .status_pending {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-tertiary);
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
 }
 
 .status_submitted {
@@ -161,36 +181,59 @@
 }
 
 .status_partial {
-  background: var(--color-price-up-bg);
+  background: rgba(34, 197, 94, 0.15);
   color: var(--color-price-up);
 }
 
+.filledBar {
+  width: 40px;
+  height: 3px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.filledBarInner {
+  height: 100%;
+  border-radius: 2px;
+  transition: width var(--transition-normal);
+}
+
+.filledBarInner.buy {
+  background: var(--color-price-up);
+}
+
+.filledBarInner.sell {
+  background: var(--color-price-down);
+}
+
 .cancelBtn {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 600;
   background: transparent;
   border: 1px solid var(--color-error);
   border-radius: var(--radius-sm);
   color: var(--color-error);
   cursor: pointer;
   transition: all var(--transition-fast);
+  text-transform: uppercase;
 }
 
 .cancelBtn:hover {
-  background: var(--color-price-down-bg);
+  background: var(--color-error);
+  color: white;
 }
 
 .empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-4);
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-sm);
+  height: 100%;
+  padding: 24px;
+  color: var(--text-tertiary);
+  font-size: 11px;
 }
-
-
-
-
-

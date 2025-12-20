@@ -89,7 +89,7 @@ export function TradePage() {
         {/* Center Area: Chart + Bottom Tabs */}
         <Panel defaultSize={55} minSize={30} className={styles.centerPanel}>
           <PanelGroup orientation="vertical" className={styles.centerPanelGroup}>
-            <Panel defaultSize={75} minSize={30} className={styles.chartPanel}>
+            <Panel defaultSize={64} minSize={25} className={styles.chartPanel}>
               <div className={styles.chartArea}>
                 <div className={styles.chartContainer}>
                   <ErrorBoundary name="PriceChart" fallback={<PanelFallback name="PRICE_CHART" />}>
@@ -104,7 +104,7 @@ export function TradePage() {
             
             <ResizeHandle orientation="vertical" />
             
-            <Panel defaultSize={25} minSize={10}>
+            <Panel defaultSize={36} minSize={15}>
               <ErrorBoundary name="BottomTabs" fallback={<PanelFallback name="BOTTOM_TABS" />}>
                 <BottomTabs onPriceClick={handlePriceClick} />
               </ErrorBoundary>
@@ -115,7 +115,7 @@ export function TradePage() {
         <ResizeHandle />
 
         {/* Right Sidebar: Order Entry + OrderBook */}
-        <Panel defaultSize={30} minSize={20} className={styles.rightPanel}>
+        <Panel defaultSize={18} minSize={12} className={styles.rightPanel}>
           <div className={styles.rightContent}>
             <ErrorBoundary name="Risk" fallback={<PanelFallback name="RISK" />}>
               <RiskRibbon />

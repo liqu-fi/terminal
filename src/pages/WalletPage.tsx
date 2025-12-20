@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useWalletStore } from '../store/walletStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
@@ -12,14 +11,12 @@ import {
   WithdrawDrawer,
   OnboardingGuide,
 } from '../components/Wallet';
-import type { OnboardingStage } from '../types/wallet';
 import styles from './WalletPage.module.css';
 
 type WalletTab = 'overview' | 'spot' | 'funding' | 'history';
 
 export function WalletPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const stage = useWalletStore((state) => state.getOnboardingStage());
   
   const [activeTab, setActiveTab] = useState<WalletTab>('overview');
@@ -51,13 +48,6 @@ export function WalletPage() {
         </div>
         
         <div className={styles.headerActions}>
-          <button 
-            className="btn-secondary"
-            onClick={() => navigate('/assets')}
-          >
-            <Icon name="layout" size="sm" />
-            {t.wallet?.overview || 'Details'}
-          </button>
           {stage !== 'not_created' && (
             <>
               <button 

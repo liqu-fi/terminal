@@ -27,7 +27,7 @@ function ConfirmModal({ isOpen, title, message, detail, confirmText, cancelText,
     <div className={styles.modalOverlay} onClick={onCancel}>
       <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <Icon name="alert-circle" size="md" className={type === 'buy' ? styles.buyIcon : styles.sellIcon} />
+          <Icon name="alert-circle" size="sm" className={type === 'buy' ? styles.buyIcon : styles.sellIcon} />
           <h3 className={styles.modalTitle}>{title}</h3>
         </div>
         <div className={styles.modalBody}>
@@ -182,27 +182,30 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
   
   const isSubmitDisabled = dataConfidence.level === 'stale' || dataConfidence.level === 'resyncing' || !quantity || (type === 'limit' && !price);
   const estimatedPriceValue = type === 'market' && metrics ? metrics.mid : (type === 'limit' ? price : '—');
-  const slippageEst = metrics?.slippageEst && metrics.slippageEst !== 'N/A' ? `${metrics.slippageEst} bps` : '—';
+  const slippageEst = metrics?.slippageEst && metrics.slippageEst !== 'N/A' ? `${metrics.slippageEst}bp` : '—';
   const feeValue = total !== '0' ? (parseFloat(total) * 0.001).toFixed(2) : '0';
 
   return (
     <div className={`card ${styles.container} ${focusMode ? styles.focused : ''} animate-fade`}>
       <div className="card-header">
         <span className="card-title">{t.orderEntry.title}</span>
-        {focusMode && <span className={styles.focusBadge}>{t.orderEntry.focusMode}</span>}
+        {focusMode && <span className={styles.focusBadge}>Focus</span>}
       </div>
       
       <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.sideToggle}>
-          <button type="button" className={`${styles.sideBtn} ${styles.buyBtn} ${side === 'buy' ? styles.active : ''}`} onClick={() => setSide('buy')}>{t.orderEntry.buy}</button>
-          <button type="button" className={`${styles.sideBtn} ${styles.sellBtn} ${side === 'sell' ? styles.active : ''}`} onClick={() => setSide('sell')}>{t.orderEntry.sell}</button>
+        {/* Combined Side & Type Toggle Row */}
+        <div className={styles.headerRow}>
+          <div className={styles.sideToggle}>
+            <button type="button" className={`${styles.sideBtn} ${styles.buyBtn} ${side === 'buy' ? styles.active : ''}`} onClick={() => setSide('buy')}>{t.orderEntry.buy}</button>
+            <button type="button" className={`${styles.sideBtn} ${styles.sellBtn} ${side === 'sell' ? styles.active : ''}`} onClick={() => setSide('sell')}>{t.orderEntry.sell}</button>
+          </div>
+          <div className={styles.typeToggle}>
+            <button type="button" className={`${styles.typeBtn} ${type === 'limit' ? styles.active : ''}`} onClick={() => setType('limit')}>{t.orderEntry.limit}</button>
+            <button type="button" className={`${styles.typeBtn} ${type === 'market' ? styles.active : ''}`} onClick={() => setType('market')}>{t.orderEntry.market}</button>
+          </div>
         </div>
 
-        <div className={styles.typeToggle}>
-          <button type="button" className={`${styles.typeBtn} ${type === 'limit' ? styles.active : ''}`} onClick={() => setType('limit')}>{t.orderEntry.limit}</button>
-          <button type="button" className={`${styles.typeBtn} ${type === 'market' ? styles.active : ''}`} onClick={() => setType('market')}>{t.orderEntry.market}</button>
-        </div>
-
+        {/* Price Input (Limit only) */}
         {type === 'limit' && (
           <div className={styles.inputGroup}>
             <label className={styles.label}>{t.orderEntry.price}</label>
@@ -220,59 +223,76 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
           </div>
         )}
 
+        {/* Amount Input */}
         <div className={styles.inputGroup}>
           <label className={styles.label}>{t.orderEntry.amount}</label>
           <div className={styles.inputWrapper}>
-            <input type="text" className={`input ${styles.input}`} value={quantity} onChange={(e) => setQuantity(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="0.00" />
-            <span className={styles.inputSuffix}>{baseAsset}</span>
+            <input type="text" className={`input ${styles.input}`} value={quantity} onChange={(e) => setQuantity(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="0.00" style={{ paddingRight: '48px' }} />
+            <span className={styles.inputSuffix} style={{ right: '8px' }}>{baseAsset}</span>
           </div>
-          <QuantitySlider value={quantityPercent} onChange={(p) => { setQuantityPercent(p); updateQuantityFromPercent(p); }} estimatedQty={quantity || '0'} />
-          <div className={styles.percentButtons}>
-            {[25, 50, 75, 100].map((pct) => (
-              <button key={pct} type="button" className={styles.percentBtn} onClick={() => updateQuantityFromPercent(pct)}>{pct}%</button>
-            ))}
+          <div className={styles.sliderRow}>
+            <div className={styles.sliderContainer}>
+              <QuantitySlider value={quantityPercent} onChange={(p) => { setQuantityPercent(p); updateQuantityFromPercent(p); }} estimatedQty={quantity || '0'} />
+            </div>
+            <div className={styles.percentButtons}>
+              {[25, 50, 75, 100].map((pct) => (
+                <button key={pct} type="button" className={styles.percentBtn} onClick={() => updateQuantityFromPercent(pct)}>{pct}%</button>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* TP/SL Compact */}
         <div className={styles.tpslContainer}>
           <div className={styles.inputGroupSmall}>
             <label className={styles.labelSmall}>{t.orderEntry.takeProfit}</label>
-            <input type="text" className={`input ${styles.inputSmall}`} value={takeProfitPrice} onChange={(e) => setTakeProfitPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="0.00" />
+            <input type="text" className={`input ${styles.inputSmall}`} value={takeProfitPrice} onChange={(e) => setTakeProfitPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="—" />
           </div>
           <div className={styles.inputGroupSmall}>
             <label className={styles.labelSmall}>{t.orderEntry.stopLoss}</label>
-            <input type="text" className={`input ${styles.inputSmall}`} value={stopLossPrice} onChange={(e) => setStopLossPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="0.00" />
+            <input type="text" className={`input ${styles.inputSmall}`} value={stopLossPrice} onChange={(e) => setStopLossPrice(e.target.value)} onFocus={handleInputFocus} onBlur={handleInputBlur} placeholder="—" />
           </div>
         </div>
 
+        {/* Compact Estimated Info */}
         <div className={styles.estimatedInfo}>
-          <div className={styles.estimatedRow}><span className={styles.estimatedLabel}>{t.orderEntry.estimatedPrice}</span><span className="tabular-nums">{estimatedPriceValue}</span></div>
-          <div className={styles.estimatedRow}><span className={styles.estimatedLabel}>{t.orderEntry.slippage}</span><span className="tabular-nums">{slippageEst}</span></div>
-          <div className={styles.estimatedRow}><span className={styles.estimatedLabel}>{t.orderEntry.fee}</span><span className="tabular-nums">{feeValue} {quoteAsset}</span></div>
+          <div className={styles.estimatedRow}>
+            <span className={styles.estimatedLabel}>{t.orderEntry.estimatedPrice}</span>
+            <span className={`${styles.estimatedValue} tabular-nums`}>{estimatedPriceValue || '—'}</span>
+          </div>
+          <div className={styles.estimatedRow}>
+            <span className={styles.estimatedLabel}>{t.orderEntry.slippage}</span>
+            <span className={`${styles.estimatedValue} tabular-nums`}>{slippageEst}</span>
+          </div>
+          <div className={styles.estimatedRow}>
+            <span className={styles.estimatedLabel}>{t.orderEntry.fee}</span>
+            <span className={`${styles.estimatedValue} tabular-nums`}>{feeValue}</span>
+          </div>
         </div>
 
-        <div className={styles.totalRow}><span className={styles.totalLabel}>{t.orderEntry.total}</span><span className="tabular-nums">{total} {quoteAsset}</span></div>
+        {/* Total & Available */}
+        <div className={styles.totalRow}>
+          <span className={styles.totalLabel}>{t.orderEntry.total}</span>
+          <span className={`${styles.totalValue} tabular-nums`}>{total} {quoteAsset}</span>
+        </div>
 
         <div className={styles.balanceRow}>
           <span className={styles.balanceLabel}>{t.orderEntry.available}</span>
-          <span className="tabular-nums">
+          <span className={`${styles.balanceValue} tabular-nums`}>
             {side === 'buy' ? `${parseFloat(quoteBalance?.available ?? '0').toFixed(2)} ${quoteAsset}` : `${parseFloat(baseBalance?.available ?? '0').toFixed(6)} ${baseAsset}`}
           </span>
         </div>
 
-        <div className={styles.quickActions}>
-          <button type="button" className={`${styles.quickBtn} ${side === 'buy' ? styles.allInBuyBtn : styles.allInSellBtn}`} onClick={() => setShowAllInConfirm(true)} disabled={!metrics}>
-            {side === 'buy' ? (t.orderEntry.allInBuy || 'Buy All') : (t.orderEntry.allInSell || 'Sell All')}
-          </button>
-        </div>
-
+        {/* Data Confidence Warning */}
         {dataConfidence.level !== 'live' && (
           <div className={`${styles.confidenceWarning} ${styles[dataConfidence.level]}`}>
+            <div className={styles.warningBar} />
             <Icon name="alert-triangle" size="xs" />
             <span className={styles.warningText}>{dataConfidence.reason}</span>
           </div>
         )}
 
+        {/* Degraded Confirm */}
         {showDegradedConfirm && (
           <div className={styles.degradedConfirm}>
             <p className={styles.confirmText}>{t.orderEntry.confirmDegraded}</p>
@@ -283,9 +303,17 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook }: OrderEntry
           </div>
         )}
 
+        {/* Submit Button */}
         <button type="submit" className={`btn ${styles.submitBtn} ${side === 'buy' ? styles.buySubmit : styles.sellSubmit}`} disabled={isSubmitDisabled}>
           {side === 'buy' ? formatMessage(t.orderEntry.placeBuyOrder, { symbol: baseAsset }) : formatMessage(t.orderEntry.placeSellOrder, { symbol: baseAsset })}
         </button>
+
+        {/* Quick Actions */}
+        <div className={styles.quickActions}>
+          <button type="button" className={`${styles.quickBtn} ${side === 'buy' ? styles.allInBuyBtn : styles.allInSellBtn}`} onClick={() => setShowAllInConfirm(true)} disabled={!metrics}>
+            {side === 'buy' ? (t.orderEntry.allInBuy || 'All-In Buy') : (t.orderEntry.allInSell || 'Sell All')}
+          </button>
+        </div>
       </form>
 
       <ConfirmModal
