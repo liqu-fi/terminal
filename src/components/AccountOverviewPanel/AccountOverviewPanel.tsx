@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useWalletStore } from '../../store/walletStore';
-import { useMarketStore } from '../../store/marketStore';
+import { useMarketStore, selectMetrics } from '../../store/marketStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
 import Decimal from 'decimal.js';
@@ -12,11 +12,11 @@ export const AccountOverviewPanel: React.FC = () => {
   const { t } = useI18n();
   const { user, isAuthenticated } = useAuthStore();
   const { balances, account } = useWalletStore();
-  const tickers = useMarketStore((state) => state.tickers);
+  const metrics = useMarketStore(selectMetrics);
 
-  // Calculate total equity
+  // Calculate total equity - simplified to use USDT balance + current position value
   const { totalEquity, availableBalance, frozenBalance } = useMemo(() => {
-    if (!balances.length) {
+    if (!balances || !balances.length) {
       return { totalEquity: '0.00', availableBalance: '0.00', frozenBalance: '0.00' };
     }
 
@@ -25,22 +25,23 @@ export const AccountOverviewPanel: React.FC = () => {
     let frozen = new Decimal(0);
 
     for (const b of balances) {
-      const avail = new Decimal(b.available);
-      const froz = new Decimal(b.frozen);
+      const avail = new Decimal(b.available || '0');
+      const froz = new Decimal(b.frozen || '0');
       const qty = avail.plus(froz);
 
       if (qty.lte(0)) continue;
 
-      available = available.plus(avail);
-      frozen = frozen.plus(froz);
-
+      // For available/frozen, only count USDT for simplicity
       if (b.asset === 'USDT') {
+        available = available.plus(avail);
+        frozen = frozen.plus(froz);
         total = total.plus(qty);
       } else {
-        const ticker = tickers[`${b.asset}USDT`];
-        const price = ticker?.lastPrice;
-        if (price && !isNaN(parseFloat(price))) {
-          total = total.plus(qty.times(price));
+        // For non-USDT assets, use mid price if available from current market data
+        const midPrice = metrics?.mid ? parseFloat(metrics.mid) : 0;
+        if (midPrice > 0) {
+          // This is a rough approximation - only works for currently selected symbol
+          total = total.plus(qty.times(midPrice));
         }
       }
     }
@@ -50,7 +51,7 @@ export const AccountOverviewPanel: React.FC = () => {
       availableBalance: available.toFixed(2),
       frozenBalance: frozen.toFixed(2),
     };
-  }, [balances, tickers]);
+  }, [balances, metrics]);
 
   const hasFunds = parseFloat(totalEquity) > 0;
 
