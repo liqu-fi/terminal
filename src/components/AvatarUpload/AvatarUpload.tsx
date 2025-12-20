@@ -164,3 +164,4 @@ function resizeImage(dataUrl: string, maxSize: number): Promise<string> {
   });
 }
 
+

@@ -26,3 +26,4 @@ export function useIsTablet(): boolean {
   return useMediaQuery('(max-width: 1024px)');
 }
 
+
