@@ -73,6 +73,7 @@ export function TriggerForm({ onSuccess, onCancel, compact = false }: TriggerFor
     addTrigger({
       symbol: selectedSymbol,
       type: triggerType,
+      enabled: true,
       condition: triggerCondition,
       action: triggerAction,
       allowDegraded,

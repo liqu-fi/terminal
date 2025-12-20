@@ -1,28 +1,45 @@
 import { useMemo } from 'react';
-import { useWalletStore, selectAccount } from '../../store/walletStore';
-import { useMarketStore, selectMetrics, selectOrderBook } from '../../store/marketStore';
+import { useWalletStore, selectAccount, selectBalances } from '../../store/walletStore';
+import { useWatchlistStore, selectSymbols } from '../../store/watchlistStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
+import Decimal from 'decimal.js';
 import styles from './AccountOverviewCard.module.css';
+
+// 资产颜色映射
+const ASSET_COLORS: Record<string, string> = {
+  USDT: 'var(--color-price-up)',
+  BTC: '#F7931A',
+  ETH: '#627EEA',
+  BNB: '#F3BA2F',
+  SOL: '#9945FF',
+  XRP: '#23292F',
+  ADA: '#0033AD',
+  DOGE: '#C2A633',
+  DEFAULT: 'var(--text-tertiary)',
+};
 
 export function AccountOverviewCard() {
   const { t } = useI18n();
   const account = useWalletStore(selectAccount);
+  const balances = useWalletStore(selectBalances);
   const getTotalEquity = useWalletStore((state) => state.getTotalEquity);
+  const symbols = useWatchlistStore(selectSymbols);
   
-  // Get current prices from market store for equity calculation
-  const metrics = useMarketStore(selectMetrics);
-  const orderBook = useMarketStore(selectOrderBook);
+  // Build prices map from watchlist symbols
+  const prices = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const sym of symbols) {
+      if (sym.price) {
+        map[sym.symbol] = sym.price;
+      }
+    }
+    return map;
+  }, [symbols]);
   
   const totalEquity = useMemo(() => {
-    // Build prices map from current market data
-    const prices: Record<string, string> = {};
-    if (orderBook?.symbol && metrics?.mid) {
-      prices[orderBook.symbol] = metrics.mid;
-    }
-    // For demo, we'll use USDT balance directly if no prices available
     return getTotalEquity(prices);
-  }, [getTotalEquity, metrics, orderBook]);
+  }, [getTotalEquity, prices]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -50,16 +67,44 @@ export function AccountOverviewCard() {
     }
   };
 
+  // 计算资产分配比例
+  const allocation = useMemo(() => {
+    const totalEquityNum = parseFloat(totalEquity.replace(/,/g, ''));
+    if (totalEquityNum <= 0) return [];
+
+    const items: { label: string; value: number; usdValue: number; color: string }[] = [];
+
+    for (const balance of balances) {
+      const qty = new Decimal(balance.total);
+      if (qty.lte(0)) continue;
+
+      let usdValue: number;
+      if (balance.asset === 'USDT') {
+        usdValue = qty.toNumber();
+      } else {
+        const symbol = `${balance.asset}USDT`;
+        const price = prices[symbol];
+        if (!price) continue;
+        usdValue = qty.mul(new Decimal(price)).toNumber();
+      }
+
+      if (usdValue > 0) {
+        items.push({
+          label: balance.asset,
+          value: (usdValue / totalEquityNum) * 100,
+          usdValue,
+          color: ASSET_COLORS[balance.asset] || ASSET_COLORS.DEFAULT,
+        });
+      }
+    }
+
+    // Sort by value descending and take top 5
+    return items.sort((a, b) => b.usdValue - a.usdValue).slice(0, 5);
+  }, [balances, prices, totalEquity]);
+
   if (!account) {
     return null;
   }
-
-  // Sample allocation for visual (can be derived from balances)
-  const allocation = [
-    { label: 'USDT', value: 75, color: 'var(--color-price-up)' },
-    { label: 'BTC', value: 15, color: '#F7931A' },
-    { label: 'ETH', value: 10, color: '#627EEA' },
-  ];
 
   return (
     <div className={`card ${styles.container}`}>
@@ -137,15 +182,21 @@ export function AccountOverviewCard() {
         </div>
 
         <div className={styles.allocationList}>
-          {allocation.map(item => (
-            <div key={item.label} className={styles.allocationItem}>
-              <div className={styles.allocationLabel}>
-                <span className={styles.colorDot} style={{ background: item.color }} />
-                {item.label}
+          {allocation.length > 0 ? (
+            allocation.map(item => (
+              <div key={item.label} className={styles.allocationItem}>
+                <div className={styles.allocationLabel}>
+                  <span className={styles.colorDot} style={{ background: item.color }} />
+                  {item.label}
+                </div>
+                <div className={styles.allocationValue}>{item.value.toFixed(1)}%</div>
               </div>
-              <div className={styles.allocationValue}>{item.value}%</div>
+            ))
+          ) : (
+            <div className={styles.emptyState}>
+              {t.wallet?.noAssets || 'No assets'}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

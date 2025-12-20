@@ -16,9 +16,10 @@ interface RiskMetrics {
 
 interface RiskRibbonProps {
   compact?: boolean;
+  full?: boolean; // 新增 full 模式用于全屏展示
 }
 
-export function RiskRibbon({ compact = false }: RiskRibbonProps) {
+export function RiskRibbon({ compact = false, full = false }: RiskRibbonProps) {
   const { t } = useI18n();
   const balances = useWalletStore(selectBalances);
   const performanceMetrics = useWalletStore((state) => state.performanceMetrics);
@@ -32,7 +33,6 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
   useEffect(() => {
     if (!metrics) return;
     
-    // 我们假设当前选中的价格可以代表主要资产价格（简化的 equity 计算）
     const prices: Record<string, string> = {};
     if (metrics.mid && orderBook?.symbol) {
       prices[orderBook.symbol] = metrics.mid;
@@ -41,17 +41,14 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
     updatePerformanceMetrics(prices);
   }, [metrics, orderBook?.symbol, updatePerformanceMetrics]);
 
-  // 当前选中的币种
   const currentSymbol = orderBook?.symbol || selectedSymbol;
 
   const riskMetrics = useMemo((): RiskMetrics | null => {
     if (!metrics) return null;
 
-    // Calculate total account value
     const usdtBalance = balances.find(b => b.asset === 'USDT');
     const usdtTotal = parseFloat(usdtBalance?.total ?? '0');
     
-    // 查找当前选中币种的持仓（只有当前币种才能计算实时盈亏）
     let positionEntries: [string, any][] = [];
     if (positions instanceof Map) {
       positionEntries = Array.from(positions.entries());
@@ -64,7 +61,6 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
     );
 
     if (!activePosition) {
-      // 检查是否有其他币种的持仓
       const hasOtherPositions = positionEntries.some(([_, pos]) =>
         pos.side === 'long' && parseFloat(pos.quantity) > 0
       );
@@ -73,7 +69,7 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
         positionSizePercent: 0,
         unrealizedPnlPercent: 0,
         volatilityRisk: 0,
-        hasRealTimePrice: !hasOtherPositions, // 如果没有任何持仓，显示正常
+        hasRealTimePrice: !hasOtherPositions,
       };
     }
 
@@ -86,11 +82,7 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
     const totalValue = usdtTotal + positionValue;
     const positionSizePercent = totalValue > 0 ? (positionValue / totalValue) * 100 : 0;
     
-    const unrealizedPnl = qty * (currentPrice - avgEntry);
     const unrealizedPnlPercent = avgEntry > 0 ? ((currentPrice - avgEntry) / avgEntry) * 100 : 0;
-
-    // Volatility risk: map microVolatility to 0-100
-    // Assuming typical BTC volatility range is 0-500 (in price terms)
     const volatility = metrics.microVolatility;
     const volatilityRisk = Math.min(100, (volatility / 100) * 100);
 
@@ -104,9 +96,6 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
 
   if (!riskMetrics) return null;
 
-  const hasPosition = riskMetrics.positionSizePercent > 0;
-
-  // Calculate overall risk level
   const overallRisk = Math.min(100, 
     (riskMetrics.positionSizePercent * 0.4) + 
     (Math.abs(riskMetrics.unrealizedPnlPercent) * 0.3) + 
@@ -130,7 +119,78 @@ export function RiskRibbon({ compact = false }: RiskRibbonProps) {
 
   const riskLevel = getRiskColor(overallRisk);
 
-  // Compact mode for mobile - just show key metrics inline
+  if (full) {
+    return (
+      <div className={`${styles.container} ${styles.full}`}>
+        <div className={styles.scoreSection}>
+          <div className={`${styles.gaugeContainer} ${styles[riskLevel]}`}>
+            <div className={styles.gaugeValue}>{overallRisk.toFixed(0)}</div>
+            <div className={styles.gaugeLabel}>{t.riskRibbon.title}</div>
+          </div>
+          <div className={styles.statusInfo}>
+            <div className={`${styles.statusLevel} ${styles[riskLevel]}`}>
+              <Icon name="shield" size="sm" />
+              {getRiskLabel(riskLevel)}
+            </div>
+            <p className={styles.statusDesc}>
+              {riskLevel === 'low' && '账户状态极佳，风险处于可控范围。'}
+              {riskLevel === 'medium' && '注意仓位规模，波动风险有所上升。'}
+              {riskLevel === 'high' && '风险极高！建议立即调整仓位或对冲。'}
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.divider} />
+
+        <h4 className={styles.gridTitle}>实时风险指标</h4>
+        <div className={styles.fullGrid}>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>{t.riskRibbon.positionRatio}</span>
+            <span className={styles.itemValue}>{riskMetrics.positionSizePercent.toFixed(2)}%</span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>未实现盈亏</span>
+            <span className={`${styles.itemValue} ${riskMetrics.unrealizedPnlPercent >= 0 ? styles.positive : styles.negative}`}>
+              {riskMetrics.unrealizedPnlPercent >= 0 ? '+' : ''}{riskMetrics.unrealizedPnlPercent.toFixed(2)}%
+            </span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>市场波动率</span>
+            <span className={styles.itemValue}>{metrics?.microVolatility.toFixed(4)}</span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>流动性深度</span>
+            <span className={styles.itemValue}>{metrics?.liquidityScore.toFixed(0)}/100</span>
+          </div>
+        </div>
+
+        <div className={styles.divider} />
+
+        <h4 className={styles.gridTitle}>历史绩效表现</h4>
+        <div className={styles.fullGrid}>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>{t.riskRibbon.winRate}</span>
+            <span className={styles.itemValue}>{(performanceMetrics.winRate * 100).toFixed(1)}%</span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>{t.riskRibbon.profitFactor}</span>
+            <span className={styles.itemValue}>{performanceMetrics.profitFactor.toFixed(2)}</span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>{t.riskRibbon.maxDrawdown}</span>
+            <span className={`${styles.itemValue} ${styles.negative}`}>-{performanceMetrics.maxDrawdown.toFixed(1)}%</span>
+          </div>
+          <div className={styles.gridItem}>
+            <span className={styles.itemLabel}>累计盈亏</span>
+            <span className={`${styles.itemValue} ${parseFloat(performanceMetrics.totalRealizedPnl) >= 0 ? styles.positive : styles.negative}`}>
+              ${performanceMetrics.totalRealizedPnl}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (compact) {
     return (
       <div className={styles.compactContainer}>

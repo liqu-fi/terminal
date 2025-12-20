@@ -4,32 +4,36 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  background: var(--bg-primary);
 }
 
-/* Side Toggle */
+/* Side Toggle - Modern Segmented Control Style */
 .sideToggle {
   display: flex;
   gap: var(--space-2);
-  padding: var(--space-1);
-  background: var(--bg-tertiary);
+  padding: 4px;
+  background: var(--bg-secondary);
   border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
 }
 
 .sideBtn {
   flex: 1;
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all var(--transition-fast);
   background: transparent;
   color: var(--text-tertiary);
+  text-transform: uppercase;
 }
 
 .sideBtn.active {
   color: white;
+  box-shadow: var(--shadow-sm);
 }
 
 .buyBtn.active {
@@ -48,44 +52,45 @@
 
 .typeBtn {
   flex: 1;
-  padding: var(--space-2);
+  padding: var(--space-1) var(--space-2);
   background: transparent;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border: none;
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all var(--transition-fast);
+  border-bottom: 2px solid transparent;
 }
 
 .typeBtn.active {
-  background: var(--bg-tertiary);
-  border-color: var(--accent);
   color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* Input Group */
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .labelRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 2px;
 }
 
 .label {
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
 }
 
 .availableHint {
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -97,20 +102,22 @@
 
 .input {
   width: 100%;
-  height: 48px;
-  padding: 0 60px 0 var(--space-4);
-  background: var(--bg-tertiary);
+  height: 44px;
+  padding: 0 50px 0 var(--space-3);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: var(--font-size-lg);
   font-family: var(--font-mono);
-  transition: border-color var(--transition-fast);
+  font-weight: var(--font-weight-bold);
+  transition: all var(--transition-fast);
 }
 
 .input:focus {
   outline: none;
   border-color: var(--accent);
+  background: var(--bg-primary);
 }
 
 .input::placeholder {
@@ -119,9 +126,9 @@
 
 .inputSuffix {
   position: absolute;
-  right: var(--space-4);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  right: var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   color: var(--text-tertiary);
 }
 
@@ -129,19 +136,21 @@
 .quickPriceRow {
   display: flex;
   gap: var(--space-2);
+  margin-top: 4px;
 }
 
 .quickPriceBtn {
   flex: 1;
-  padding: var(--space-2);
-  background: var(--bg-tertiary);
+  padding: 4px;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: 4px;
   color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: all var(--transition-fast);
+  text-transform: uppercase;
 }
 
 .quickPriceBtn:active {
@@ -150,79 +159,102 @@
   color: var(--accent);
 }
 
-/* Percentage Buttons */
-.percentRow {
+/* Slider Styles */
+.sliderContainer {
+  margin: var(--space-4) 0 var(--space-2);
+  padding: 0 var(--space-1);
+}
+
+.sliderWrapper {
+  position: relative;
+  height: 24px;
   display: flex;
-  gap: var(--space-2);
+  align-items: center;
 }
 
-.percentBtn {
-  flex: 1;
-  padding: var(--space-2);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-secondary);
+  outline: none;
+  margin: 0;
+  z-index: 2;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: 2px solid var(--accent);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  box-shadow: 0 0 0 4px var(--bg-primary);
 }
 
-.percentBtn.active {
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 0 4px var(--bg-primary);
+}
+
+.sliderTrack {
+  position: absolute;
+  left: 0;
+  height: 4px;
+  border-radius: 2px;
   background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+  z-index: 1;
 }
 
-.percentBtn:active:not(.active) {
-  background: var(--surface-hover);
-}
-
-/* Total Row */
-.totalRow {
+.sliderSteps {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3);
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-md);
+  padding: 0;
+  z-index: 0;
 }
 
-.totalLabel {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+.sliderStep {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-subtle);
+  transform: translateX(-50%);
 }
 
-.totalValue {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
+.sliderStep.active {
+  background: var(--accent);
 }
 
-/* Warning */
-.warning {
+.percentRow {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
+  justify-content: space-between;
+  margin-top: var(--space-1);
 }
 
-.warning.degraded {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
+.percentLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-medium);
+  width: 24px;
+  text-align: center;
 }
 
-.warning.stale {
-  background: var(--color-error-bg);
-  color: var(--color-error);
-}
-
-.warning.resyncing {
-  background: var(--color-info-bg);
-  color: var(--color-info);
+.percentLabel.active {
+  color: var(--accent);
+  font-weight: var(--font-weight-bold);
 }
 
 /* Submit Button */
@@ -236,7 +268,9 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
+  margin-top: var(--space-2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .submitBtn:active:not(:disabled) {
@@ -247,6 +281,9 @@
 .submitBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  box-shadow: none;
 }
 
 .buySubmit {
@@ -258,4 +295,3 @@
   background: var(--color-negative);
   color: white;
 }
-

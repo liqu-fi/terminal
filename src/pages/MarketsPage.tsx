@@ -81,13 +81,16 @@ export function MarketsPage() {
         const topSymbols = tickers.slice(0, 30); // Reduced from 50 to 30
         for (let i = 0; i < topSymbols.length; i++) {
           const ticker = topSymbols[i];
+          if (!ticker) continue;
+          
+          const symbol = ticker.symbol;
           // Add small delay between requests to spread load
           setTimeout(() => {
-            fetchSparkline(ticker.symbol).then(s => {
-              setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, sparkline: s } : m));
+            fetchSparkline(symbol).then(s => {
+              setMarkets(prev => prev.map(m => m.symbol === symbol ? { ...m, sparkline: s } : m));
             });
-            calculateIndicators(ticker.symbol).then(ind => {
-              setMarkets(prev => prev.map(m => m.symbol === ticker.symbol ? { ...m, indicators: ind } : m));
+            calculateIndicators(symbol).then(ind => {
+              setMarkets(prev => prev.map(m => m.symbol === symbol ? { ...m, indicators: ind } : m));
             });
           }, i * 100); // 100ms delay between each request
         }

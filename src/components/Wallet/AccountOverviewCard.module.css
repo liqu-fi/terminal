@@ -122,4 +122,10 @@
   border-radius: 50%;
 }
 
+.emptyState {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: var(--space-2) 0;
+}
 

@@ -13,7 +13,7 @@ import {
   // View toggle icons
   LayoutGrid, LayoutList, Grid,
   // Orders page icons
-  Layers, Percent, Repeat, PieChart, Send, Radio, XCircle, Eye, Scroll, Banknote, Layout,
+  Layers, Percent, Repeat, PieChart, Send, Radio, XCircle, Eye, EyeOff, Scroll, Banknote, Layout,
   // Settings page icons
   User, Lock, Key, Smartphone, Monitor, Volume2, VolumeX, BellRing, BellOff,
   Languages, Palette, Database, FileText, LogOut, HardDrive, Server, Fingerprint,
@@ -21,7 +21,8 @@ import {
   Sliders, Timer, Gauge, Binary, QrCode, Scan, KeyRound, UserCog, BellPlus,
   MonitorSmartphone, CloudOff, Cloud, Cpu, MemoryStick, CircleDot, Eraser,
   // Extra mobile icons
-  Users, Gift, Headphones, HelpCircle
+  Users, Gift, Headphones, HelpCircle,
+  Camera, Circle, DollarSign, Pencil as Edit
 } from 'lucide-react';
 import { CSSProperties } from 'react';
 
@@ -100,9 +101,14 @@ export type IconName =
   | 'radio'
   | 'x-circle'
   | 'eye'
+  | 'eye-off'
   | 'scroll'
   | 'banknote'
   | 'layout'
+  | 'camera'
+  | 'circle'
+  | 'dollar-sign'
+  | 'edit'
   // Settings page icons
   | 'user'
   | 'lock'
@@ -224,9 +230,14 @@ const iconMap: Record<IconName, typeof BarChart3> = {
   'radio': Radio,
   'x-circle': XCircle,
   'eye': Eye,
+  'eye-off': EyeOff,
   'scroll': Scroll,
   'banknote': Banknote,
   'layout': Layout,
+  'camera': Camera,
+  'circle': Circle,
+  'dollar-sign': DollarSign,
+  'edit': Edit,
   // Settings page icons
   'user': User,
   'lock': Lock,

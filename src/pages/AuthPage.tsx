@@ -4,6 +4,9 @@ import { useAuthStore } from '../store/authStore';
 import { useWalletStore } from '../store/walletStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { LanguageToggle } from '../components/LanguageToggle';
+import { ThemeToggle } from '../components/ThemeToggle';
 import styles from './AuthPage.module.css';
 
 type AuthMode = 'login' | 'register';
@@ -11,6 +14,7 @@ type AuthMode = 'login' | 'register';
 export const AuthPage: React.FC = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { login, register, isAuthenticated, isLoading, isInitialized, markAsInitialized } = useAuthStore();
   const { grantInitialFunds, hasReceivedInitialGrant } = useWalletStore();
   
@@ -107,10 +111,16 @@ export const AuthPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.overlay} />
       
+      {/* Quick Settings Bar */}
+      <div className={styles.settingsBar}>
+        <LanguageToggle />
+        <ThemeToggle />
+      </div>
+
       <div className={styles.card}>
         <div className={styles.header}>
           <div className={styles.logo}>
-            <Icon name="activity" size="xl" strokeWidth={2.5} />
+            <Icon name="activity" size={isMobile ? "lg" : "xl"} strokeWidth={2.5} />
             <span className={styles.title}>TBT TRADING</span>
           </div>
           <p className={styles.subtitle}>{t.header.title}</p>
@@ -123,39 +133,49 @@ export const AuthPage: React.FC = () => {
             <h3 className={styles.welcomeTitle}>Welcome to TBT Trading</h3>
           </div>
           
-          <div className={styles.welcomeContent}>
-            <div className={styles.welcomeTextZh}>
-              <p className={styles.welcomeParagraph}>
-                {t.auth?.welcomeMessageZh}
+          {!isMobile ? (
+            <div className={styles.welcomeContent}>
+              <div className={styles.welcomeTextZh}>
+                <p className={styles.welcomeParagraph}>
+                  {t.auth?.welcomeMessageZh}
+                </p>
+              </div>
+              <div className={styles.welcomeDivider} />
+              <div className={styles.welcomeTextEn}>
+                <p className={styles.welcomeParagraph}>
+                  {t.auth?.welcomeMessageEn}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.welcomeContentMobile}>
+              <p className={styles.welcomeTextCompact}>
+                专业数字资产交易终端 • 虚拟赠金 30 万美元
               </p>
             </div>
-            <div className={styles.welcomeDivider} />
-            <div className={styles.welcomeTextEn}>
-              <p className={styles.welcomeParagraph}>
-                {t.auth?.welcomeMessageEn}
-              </p>
-            </div>
-          </div>
+          )}
 
-          {/* Feature Highlights */}
-          <div className={styles.featuresGrid}>
-            <div className={styles.featureItem}>
-              <Icon name="shield" size="xs" />
-              <span>Bank-Grade Security</span>
+          {/* Feature Highlights - Grid on Desktop, Scrolling on Mobile if needed, but here we just simplify */}
+          {!isMobile && (
+            <div className={styles.featuresGrid}>
+              <div className={styles.featureItem}>
+                <Icon name="shield" size="xs" />
+                <span>Bank-Grade Security</span>
+              </div>
+              <div className={styles.featureItem}>
+                <Icon name="zap" size="xs" />
+                <span>Real-Time Trading</span>
+              </div>
+              <div className={styles.featureItem}>
+                <Icon name="trending-up" size="xs" />
+                <span>Advanced Analytics</span>
+              </div>
+              <div className={styles.featureItem}>
+                <Icon name="smartphone" size="xs" />
+                <span>Multi-Platform</span>
+              </div>
             </div>
-            <div className={styles.featureItem}>
-              <Icon name="zap" size="xs" />
-              <span>Real-Time Trading</span>
-            </div>
-            <div className={styles.featureItem}>
-              <Icon name="trending-up" size="xs" />
-              <span>Advanced Analytics</span>
-            </div>
-            <div className={styles.featureItem}>
-              <Icon name="smartphone" size="xs" />
-              <span>Multi-Platform</span>
-            </div>
-          </div>
+          )}
 
           {/* Account Benefits */}
           <div className={styles.benefitsCard}>
@@ -165,7 +185,7 @@ export const AuthPage: React.FC = () => {
               </div>
               <div className={styles.benefitContent}>
                 <span className={styles.benefitValue}>$300,000</span>
-                <span className={styles.benefitLabel}>Virtual Trading Capital</span>
+                {!isMobile && <span className={styles.benefitLabel}>Virtual Trading Capital</span>}
               </div>
             </div>
             <div className={styles.benefitDivider} />
@@ -174,8 +194,8 @@ export const AuthPage: React.FC = () => {
                 <Icon name="credit-card" size="sm" />
               </div>
               <div className={styles.benefitContent}>
-                <span className={styles.benefitValue}>Unlimited</span>
-                <span className={styles.benefitLabel}>Bank Card Support</span>
+                <span className={styles.benefitValue}>{isMobile ? "UNLIMITED" : "Unlimited"}</span>
+                {!isMobile && <span className={styles.benefitLabel}>Bank Card Support</span>}
               </div>
             </div>
           </div>
@@ -275,49 +295,54 @@ export const AuthPage: React.FC = () => {
 
         {/* Enhanced Footer with Security & Status */}
         <div className={styles.footer}>
-          <div className={styles.securityBadges}>
-            <div className={styles.badge}>
-              <Icon name="shield-check" size="xs" />
-              <span>SSL Encrypted</span>
+          {!isMobile && (
+            <div className={styles.securityBadges}>
+              <div className={styles.badge}>
+                <Icon name="shield-check" size="xs" />
+                <span>SSL Encrypted</span>
+              </div>
+              <div className={styles.badge}>
+                <Icon name="lock" size="xs" />
+                <span>2FA Ready</span>
+              </div>
+              <div className={styles.badge}>
+                <Icon name="shield" size="xs" />
+                <span>Privacy First</span>
+              </div>
             </div>
-            <div className={styles.badge}>
-              <Icon name="lock" size="xs" />
-              <span>2FA Ready</span>
-            </div>
-            <div className={styles.badge}>
-              <Icon name="shield" size="xs" />
-              <span>Privacy First</span>
-            </div>
-          </div>
+          )}
           
           <div className={styles.systemStatus}>
             <div className={styles.statusHeader}>
               <Icon name="activity" size="xs" />
-              <span>System Status</span>
+              <span>{isMobile ? "Network Status" : "System Status"}</span>
+              {isMobile && <span className={styles.statusBadge}>Online</span>}
             </div>
-            <div className={styles.statusGrid}>
-              <div className={styles.statusItem}>
-                <span className={`${styles.dot} ${styles[systemCheck.ws]}`} />
-                <div className={styles.statusInfo}>
-                  <span className={styles.statusLabel}>WebSocket</span>
-                  <span className={styles.statusValue}>{systemCheck.ws === 'ok' ? 'Connected' : 'Connecting...'}</span>
+            {!isMobile && (
+              <div className={styles.statusGrid}>
+                <div className={styles.statusItem}>
+                  <span className={`${styles.dot} ${styles[systemCheck.ws]}`} />
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusLabel}>WebSocket</span>
+                    <span className={styles.statusValue}>{systemCheck.ws === 'ok' ? 'Connected' : 'Connecting...'}</span>
+                  </div>
+                </div>
+                <div className={styles.statusItem}>
+                  <span className={`${styles.dot} ${styles[systemCheck.engine]}`} />
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusLabel}>Matching Engine</span>
+                    <span className={styles.statusValue}>{systemCheck.engine === 'ok' ? 'Operational' : 'Initializing...'}</span>
+                  </div>
+                </div>
+                <div className={styles.statusItem}>
+                  <span className={`${styles.dot} ${styles[systemCheck.security]}`} />
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusLabel}>Security Layer</span>
+                    <span className={styles.statusValue}>{systemCheck.security === 'ok' ? 'Active' : 'Loading...'}</span>
+                  </div>
                 </div>
               </div>
-              <div className={styles.statusItem}>
-                <span className={`${styles.dot} ${styles[systemCheck.engine]}`} />
-                <div className={styles.statusInfo}>
-                  <span className={styles.statusLabel}>Matching Engine</span>
-                  <span className={styles.statusValue}>{systemCheck.engine === 'ok' ? 'Operational' : 'Initializing...'}</span>
-                </div>
-              </div>
-              <div className={styles.statusItem}>
-                <span className={`${styles.dot} ${styles[systemCheck.security]}`} />
-                <div className={styles.statusInfo}>
-                  <span className={styles.statusLabel}>Security Layer</span>
-                  <span className={styles.statusValue}>{systemCheck.security === 'ok' ? 'Active' : 'Loading...'}</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

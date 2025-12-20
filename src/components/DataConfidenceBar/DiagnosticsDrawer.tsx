@@ -1,5 +1,5 @@
 import { useMarketStore, selectConnectionStatus, selectDataConfidence, selectNetworkHealth } from '../../store/marketStore';
-import { useI18n } from '../../i18n';
+import { useI18n, type Locale } from '../../i18n';
 import { Icon } from '../Icon';
 import type { NetworkEvent, NetworkEventType } from '../../types/market';
 import styles from './DiagnosticsDrawer.module.css';
@@ -75,7 +75,7 @@ function getEventClass(type: NetworkEventType): string {
 }
 
 // 获取事件类型的显示名称
-function getEventTypeName(type: NetworkEventType, t: ReturnType<typeof useI18n>['t']): string {
+function getEventTypeName(type: NetworkEventType, t: Locale): string {
   const names: Record<NetworkEventType, string> = {
     connected: t.networkHealth?.events?.connected || 'Connected',
     disconnected: t.networkHealth?.events?.disconnected || 'Disconnected',

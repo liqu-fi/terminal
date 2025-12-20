@@ -198,9 +198,9 @@ export function Watchlist({ onSymbolChange, isCollapsed = false, compact = false
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // 使用 Binance 24hr ticker API 批量获取所有价格
+        // 使用代理路径避免 CORS 问题
         const symbolList = symbols.map(s => s.symbol).join(',');
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolList.split(',').map(s => `"${s}"`).join(',')}]`);
+        const response = await fetch(`/binance-api/api/v3/ticker/24hr?symbols=[${symbolList.split(',').map(s => `"${s}"`).join(',')}]`);
         
         if (!response.ok) {
           console.warn('Watchlist fetch failed:', response.status);

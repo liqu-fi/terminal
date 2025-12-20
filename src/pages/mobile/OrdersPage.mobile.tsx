@@ -165,7 +165,7 @@ function TradeCard({ fill, order }: {
 
 export function MobileOrdersPage() {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<TabType>('open');
+  const [activeTab, setActiveTab] = useState<TabType>('history');
   const [selectedOrder, setSelectedOrder] = useState<PaperOrder | null>(null);
 
   const orders = useTradingStore((state) => state.orders);
@@ -219,7 +219,7 @@ export function MobileOrdersPage() {
           segments={tabSegments}
           activeId={activeTab}
           onChange={(id) => setActiveTab(id as TabType)}
-          variant="pills"
+          variant="underline"
         />
       </div>
 

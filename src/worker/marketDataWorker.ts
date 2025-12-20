@@ -333,9 +333,10 @@ async function connect(symbol: string): Promise<void> {
     
     const streamName = `${symbol.toLowerCase()}@depth@100ms`;
     const tradeStreamName = `${symbol.toLowerCase()}@trade`;
+    const tickerStreamName = `${symbol.toLowerCase()}@miniTicker`;
     // Binance WebSocket 组合流格式：使用 /stream?streams= 端点
     const baseUrl = BINANCE_WS_URLS[currentWsUrlIndex % BINANCE_WS_URLS.length];
-    const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}`;
+    const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}/${tickerStreamName}`;
 
     log('info', 'ws', 'ws.connecting', { symbol, url: wsUrl, urlIndex: currentWsUrlIndex });
 
@@ -525,6 +526,8 @@ function handleMessage(data: unknown): void {
     handleDepthUpdate(msg);
   } else if (msg['e'] === 'trade') {
     handleTradeUpdate(msg);
+  } else if (msg['e'] === '24hrMiniTicker') {
+    handleMiniTickerUpdate(msg);
   }
 }
 
@@ -601,6 +604,33 @@ function handleTradeUpdate(msg: Record<string, unknown>): void {
   if (tradeBatch.length >= 50) {
     sendTradeBatch();
   }
+}
+
+function handleMiniTickerUpdate(msg: Record<string, unknown>): void {
+  if (!orderBookManager || !currentSymbol) return;
+
+  // 验证消息的 symbol 是否匹配当前订阅（忽略大小写）
+  const msgSymbol = (msg['s'] as string)?.toUpperCase();
+  if (msgSymbol && msgSymbol !== currentSymbol.toUpperCase()) {
+    // 忽略不匹配的消息
+    return;
+  }
+
+  // Update 24h ticker data in order book manager
+  // Binance miniTicker format: { h: high, l: low, v: volume, ... }
+  // Note: miniTicker doesn't include price change, so we calculate it from open price
+  const openPrice = parseFloat(msg['o'] as string);
+  const closePrice = parseFloat(msg['c'] as string);
+  const priceChange = closePrice - openPrice;
+  const priceChangePercent = openPrice > 0 ? (priceChange / openPrice) * 100 : 0;
+
+  orderBookManager.updateTicker24h({
+    h: String(msg['h']),  // 24h high
+    l: String(msg['l']),  // 24h low
+    v: String(msg['v']),  // 24h volume (base asset)
+    p: priceChange.toFixed(8),
+    P: priceChangePercent.toFixed(2),
+  });
 }
 
 function sendTradeBatch(): void {
@@ -748,8 +778,9 @@ async function reconnectWithRetainedData(symbol: string): Promise<void> {
     
     const streamName = `${symbol.toLowerCase()}@depth@100ms`;
     const tradeStreamName = `${symbol.toLowerCase()}@trade`;
+    const tickerStreamName = `${symbol.toLowerCase()}@miniTicker`;
     const baseUrl = BINANCE_WS_URLS[currentWsUrlIndex % BINANCE_WS_URLS.length];
-    const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}`;
+    const wsUrl = `${baseUrl}/stream?streams=${streamName}/${tradeStreamName}/${tickerStreamName}`;
     
     log('info', 'ws', 'ws.reconnecting', { symbol, url: wsUrl, urlIndex: currentWsUrlIndex });
     

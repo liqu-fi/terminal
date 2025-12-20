@@ -5,6 +5,7 @@ import { useWalletStore, selectBalances } from '../../store/walletStore';
 import { useI18n, formatMessage } from '../../i18n';
 import { toast } from '../../components/Toast';
 import { Icon } from '../../components/Icon';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import type { OrderSide, OrderType } from '../../types/trading';
 import styles from './MobileOrderEntry.module.css';
 
@@ -22,6 +23,7 @@ export function MobileOrderEntry({
   onSuccess,
 }: MobileOrderEntryProps) {
   const { t } = useI18n();
+  const { trigger } = useHapticFeedback();
   const [type, setType] = useState<OrderType>('limit');
   const [price, setPrice] = useState(priceFromOrderBook || '');
   const [quantity, setQuantity] = useState('');
@@ -82,8 +84,9 @@ export function MobileOrderEntry({
     if (max > 0) {
       setQuantity((max * pct / 100).toFixed(6));
       setQuantityPercent(pct);
+      trigger('selection');
     }
-  }, [getMaxQuantity]);
+  }, [getMaxQuantity, trigger]);
 
   const handleSubmit = () => {
     if (dataConfidence.level === 'stale') {
@@ -109,17 +112,19 @@ export function MobileOrderEntry({
 
     if (order) {
       toast.success(t.toast?.orderSubmitted || 'Order submitted');
+      trigger('success');
       setQuantity('');
       setQuantityPercent(0);
       onSuccess?.();
     } else {
       toast.error(t.orderEntry?.insufficientBalance || 'Insufficient balance');
+      trigger('error');
     }
   };
 
   const availableBalance = side === 'buy'
-    ? `${parseFloat(quoteBalance?.available ?? '0').toFixed(2)} ${quoteAsset}`
-    : `${parseFloat(baseBalance?.available ?? '0').toFixed(6)} ${baseAsset}`;
+    ? `${parseFloat(quoteBalance?.available ?? '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${quoteAsset}`
+    : `${parseFloat(baseBalance?.available ?? '0').toFixed(4)} ${baseAsset}`;
 
   return (
     <div className={styles.container}>
@@ -207,23 +212,58 @@ export function MobileOrderEntry({
             inputMode="decimal"
             className={styles.input}
             value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
+            onChange={(e) => {
+              setQuantity(e.target.value);
+              const val = parseFloat(e.target.value);
+              const max = getMaxQuantity();
+              if (!isNaN(val) && max > 0) {
+                setQuantityPercent(Math.min(100, Math.max(0, (val / max) * 100)));
+              } else {
+                setQuantityPercent(0);
+              }
+            }}
             placeholder="0.00"
           />
           <span className={styles.inputSuffix}>{baseAsset}</span>
         </div>
 
-        {/* Percentage Buttons */}
-        <div className={styles.percentRow}>
-          {[25, 50, 75, 100].map((pct) => (
-            <button
-              key={pct}
-              className={`${styles.percentBtn} ${quantityPercent === pct ? styles.active : ''}`}
-              onClick={() => updateQuantityFromPercent(pct)}
-            >
-              {pct}%
-            </button>
-          ))}
+        {/* Quantity Slider */}
+        <div className={styles.sliderContainer}>
+          <div className={styles.sliderWrapper}>
+            <div className={styles.sliderSteps}>
+              {[0, 25, 50, 75, 100].map(step => (
+                <div 
+                  key={step} 
+                  className={`${styles.sliderStep} ${quantityPercent >= step ? styles.active : ''}`}
+                  style={{ left: `${step}%` }}
+                />
+              ))}
+            </div>
+            <div 
+              className={styles.sliderTrack} 
+              style={{ width: `${quantityPercent}%` }}
+            />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={quantityPercent}
+              onChange={(e) => updateQuantityFromPercent(parseInt(e.target.value))}
+              className={styles.slider}
+            />
+          </div>
+          <div className={styles.percentRow}>
+            {[0, 25, 50, 75, 100].map((pct) => (
+              <span
+                key={pct}
+                className={`${styles.percentLabel} ${Math.round(quantityPercent) === pct ? styles.active : ''}`}
+                onClick={() => updateQuantityFromPercent(pct)}
+              >
+                {pct}%
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -39,6 +39,7 @@ export function TPSLForm({ symbol, currentPrice, avgEntryPrice, quantity, onClos
         id: tpId,
         symbol,
         type: 'takeProfit',
+        enabled: true,
         condition: {
           priceSource: 'last',
           operator: 'gte',
@@ -66,6 +67,7 @@ export function TPSLForm({ symbol, currentPrice, avgEntryPrice, quantity, onClos
         id: slId,
         symbol,
         type: 'stopLoss',
+        enabled: true,
         condition: {
           priceSource: 'last',
           operator: 'lte',

@@ -16,12 +16,12 @@ describe('OrderBookManager', () => {
           ['50000.00', '1.5'],
           ['49999.00', '2.0'],
           ['49998.00', '0.5'],
-        ],
+        ] as [string, string][],
         asks: [
           ['50001.00', '1.0'],
           ['50002.00', '1.5'],
           ['50003.00', '2.0'],
-        ],
+        ] as [string, string][],
       };
 
       manager.applySnapshot(snapshot);
@@ -42,10 +42,10 @@ describe('OrderBookManager', () => {
         bids: [
           ['50000.00', '1.5'],
           ['49999.00', '0'], // Should be ignored
-        ],
+        ] as [string, string][],
         asks: [
           ['50001.00', '1.0'],
-        ],
+        ] as [string, string][],
       };
 
       manager.applySnapshot(snapshot);
@@ -59,8 +59,8 @@ describe('OrderBookManager', () => {
     beforeEach(() => {
       manager.applySnapshot({
         lastUpdateId: 100,
-        bids: [['50000.00', '1.0']],
-        asks: [['50001.00', '1.0']],
+        bids: [['50000.00', '1.0']] as [string, string][],
+        asks: [['50001.00', '1.0']] as [string, string][],
       });
     });
 
@@ -132,12 +132,12 @@ describe('OrderBookManager', () => {
           ['50000.00', '1.0'],
           ['49999.00', '2.0'],
           ['49998.00', '3.0'],
-        ],
+        ] as [string, string][],
         asks: [
           ['50001.00', '1.5'],
           ['50002.00', '2.5'],
           ['50003.00', '3.5'],
-        ],
+        ] as [string, string][],
       });
     });
 
@@ -184,8 +184,8 @@ describe('OrderBookManager', () => {
     it('should not be stale immediately after snapshot', () => {
       manager.applySnapshot({
         lastUpdateId: 100,
-        bids: [['50000.00', '1.0']],
-        asks: [['50001.00', '1.0']],
+        bids: [['50000.00', '1.0']] as [string, string][],
+        asks: [['50001.00', '1.0']] as [string, string][],
       });
 
       expect(manager.checkStale()).toBe(false);

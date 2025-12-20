@@ -32,6 +32,15 @@ interface OrderBookState {
   consecutiveFailures: number;
 }
 
+// 24h ticker data
+interface Ticker24h {
+  high24h: string;
+  low24h: string;
+  vol24h: string;
+  priceChange24h: string;
+  priceChangePercent24h: string;
+}
+
 // Metrics calculation helpers
 interface MidPriceBuffer {
   prices: number[];
@@ -61,6 +70,7 @@ export class OrderBookManager {
   private state: OrderBookState;
   private midPriceBuffer: MidPriceBuffer;
   private tradeBuffer: TradeBuffer;
+  private ticker24h: Ticker24h;
 
   constructor(symbol: string) {
     this.state = {
@@ -89,6 +99,33 @@ export class OrderBookManager {
       quantities: [],
       index: 0,
       count: 0,
+    };
+
+    this.ticker24h = {
+      high24h: '0',
+      low24h: '0',
+      vol24h: '0',
+      priceChange24h: '0',
+      priceChangePercent24h: '0',
+    };
+  }
+
+  /**
+   * Update 24h ticker data from websocket stream
+   */
+  updateTicker24h(data: {
+    h: string;  // high
+    l: string;  // low
+    v: string;  // volume
+    p: string;  // price change
+    P: string;  // price change percent
+  }): void {
+    this.ticker24h = {
+      high24h: data.h,
+      low24h: data.l,
+      vol24h: data.v,
+      priceChange24h: data.p,
+      priceChangePercent24h: data.P,
     };
   }
 
@@ -351,6 +388,12 @@ export class OrderBookManager {
       liquidityScore,
       slippageEst,
       lastUpdateTime: now,
+      // 24h ticker data
+      high24h: this.ticker24h.high24h,
+      low24h: this.ticker24h.low24h,
+      vol24h: this.ticker24h.vol24h,
+      priceChange24h: this.ticker24h.priceChange24h,
+      priceChangePercent24h: this.ticker24h.priceChangePercent24h,
     };
   }
 
@@ -483,6 +526,12 @@ export class OrderBookManager {
       liquidityScore: 0,
       slippageEst: 'N/A',
       lastUpdateTime: now,
+      // 24h ticker data (may still have valid data even without orderbook)
+      high24h: this.ticker24h.high24h,
+      low24h: this.ticker24h.low24h,
+      vol24h: this.ticker24h.vol24h,
+      priceChange24h: this.ticker24h.priceChange24h,
+      priceChangePercent24h: this.ticker24h.priceChangePercent24h,
     };
   }
 

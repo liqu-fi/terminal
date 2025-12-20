@@ -267,6 +267,7 @@ export const enUS: Locale = {
     percent100: '100%',
     placeOrder: 'Place Order',
     placeBuyOrder: 'Buy {symbol}',
+    placeSellOrder: 'Sell {symbol}',
     trade: 'Trade',
     closeAll: 'Close Position',
     fullPosition: 'Full Position',
@@ -297,6 +298,9 @@ export const enUS: Locale = {
     confirmAllInSellMessage: 'Sell all holdings',
     confirmAllInBuy: 'Confirm Buy',
     confirmAllInSell: 'Confirm Sell',
+    invalidAmount: 'Invalid amount',
+    invalidPrice: 'Invalid price',
+    insufficientBalance: 'Insufficient balance',
   },
 
   // Open Orders
@@ -610,7 +614,9 @@ export const enUS: Locale = {
     statusSuspended: 'Suspended',
     myAssets: 'My Assets',
     asset: 'Asset',
+    assets: 'Assets',
     balance: 'Balance',
+    totalBalance: 'Total Balance',
     value: 'Value (USDT)',
     avgPrice: 'Avg Entry Price',
     unrealizedPnl: 'Unrealized P&L',
@@ -666,6 +672,10 @@ export const enUS: Locale = {
     filterTrade: 'Trade',
     filterFee: 'Fee',
     noRecords: 'No records yet',
+    noAssets: 'No assets',
+    depositFirst: 'Deposit first',
+    hideZero: 'Hide zero balances',
+    showAll: 'Show all',
     type: 'Type',
     time: 'Time',
     reference: 'Reference',
@@ -728,6 +738,9 @@ export const enUS: Locale = {
     filledOrders: 'Filled',
     totalTrades: 'Total Trades',
     totalVolume: 'Total Volume',
+    open: 'Open Orders',
+    history: 'Order History',
+    trades: 'Trade History',
     // Order status
     status: {
       pending: 'Pending',

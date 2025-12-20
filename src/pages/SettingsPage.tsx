@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore, type UserPreferences } from '../store/authStore';
 import { useI18n } from '../i18n';
 import { Icon } from '../components/Icon';

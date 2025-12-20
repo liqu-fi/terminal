@@ -429,59 +429,172 @@
   to { transform: rotate(360deg); }
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
+/* 响应式 - 低高度屏幕 */
+@media (max-height: 800px) {
   .toolbar {
-    padding: 4px 8px;
-    flex-wrap: nowrap;
-    min-height: 40px;
+    padding: 2px 8px;
+    min-height: 32px;
   }
   
-  .toolbarScrollArea {
-    gap: 8px;
-  }
-
   .indicatorBtn {
-    padding: 4px 6px;
+    padding: 2px 6px;
     font-size: 10px;
   }
 
   .timeRangeBtn {
-    padding: 4px 6px;
+    padding: 2px 6px;
     font-size: 10px;
   }
   
-  .ohlcBar {
-    padding: 4px 8px;
-    gap: 4px;
-    flex-direction: row;
-    justify-content: space-between;
-    flex-wrap: wrap;
+  .chartTypeBtn {
+    width: 24px;
+    height: 20px;
   }
   
-  .symbolInfo {
-    gap: 6px;
+  .toolBtn {
+    width: 24px;
+    height: 24px;
   }
-
+  
+  .ohlcBar {
+    padding: 2px 8px;
+    min-height: 28px;
+  }
+  
   .symbolName {
-    font-size: 13px;
+    font-size: 12px;
   }
-
+  
   .currentPrice {
-    font-size: 13px;
-  }
-
-  .ohlcData {
-    width: 100%;
-    gap: 8px;
-    justify-content: flex-start;
+    font-size: 12px;
   }
   
   .ohlcItem {
     font-size: 10px;
   }
+  
+  .legend {
+    padding: 2px 8px;
+    font-size: 9px;
+  }
+  
+  .volumeChart {
+    height: 60px;
+  }
+}
+
+/* 响应式 - 非常低高度屏幕 */
+@media (max-height: 700px) {
+  .indicatorGroup {
+    display: none;
+  }
+  
+  .legend {
+    display: none;
+  }
+  
+  .volumeChart {
+    height: 50px;
+  }
+  
+  .mainChart {
+    min-height: 120px;
+  }
+}
+
+/* 响应式 - 窄宽度屏幕 */
+@media (max-width: 1200px) {
+  .ohlcData {
+    display: none;
+  }
+}
+
+/* 响应式 - 移动端 */
+@media (max-width: 768px) {
+  .container {
+    min-height: 200px;
+  }
+
+  .toolbar {
+    padding: 2px 6px;
+    flex-wrap: nowrap;
+    min-height: 32px;
+  }
+  
+  .toolbarScrollArea {
+    gap: 6px;
+  }
+
+  .indicatorBtn {
+    padding: 2px 5px;
+    font-size: 9px;
+  }
+
+  .timeRangeBtn {
+    padding: 2px 5px;
+    font-size: 9px;
+  }
+
+  .chartTypeBtn {
+    width: 24px;
+    height: 20px;
+  }
+
+  .toolBtn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .ohlcBar {
+    padding: 2px 6px;
+    gap: 4px;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    min-height: 24px;
+  }
+  
+  .symbolInfo {
+    gap: 4px;
+  }
+
+  .symbolName {
+    font-size: 11px;
+  }
+
+  .currentPrice {
+    font-size: 11px;
+  }
+
+  .priceChange {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .ohlcData {
+    display: none;
+  }
+  
+  .ohlcItem {
+    font-size: 9px;
+  }
+
+  .legend {
+    padding: 1px 6px;
+    font-size: 8px;
+  }
 
   .mainChart {
-    min-height: 250px;
+    min-height: 120px;
+  }
+
+  .volumeChart {
+    height: 50px;
+  }
+
+  .volumeLabel {
+    font-size: 8px;
+    top: 2px;
+    left: 4px;
   }
 }

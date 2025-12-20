@@ -40,10 +40,17 @@ export function Sparkline({
       y: padding + (height - padding * 2) - ((value - min) / range) * (height - padding * 2)
     }));
 
-    const linePath = `M ${points[0].x},${points[0].y} ` + points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ');
+    const firstPoint = points[0];
+    if (!firstPoint) return { path: '', areaPath: '', isPositive: true };
+
+    const linePath = `M ${firstPoint.x},${firstPoint.y} ` + points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ');
     const area = `${linePath} L ${width},${height} L 0,${height} Z`;
 
-    return { path: linePath, areaPath: area, isPositive: data[data.length - 1] >= data[0] };
+    const lastValue = data[data.length - 1];
+    const firstValue = data[0];
+    const positive = (lastValue !== undefined && firstValue !== undefined) ? lastValue >= firstValue : true;
+
+    return { path: linePath, areaPath: area, isPositive: positive };
   }, [data, width, height]);
 
   const finalColor = color || (isPositive ? colors.up : colors.down);

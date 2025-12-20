@@ -50,24 +50,25 @@ PriceLevel.displayName = 'PriceLevel';
 
 function formatPrice(price: string): string {
   const num = parseFloat(price);
-  if (num >= 1000) return num.toFixed(2);
+  if (num >= 1000) return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (num >= 1) return num.toFixed(4);
-  return num.toFixed(8);
+  return num.toFixed(6);
 }
 
 function formatQuantity(qty: string): string {
   const num = parseFloat(qty);
   if (num >= 1000) return num.toFixed(2);
   if (num >= 1) return num.toFixed(4);
-  return num.toFixed(6);
+  return num.toFixed(5);
 }
 
 interface OrderBookProps {
   onPriceClick?: (price: string, side: 'buy' | 'sell') => void;
   embedded?: boolean;  // 嵌入到BottomTabs时使用的模式
+  compact?: boolean;   // 移动端紧凑模式
 }
 
-export function OrderBook({ onPriceClick, embedded = false }: OrderBookProps) {
+export function OrderBook({ onPriceClick, embedded = false, compact = false }: OrderBookProps) {
   const { t } = useI18n();
   const orderBook = useMarketStore(selectOrderBook);
   const metrics = useMarketStore(selectMetrics);
@@ -190,17 +191,19 @@ export function OrderBook({ onPriceClick, embedded = false }: OrderBookProps) {
   }
 
   return (
-    <div className={`card ${styles.container} ${styles[level] || ''}`}>
-      <div className="card-header">
-        <span className="card-title">{t.orderBook.title}</span>
-        {level !== 'live' && (
-          <div className={styles.confidenceIcon} title={reason}>
-            {isResyncing && <Icon name="refresh-cw" size="sm" className={styles.spinning} />}
-            {isStale && <Icon name="wifi-off" size="sm" />}
-            {level === 'degraded' && <Icon name="alert-triangle" size="sm" />}
-          </div>
-        )}
-      </div>
+    <div className={`card ${styles.container} ${compact ? styles.compact : ''} ${styles[level] || ''}`}>
+      {!compact && (
+        <div className="card-header">
+          <span className="card-title">{t.orderBook.title}</span>
+          {level !== 'live' && (
+            <div className={styles.confidenceIcon} title={reason}>
+              {isResyncing && <Icon name="refresh-cw" size="sm" className={styles.spinning} />}
+              {isStale && <Icon name="wifi-off" size="sm" />}
+              {level === 'degraded' && <Icon name="alert-triangle" size="sm" />}
+            </div>
+          )}
+        </div>
+      )}
       
       <div className={`${styles.body} ${isStale ? styles.staleBody : ''}`}>
         <div className={styles.header}>
@@ -210,7 +213,7 @@ export function OrderBook({ onPriceClick, embedded = false }: OrderBookProps) {
 
         <div className={styles.asksSection}>
           <div className={styles.scrollContent}>
-            {orderBook.asks.slice().reverse().map((lvl, i) => (
+            {orderBook.asks.slice(compact ? -10 : undefined).reverse().map((lvl, i) => (
               <PriceLevel
                 key={`ask-${lvl.price}`}
                 level={lvl}
@@ -228,11 +231,18 @@ export function OrderBook({ onPriceClick, embedded = false }: OrderBookProps) {
             <span className="tabular-nums">{formatPrice(String(spread))}</span>
             <span className={styles.spreadBps}>({spreadBps.toFixed(2)} bps)</span>
           </div>
+          {compact && level !== 'live' && (
+            <div className={styles.confidenceIcon} title={reason}>
+              {isResyncing && <Icon name="refresh-cw" size="xs" className={styles.spinning} />}
+              {isStale && <Icon name="wifi-off" size="xs" />}
+              {level === 'degraded' && <Icon name="alert-triangle" size="xs" />}
+            </div>
+          )}
         </div>
 
         <div className={styles.bidsSection}>
           <div className={styles.scrollContent}>
-            {orderBook.bids.map((lvl, i) => (
+            {orderBook.bids.slice(0, compact ? 10 : undefined).map((lvl, i) => (
               <PriceLevel
                 key={`bid-${lvl.price}`}
                 level={lvl}

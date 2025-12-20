@@ -266,6 +266,8 @@ export const useTradingStore = create<TradingState>()(
           }
         },
 
+        setFocusMode: (enabled) => set({ focusMode: enabled }),
+
         updatePositionTPSL: (symbol, takeProfitPrice, stopLossPrice) => {
           set((s) => {
             const newPositions = new Map(s.positions);

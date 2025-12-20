@@ -71,9 +71,11 @@ function calculateMA(data: KlineData[], period: number) {
   for (let i = period - 1; i < data.length; i++) {
     let sum = 0;
     for (let j = 0; j < period; j++) {
-      sum += data[i - j].close;
+      const item = data[i - j];
+      if (item) sum += item.close;
     }
-    result.push({ time: data[i].time, value: sum / period });
+    const current = data[i];
+    if (current) result.push({ time: current.time, value: sum / period });
   }
   return result;
 }
@@ -85,9 +87,11 @@ function calculateEMA(data: KlineData[], period: number) {
   let ema = data[0]?.close || 0;
   
   for (let i = 0; i < data.length; i++) {
-    ema = i === 0 ? data[i].close : (data[i].close - ema) * multiplier + ema;
+    const current = data[i];
+    if (!current) continue;
+    ema = i === 0 ? current.close : (current.close - ema) * multiplier + ema;
     if (i >= period - 1) {
-      result.push({ time: data[i].time, value: ema });
+      result.push({ time: current.time, value: ema });
     }
   }
   return result;
@@ -99,16 +103,25 @@ function calculateBOLL(data: KlineData[], period: number = 20, stdDev: number = 
   
   for (let i = period - 1; i < data.length; i++) {
     let sum = 0;
-    for (let j = 0; j < period; j++) sum += data[i - j].close;
+    for (let j = 0; j < period; j++) {
+      const item = data[i - j];
+      if (item) sum += item.close;
+    }
     const ma = sum / period;
     
     let squaredDiffSum = 0;
-    for (let j = 0; j < period; j++) squaredDiffSum += Math.pow(data[i - j].close - ma, 2);
+    for (let j = 0; j < period; j++) {
+      const item = data[i - j];
+      if (item) squaredDiffSum += Math.pow(item.close - ma, 2);
+    }
     const std = Math.sqrt(squaredDiffSum / period);
     
-    middle.push({ time: data[i].time, value: ma });
-    upper.push({ time: data[i].time, value: ma + stdDev * std });
-    lower.push({ time: data[i].time, value: ma - stdDev * std });
+    const current = data[i];
+    if (current) {
+      middle.push({ time: current.time, value: ma });
+      upper.push({ time: current.time, value: ma + stdDev * std });
+      lower.push({ time: current.time, value: ma - stdDev * std });
+    }
   }
   
   return { upper, middle, lower };
@@ -176,7 +189,7 @@ export function PriceChart() {
     }
     
     try {
-      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=500`;
+      const url = `/binance-api/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=500`;
       const response = await fetch(url);
       
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -638,13 +651,17 @@ export function PriceChart() {
       
       // 添加触发器价格线
       triggers.filter(t => t.enabled && t.symbol === selectedSymbol).forEach(trigger => {
+        const triggerPrice = trigger.triggerPrice || trigger.condition.threshold;
+        const side = trigger.action.side;
+        const type = trigger.action.type;
+        
         series.createPriceLine({
-          price: parseFloat(trigger.triggerPrice),
-          color: trigger.action === 'buy' ? CHART_COLORS.buy : CHART_COLORS.sell,
+          price: parseFloat(triggerPrice),
+          color: side === 'buy' ? CHART_COLORS.buy : CHART_COLORS.sell,
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: `T: ${trigger.action.toUpperCase()}`,
+          title: `T: ${type.toUpperCase()}${side ? ` ${side.toUpperCase()}` : ''}`,
         });
       });
 
@@ -665,8 +682,12 @@ export function PriceChart() {
   // 价格信息计算
   const priceInfo = useMemo(() => {
     if (klines.length === 0) return null;
-    const current = klines[klines.length - 1].close;
-    const first = klines[0].open;
+    const lastKline = klines[klines.length - 1];
+    const firstKline = klines[0];
+    if (!lastKline || !firstKline) return null;
+    
+    const current = lastKline.close;
+    const first = firstKline.open;
     const high24h = Math.max(...klines.map(k => k.high));
     const low24h = Math.min(...klines.map(k => k.low));
     const totalVolume = klines.reduce((sum, k) => sum + k.volume, 0);
@@ -762,7 +783,7 @@ export function PriceChart() {
           {priceInfo && (
             <>
               <span className={styles.currentPrice}>
-                {priceInfo.current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                {priceInfo.current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               <span className={`${styles.priceChange} ${priceInfo.change >= 0 ? styles.up : styles.down}`}>
                 {priceInfo.change >= 0 ? '+' : ''}{priceInfo.changePercent.toFixed(2)}%
@@ -775,24 +796,18 @@ export function PriceChart() {
         <div className={styles.ohlcData}>
           {crosshairData ? (
             <>
-              <span className={styles.ohlcItem}><label>T</label>{crosshairData.time}</span>
-              <span className={styles.ohlcItem}><label>O</label>{crosshairData.open.toFixed(2)}</span>
-              <span className={styles.ohlcItem}><label>H</label>{crosshairData.high.toFixed(2)}</span>
-              <span className={styles.ohlcItem}><label>L</label>{crosshairData.low.toFixed(2)}</span>
+              <span className={styles.ohlcItem}><label>O</label>{crosshairData.open.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className={styles.ohlcItem}><label>H</label>{crosshairData.high.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className={styles.ohlcItem}><label>L</label>{crosshairData.low.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span className={`${styles.ohlcItem} ${crosshairData.change >= 0 ? styles.up : styles.down}`}>
-                <label>C</label>{crosshairData.close.toFixed(2)}
+                <label>C</label>{crosshairData.close.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               <span className={styles.ohlcItem}><label>V</label>{(crosshairData.volume / 1000).toFixed(2)}K</span>
-              {!isMobile && (
-                <span className={`${styles.ohlcItem} ${crosshairData.changePercent >= 0 ? styles.up : styles.down}`}>
-                  <label>Chg</label>{crosshairData.changePercent >= 0 ? '+' : ''}{crosshairData.changePercent.toFixed(2)}%
-                </span>
-              )}
             </>
           ) : priceInfo && (
             <>
-              <span className={styles.ohlcItem}><label>{isMobile ? 'H' : '24H High'}</label>{priceInfo.high24h.toFixed(2)}</span>
-              <span className={styles.ohlcItem}><label>{isMobile ? 'L' : '24H Low'}</label>{priceInfo.low24h.toFixed(2)}</span>
+              <span className={styles.ohlcItem}><label>{isMobile ? 'H' : '24H High'}</label>{priceInfo.high24h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className={styles.ohlcItem}><label>{isMobile ? 'L' : '24H Low'}</label>{priceInfo.low24h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               {!isMobile && (
                 <>
                   <span className={styles.ohlcItem}><label>24H Vol</label>{(priceInfo.volume / 1000000).toFixed(2)}M</span>

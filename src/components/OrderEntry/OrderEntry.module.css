@@ -22,8 +22,8 @@
 
 .sideToggle {
   display: flex;
-  gap: 2px;
-  padding: 2px;
+  gap: 0.125rem; /* 2px */
+  padding: 0.125rem; /* 2px */
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
   flex: 1;
@@ -31,11 +31,11 @@
 
 .sideBtn {
   flex: 1;
-  padding: 6px 8px;
-  font-size: 11px;
+  padding: 0.375rem 0.5rem; /* 6px 8px */
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   border: none;
-  border-radius: calc(var(--radius-sm) - 1px);
+  border-radius: calc(var(--radius-sm) - 0.0625rem);
   cursor: pointer;
   transition: all var(--transition-fast);
   background: transparent;
@@ -61,19 +61,19 @@
 
 .typeToggle {
   display: flex;
-  gap: 2px;
-  padding: 2px;
+  gap: 0.125rem; /* 2px */
+  padding: 0.125rem; /* 2px */
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
 }
 
 .typeBtn {
-  padding: 6px 10px;
-  font-size: 10px;
+  padding: 0.375rem 0.625rem; /* 6px 10px */
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-semibold);
   background: transparent;
   border: none;
-  border-radius: calc(var(--radius-sm) - 1px);
+  border-radius: calc(var(--radius-sm) - 0.0625rem);
   color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -94,11 +94,11 @@
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.25rem; /* 4px */
 }
 
 .label {
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -109,22 +109,22 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem; /* 4px */
 }
 
 .input {
   flex: 1;
-  padding: 6px 48px 6px 8px !important;
-  font-size: 13px !important;
-  height: 32px;
+  padding: 0.375rem 3rem 0.375rem 0.5rem !important; /* 6px 48px 6px 8px */
+  font-size: var(--font-size-md) !important;
+  height: 2rem; /* 32px */
 }
 
 .stepBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 1.5rem; /* 24px */
+  height: 1.5rem; /* 24px */
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-sm);
@@ -142,8 +142,8 @@
 
 .inputSuffix {
   position: absolute;
-  right: calc(24px + 4px + 8px);
-  font-size: 10px;
+  right: calc(1.5rem + 0.25rem + 0.5rem); /* 24px + 4px + 8px */
+  font-size: var(--font-size-2xs);
   color: var(--color-text-tertiary);
   pointer-events: none;
   z-index: 1;
@@ -230,9 +230,9 @@
 }
 
 .inputSmall {
-  padding: 5px 8px !important;
-  font-size: 12px !important;
-  height: 28px;
+  padding: 0.3125rem 0.5rem !important; /* 5px 8px */
+  font-size: var(--font-size-sm) !important;
+  height: 1.75rem; /* 28px */
 }
 
 /* Compact info section */
@@ -307,8 +307,8 @@
 /* Submit button */
 .submitBtn {
   width: 100%;
-  height: 36px;
-  font-size: 12px;
+  height: 2.25rem; /* 36px */
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.03em;

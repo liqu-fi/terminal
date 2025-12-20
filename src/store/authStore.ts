@@ -247,16 +247,23 @@ export const useAuthStore = create<AuthState>()(
         
         const newHash = simpleHash(newPass);
         
-        set((s) => ({
-          user: s.user ? { ...s.user, passwordHash: newHash } : null,
-          registeredUsers: {
-            ...s.registeredUsers,
-            [s.user!.username.toLowerCase()]: {
-              ...s.registeredUsers[s.user!.username.toLowerCase()],
-              passwordHash: newHash,
+        set((s) => {
+          if (!s.user) return {};
+          const usernameKey = s.user.username.toLowerCase();
+          const registeredUser = s.registeredUsers[usernameKey];
+          if (!registeredUser) return {};
+          
+          return {
+            user: { ...s.user, passwordHash: newHash },
+            registeredUsers: {
+              ...s.registeredUsers,
+              [usernameKey]: {
+                ...registeredUser,
+                passwordHash: newHash,
+              },
             },
-          },
-        }));
+          };
+        });
         
         return { success: true };
       },

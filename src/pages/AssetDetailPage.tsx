@@ -90,10 +90,10 @@ function PortfolioChart({
   };
   
   const timeLabels = getTimeLabels();
-  const startValue = data[0];
-  const endValue = data[data.length - 1];
+  const startValue = data[0] !== undefined ? data[0] : 0;
+  const endValue = data[data.length - 1] !== undefined ? data[data.length - 1] : 0;
   const changeValue = endValue - startValue;
-  const changePercent = ((changeValue / startValue) * 100).toFixed(2);
+  const changePercent = startValue !== 0 ? ((changeValue / startValue) * 100).toFixed(2) : '0.00';
   
   // 格式化数值
   const formatValue = (v: number) => {
@@ -243,20 +243,24 @@ function PortfolioChart({
         )}
         
         {/* 起止点标记 */}
-        <circle
-          cx={points[0].x}
-          cy={points[0].y}
-          r="3"
-          fill="var(--text-tertiary)"
-        />
-        <circle
-          cx={points[points.length - 1].x}
-          cy={points[points.length - 1].y}
-          r="4"
-          fill={color}
-          stroke="var(--bg-secondary)"
-          strokeWidth="2"
-        />
+        {points.length > 0 && (
+          <>
+            <circle
+              cx={points[0].x}
+              cy={points[0].y}
+              r="3"
+              fill="var(--text-tertiary)"
+            />
+            <circle
+              cx={points[points.length - 1].x}
+              cy={points[points.length - 1].y}
+              r="4"
+              fill={color}
+              stroke="var(--bg-secondary)"
+              strokeWidth="2"
+            />
+          </>
+        )}
       </svg>
       
       {/* 悬停提示框 */}
@@ -356,7 +360,7 @@ function StatCard({
   label: string; 
   value: string | number; 
   subValue?: string;
-  icon: string;
+  icon: IconName;
   color: 'blue' | 'green' | 'orange' | 'purple' | 'red';
   onClick?: () => void;
 }) {

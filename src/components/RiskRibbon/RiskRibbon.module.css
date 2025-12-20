@@ -239,3 +239,113 @@
 .compactMetric.negative {
   color: var(--color-price-down);
 }
+
+/* Full Dashboard Mode */
+.full {
+  padding: var(--space-4);
+  background: var(--bg-primary);
+  border: none;
+  gap: var(--space-6);
+}
+
+.scoreSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.gaugeContainer {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 8px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gaugeContainer.low { border-color: var(--color-positive); }
+.gaugeContainer.medium { border-color: var(--color-warning); }
+.gaugeContainer.high { border-color: var(--color-negative); }
+
+.gaugeValue {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.gaugeLabel {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.statusInfo {
+  flex: 1;
+}
+
+.statusLevel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-2);
+}
+
+.statusLevel.low { background: var(--color-positive-bg); color: var(--color-positive); }
+.statusLevel.medium { background: var(--color-warning-bg); color: var(--color-warning); }
+.statusLevel.high { background: var(--color-negative-bg); color: var(--color-negative); }
+
+.statusDesc {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.gridTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.fullGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.gridItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemLabel {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.itemValue {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.positive { color: var(--color-positive); }
+.negative { color: var(--color-negative); }
+

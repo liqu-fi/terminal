@@ -8,6 +8,7 @@ export interface SymbolInfo {
   quoteAsset: string;
   price?: string;
   priceChange24h?: number;
+  change24h?: string;
   volume24h?: string;
   sparkline?: number[]; // 24h price points for sparkline
 }

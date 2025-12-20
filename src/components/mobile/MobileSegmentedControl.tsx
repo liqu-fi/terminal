@@ -29,6 +29,21 @@ export function MobileSegmentedControl({
   const containerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const [hasScroll, setHasScroll] = useState(false);
+
+  // Check if content is scrollable
+  useEffect(() => {
+    const checkScroll = () => {
+      if (containerRef.current) {
+        const { scrollWidth, clientWidth } = containerRef.current;
+        setHasScroll(scrollWidth > clientWidth);
+      }
+    };
+
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [segments]);
 
   // Update indicator position when active segment changes
   useEffect(() => {
@@ -46,12 +61,12 @@ export function MobileSegmentedControl({
         containerRef.current.scrollTo({ left: scrollLeft, behavior: 'smooth' });
       }
     }
-  }, [activeId, scrollable]);
+  }, [activeId, scrollable, segments]);
 
   return (
     <div
       ref={containerRef}
-      className={`${styles.container} ${styles[variant]} ${scrollable ? styles.scrollable : ''}`}
+      className={`${styles.container} ${styles[variant]} ${scrollable ? styles.scrollable : ''} ${hasScroll ? styles.hasScroll : ''}`}
     >
       {variant === 'underline' && (
         <div

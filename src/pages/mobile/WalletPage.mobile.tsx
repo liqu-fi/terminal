@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWalletStore, selectBalances } from '../../store/walletStore';
+import { useWatchlistStore } from '../../store/watchlistStore';
 import { useI18n } from '../../i18n';
 import { Icon } from '../../components/Icon';
 import { MobileHeader } from '../../components/Layout';
@@ -14,12 +16,14 @@ import styles from './WalletPage.mobile.module.css';
 
 export function MobileWalletPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { trigger } = useHapticFeedback();
   const stage = useWalletStore((state) => state.getOnboardingStage());
   const balances = useWalletStore(selectBalances);
   const performance = useWalletStore((state) => state.performanceMetrics);
   const account = useWalletStore((state) => state.account);
   const resetWallet = useWalletStore((state) => state.resetWallet);
+  const setSelectedSymbol = useWatchlistStore((state) => state.setSelectedSymbol);
 
   const [hideBalance, setHideBalance] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
@@ -44,6 +48,19 @@ export function MobileWalletPage() {
   const handleToggleAssets = () => {
     trigger('selection');
     setShowAllAssets(!showAllAssets);
+  };
+
+  // 点击资产跳转到交易页面
+  const handleAssetClick = (asset: string) => {
+    trigger('medium');
+    // 稳定币不能作为交易对的基础资产，跳过
+    if (asset === 'USDT' || asset === 'USDC' || asset === 'BUSD') {
+      return;
+    }
+    // 设置交易对并跳转
+    const symbol = `${asset}USDT`;
+    setSelectedSymbol(symbol);
+    navigate('/trade');
   };
 
 
@@ -205,32 +222,44 @@ export function MobileWalletPage() {
         </div>
 
         <div className={styles.assetList}>
-          {(showAllAssets ? balances : activeBalances).map((balance) => (
-            <div key={balance.asset} className={styles.assetItem} onClick={() => trigger('selection')}>
-              <div className={styles.assetIcon}>
-                {balance.asset.slice(0, 2)}
+          {(showAllAssets ? balances : activeBalances).map((balance) => {
+            const isStablecoin = ['USDT', 'USDC', 'BUSD'].includes(balance.asset);
+            return (
+              <div 
+                key={balance.asset} 
+                className={`${styles.assetItem} ${!isStablecoin ? styles.clickable : ''}`}
+                onClick={() => handleAssetClick(balance.asset)}
+              >
+                <div className={styles.assetIcon}>
+                  {balance.asset.slice(0, 2)}
+                </div>
+                <div className={styles.assetInfo}>
+                  <span className={styles.assetName}>{balance.asset}</span>
+                  <span className={styles.assetFullName}>
+                    {balance.asset === 'USDT' ? 'Tether' :
+                     balance.asset === 'BTC' ? 'Bitcoin' :
+                     balance.asset === 'ETH' ? 'Ethereum' :
+                     balance.asset}
+                  </span>
+                </div>
+                <div className={styles.assetBalance}>
+                  <span className={`${styles.balanceAmount} tabular-nums`}>
+                    {hideBalance ? '****' : parseFloat(balance.total).toFixed(
+                      balance.asset === 'USDT' ? 2 : 6
+                    )}
+                  </span>
+                  <span className={styles.balanceValue}>
+                    {hideBalance ? '****' : `≈ $${parseFloat(balance.total).toFixed(2)}`}
+                  </span>
+                </div>
+                {!isStablecoin && (
+                  <div className={styles.assetArrow}>
+                    <Icon name="chevron-right" size="sm" />
+                  </div>
+                )}
               </div>
-              <div className={styles.assetInfo}>
-                <span className={styles.assetName}>{balance.asset}</span>
-                <span className={styles.assetFullName}>
-                  {balance.asset === 'USDT' ? 'Tether' :
-                   balance.asset === 'BTC' ? 'Bitcoin' :
-                   balance.asset === 'ETH' ? 'Ethereum' :
-                   balance.asset}
-                </span>
-              </div>
-              <div className={styles.assetBalance}>
-                <span className={`${styles.balanceAmount} tabular-nums`}>
-                  {hideBalance ? '****' : parseFloat(balance.total).toFixed(
-                    balance.asset === 'USDT' ? 2 : 6
-                  )}
-                </span>
-                <span className={styles.balanceValue}>
-                  {hideBalance ? '****' : `≈ $${parseFloat(balance.total).toFixed(2)}`}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {activeBalances.length === 0 && !showAllAssets && (
             <div className={styles.emptyAssets}>

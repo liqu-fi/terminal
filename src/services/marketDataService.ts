@@ -129,21 +129,36 @@ function calculateRSI(closes: number[], period: number): number | null {
   if (closes.length < period + 1) return null;
   let gains = 0, losses = 0;
   for (let i = 1; i <= period; i++) {
-    const diff = closes[i] - closes[i - 1];
-    if (diff > 0) gains += diff; else losses -= diff;
+    const current = closes[i];
+    const prev = closes[i - 1];
+    if (current !== undefined && prev !== undefined) {
+      const diff = current - prev;
+      if (diff > 0) gains += diff; else losses -= diff;
+    }
   }
   let avgGain = gains / period, avgLoss = losses / period;
   for (let i = period + 1; i < closes.length; i++) {
-    const diff = closes[i] - closes[i - 1];
-    avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
-    avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+    const current = closes[i];
+    const prev = closes[i - 1];
+    if (current !== undefined && prev !== undefined) {
+      const diff = current - prev;
+      avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
+      avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+    }
   }
   return avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
 }
 
 function calculateVolatility(closes: number[]): number {
   const returns = [];
-  for (let i = 1; i < closes.length; i++) returns.push((closes[i] - closes[i-1]) / closes[i-1]);
+  for (let i = 1; i < closes.length; i++) {
+    const current = closes[i];
+    const prev = closes[i - 1];
+    if (current !== undefined && prev !== undefined && prev !== 0) {
+      returns.push((current - prev) / prev);
+    }
+  }
+  if (returns.length === 0) return 0;
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
   const variance = returns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / returns.length;
   return Math.sqrt(variance) * 100;

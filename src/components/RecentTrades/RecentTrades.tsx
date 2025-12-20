@@ -33,16 +33,16 @@ TradeRow.displayName = 'TradeRow';
 
 function formatPrice(price: string): string {
   const num = parseFloat(price);
-  if (num >= 1000) return num.toFixed(2);
+  if (num >= 1000) return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (num >= 1) return num.toFixed(4);
-  return num.toFixed(8);
+  return num.toFixed(6);
 }
 
 function formatQuantity(qty: string): string {
   const num = parseFloat(qty);
   if (num >= 1000) return num.toFixed(2);
   if (num >= 1) return num.toFixed(4);
-  return num.toFixed(6);
+  return num.toFixed(5);
 }
 
 function formatTime(timestamp: number): string {
@@ -57,17 +57,20 @@ function formatTime(timestamp: number): string {
 
 interface RecentTradesProps {
   onPriceClick?: (price: string) => void;
+  compact?: boolean;
 }
 
-export function RecentTrades({ onPriceClick }: RecentTradesProps) {
+export function RecentTrades({ onPriceClick, compact = false }: RecentTradesProps) {
   const { t } = useI18n();
   const trades = useMarketStore(selectRecentTrades);
 
   return (
-    <div className={`card ${styles.container} animate-fade`}>
-      <div className="card-header">
-        <span className="card-title">{t.recentTrades?.title || 'Recent Trades'}</span>
-      </div>
+    <div className={`card ${styles.container} ${compact ? styles.compact : ''} animate-fade`}>
+      {!compact && (
+        <div className="card-header">
+          <span className="card-title">{t.recentTrades?.title || 'Recent Trades'}</span>
+        </div>
+      )}
       
       <div className={styles.header}>
         <span>{t.orderBook?.price || 'Price'}</span>
@@ -83,7 +86,7 @@ export function RecentTrades({ onPriceClick }: RecentTradesProps) {
           </div>
         ) : (
           <div className={styles.list}>
-            {trades.slice(0, 50).map((trade) => (
+            {trades.slice(0, compact ? 20 : 50).map((trade) => (
               <TradeRow key={trade.id} trade={trade} onClick={onPriceClick} />
             ))}
           </div>

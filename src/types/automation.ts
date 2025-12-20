@@ -15,10 +15,14 @@ export interface Trigger {
   type: TriggerType;             // 触发器类型
   status: TriggerStatus;         // 当前状态
   statusReason?: string;         // 状态原因（如 blocked 时）
+  enabled: boolean;              // 是否启用
   condition: TriggerCondition;   // 触发条件
   action: TriggerAction;         // 触发动作
   positionId?: string;           // 关联持仓（TP/SL 时）
   linkedTriggerId?: string;      // OCO 关联的另一个触发器
+  
+  // 兼容旧代码的属性
+  triggerPrice?: string;         // 触发价格 (旧属性，建议迁移到 condition.threshold)
   
   // 配置
   allowDegraded: boolean;        // 允许 DEGRADED 执行
@@ -63,11 +67,13 @@ export interface ExecutionLog {
   id: string;                    // uuid
   triggerId: string;             // 关联触发器
   firedAt: number;               // 触发时间
+  timestamp?: number;            // 触发时间 (兼容性字段)
   
   // 触发时的市场状态
   observedPrice: string;         // 观测价格
   confidenceLevel: DataConfidenceLevel;  // 数据可信度
   confidenceReason: string;      // 可信度原因
+  reason?: string;               // 触发原因描述
   
   // 执行结果
   result: ExecutionResult;

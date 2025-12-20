@@ -5,6 +5,18 @@ import styles from './DepthChart.module.css';
 
 const DEPTH_LEVELS = 15;
 
+function formatPrice(price: number): string {
+  if (price >= 1000) return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (price >= 1) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+function formatQuantity(qty: number): string {
+  if (qty >= 1000) return qty.toFixed(2);
+  if (qty >= 1) return qty.toFixed(4);
+  return qty.toFixed(5);
+}
+
 export function DepthChart() {
   const { t } = useI18n();
   const orderBook = useMarketStore(selectOrderBook);
@@ -99,7 +111,7 @@ export function DepthChart() {
       <div className="card-header">
         <span>{t.depthChart.title}</span>
         <span className={`${styles.midPrice} tabular-nums`}>
-          {t.orderBook.midPrice}: {midPrice.toFixed(2)}
+          {t.orderBook.midPrice}: {formatPrice(midPrice)}
         </span>
       </div>
       
@@ -113,11 +125,11 @@ export function DepthChart() {
                 style={{ width: `${scaleWidth(level.cumulative)}%` }}
               >
                 <span className={`${styles.barLabel} tabular-nums`}>
-                  {level.quantity.toFixed(4)}
+                  {formatQuantity(level.quantity)}
                 </span>
               </div>
               <span className={`${styles.price} tabular-nums price-up`}>
-                {level.price.toFixed(2)}
+                {formatPrice(level.price)}
               </span>
             </div>
           ))}
@@ -149,14 +161,14 @@ export function DepthChart() {
           {askLevels.map((level, i) => (
             <div key={`ask-${i}`} className={styles.level}>
               <span className={`${styles.price} tabular-nums price-down`}>
-                {level.price.toFixed(2)}
+                {formatPrice(level.price)}
               </span>
               <div 
                 className={`${styles.bar} ${styles.askBar}`}
                 style={{ width: `${scaleWidth(level.cumulative)}%` }}
               >
                 <span className={`${styles.barLabel} tabular-nums`}>
-                  {level.quantity.toFixed(4)}
+                  {formatQuantity(level.quantity)}
                 </span>
               </div>
             </div>

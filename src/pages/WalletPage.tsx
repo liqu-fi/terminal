@@ -18,19 +18,18 @@ import styles from './WalletPage.module.css';
 type WalletTab = 'overview' | 'spot' | 'funding' | 'history';
 
 export function WalletPage() {
+  // All hooks must be called before any conditional returns
   const isMobile = useIsMobile();
+  const { t } = useI18n();
+  const stage = useWalletStore((state) => state.getOnboardingStage());
+  const [activeTab, setActiveTab] = useState<WalletTab>('overview');
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   // Render mobile layout
   if (isMobile) {
     return <MobileWalletPage />;
   }
-
-  const { t } = useI18n();
-  const stage = useWalletStore((state) => state.getOnboardingStage());
-  
-  const [activeTab, setActiveTab] = useState<WalletTab>('overview');
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const tabs: { id: WalletTab; label: string; icon: any }[] = [
     { id: 'overview', label: t.wallet?.overview || 'Overview', icon: 'layout' },

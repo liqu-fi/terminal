@@ -53,6 +53,12 @@ export interface DerivedMetrics {
   liquidityScore: number;   // 流动性评分 0-100
   slippageEst: string;      // 滑点预估
   lastUpdateTime: number;   // 最后更新时间
+  // 24小时统计数据
+  high24h: string;          // 24小时最高价
+  low24h: string;           // 24小时最低价
+  vol24h: string;           // 24小时成交量（base asset）
+  priceChange24h: string;   // 24小时价格变化
+  priceChangePercent24h: string; // 24小时价格变化百分比
 }
 
 // ===== 连接状态 =====

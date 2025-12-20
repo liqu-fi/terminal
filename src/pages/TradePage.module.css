@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   padding: var(--space-2);
-  height: calc(100vh - 64px); /* Adjusted for TopNav height */
+  height: calc(100vh - var(--header-height)); /* Adjusted for TopNav height */
   overflow: hidden;
   background: var(--bg-primary);
 }
@@ -36,7 +36,7 @@
 
 .sidebarContent > :last-child {
   flex: 1 1 auto;
-  min-height: 180px;
+  min-height: 11.25rem; /* 180px */
   overflow: hidden;
 }
 
@@ -68,7 +68,7 @@
 
 .chartContainer {
   flex: 1 1 auto;
-  min-height: 300px;
+  min-height: 18.75rem; /* 300px */
   overflow: hidden;
 }
 
@@ -87,7 +87,7 @@
 
 .orderBookWrapper {
   flex: 1 1 0;
-  min-height: 200px;
+  min-height: 12.5rem; /* 200px */
   overflow: hidden;
 }
 
@@ -106,8 +106,8 @@
 
 /* Resize Handles */
 .resizeHandleHorizontal {
-  width: 4px;
-  margin: 0 2px;
+  width: 0.25rem; /* 4px */
+  margin: 0 0.125rem; /* 2px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -122,8 +122,8 @@
 }
 
 .resizeHandleVertical {
-  height: 4px;
-  margin: 2px 0;
+  height: 0.25rem; /* 4px */
+  margin: 0.125rem 0; /* 2px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,29 +144,40 @@
 }
 
 /* Responsive - Medium screens (1080p and similar) */
-@media (max-height: 900px) {
+@media (max-height: 56.25rem) { /* 900px */
   .chartArea {
     gap: 0;
   }
   
   .chartContainer {
-    min-height: 250px;
+    min-height: 15.625rem; /* 250px */
   }
 }
 
-/* Responsive - Hide left panel on smaller widths */
-@media (max-width: 1200px) {
+/* Responsive - Hide left panel on narrow widths */
+@media (max-width: 1024px) {
   .leftPanel {
     display: none !important;
   }
 }
 
+/* 4:3 和正方形屏幕 - 缩小左侧面板但保留显示 */
+@media (max-width: 1200px) and (min-width: 1025px) {
+  .sidebarContent > :first-child {
+    max-height: 40%;
+  }
+  
+  .sidebarContent > :last-child {
+    min-height: 150px;
+  }
+}
+
 /* Responsive - Stack layout on tablet */
-@media (max-width: 900px) and (min-width: 769px) {
+@media (max-width: 56.25rem) and (min-width: 48.0625rem) { /* 900px and 769px */
   .container {
     overflow-y: auto;
     height: auto;
-    min-height: calc(100vh - 64px);
+    min-height: calc(100vh - var(--header-height));
   }
   
   .mainLayout {
@@ -175,11 +186,11 @@
   }
   
   .rightPanel {
-    min-height: 500px;
+    min-height: 31.25rem; /* 500px */
   }
   
   .orderBookWrapper {
-    min-height: 250px;
+    min-height: 15.625rem; /* 250px */
   }
 }
 
@@ -193,7 +204,7 @@
 .mobileContainer {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 48px - 56px - env(safe-area-inset-bottom)); /* Header + BottomNav */
+  height: calc(100vh - var(--header-height) - var(--bottom-nav-height) - env(safe-area-inset-bottom)); /* Header + BottomNav */
   background: var(--bg-primary);
   overflow: hidden;
 }
@@ -229,7 +240,7 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
-  min-height: 36px;
+  min-height: 2.25rem; /* 36px */
 }
 
 .mobileTabBtn:active {
@@ -271,12 +282,12 @@
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-subtle);
   transition: max-height var(--transition-normal);
-  max-height: 48px;
+  max-height: var(--header-height);
   overflow: hidden;
 }
 
 .mobileAccountSummary.expanded {
-  max-height: 400px;
+  max-height: 25rem; /* 400px */
   overflow-y: auto;
 }
 
@@ -313,7 +324,7 @@
 
 .quickOrderBtn {
   flex: 1;
-  height: 48px;
+  height: 3rem; /* 48px */
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);

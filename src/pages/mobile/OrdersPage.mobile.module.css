@@ -36,7 +36,6 @@
 
 /* Tab Navigation */
 .tabNav {
-  padding: var(--space-2) var(--space-4);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-subtle);
 }
