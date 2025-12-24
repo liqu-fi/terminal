@@ -302,6 +302,11 @@ export const zhCN = {
     confirmAllInSell: '确认卖出',
     invalidAmount: '数量无效',
     invalidPrice: '价格无效',
+    invalidTriggerPrice: '触发价格无效',
+    invalidLimitPrice: '限价无效',
+    invalidStopPrice: '止损价格无效',
+    invalidStopLimitPrice: '止损限价无效',
+    invalidTrailingValue: '跟踪值无效',
     insufficientBalance: '余额不足',
   },
 

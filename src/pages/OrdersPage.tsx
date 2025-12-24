@@ -66,6 +66,8 @@ function getStatusConfig(status: OrderStatus): { text: string; className: string
     filled: { text: 'Filled', className: styles.statusFilled || '', icon: 'check-circle' },
     cancelled: { text: 'Cancelled', className: styles.statusCancelled || '', icon: 'x-circle' },
     rejected: { text: 'Rejected', className: styles.statusRejected || '', icon: 'alert-circle' },
+    expired: { text: 'Expired', className: styles.statusCancelled || '', icon: 'clock' },
+    triggered: { text: 'Triggered', className: styles.statusOpen || '', icon: 'zap' },
   };
   return configs[status] || { text: status, className: '', icon: 'circle' };
 }

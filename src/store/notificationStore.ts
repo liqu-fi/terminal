@@ -8,7 +8,9 @@ export type ToastKey =
   | `connection:${string}`           // connection:state
   | `automation:${string}:${string}`   // automation:triggerId:status
   | `error:${string}`                // error:errorCode
-  | `warning:${string}`;             // warning:warningType
+  | `warning:${string}`              // warning:warningType
+  | `oco:${string}:${string}`        // oco:groupId:status
+  | `trailing:${string}:${string}`;  // trailing:orderId:status
 
 export interface ToastItem {
   id: string;

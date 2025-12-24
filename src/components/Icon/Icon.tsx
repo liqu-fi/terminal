@@ -22,7 +22,9 @@ import {
   MonitorSmartphone, CloudOff, Cloud, Cpu, MemoryStick, CircleDot, Eraser,
   // Extra mobile icons
   Users, Gift, Headphones, HelpCircle,
-  Camera, Circle, DollarSign, Pencil as Edit
+  Camera, Circle, DollarSign, Pencil as Edit,
+  // Advanced order icons
+  GitBranch, Split
 } from 'lucide-react';
 import { CSSProperties } from 'react';
 
@@ -153,7 +155,9 @@ export type IconName =
   | 'users'
   | 'gift'
   | 'headphones'
-  | 'help-circle';
+  | 'help-circle'
+  | 'git-branch'
+  | 'split';
 
 const iconMap: Record<IconName, typeof BarChart3> = {
   'bar-chart-2': BarChart2,
@@ -283,6 +287,8 @@ const iconMap: Record<IconName, typeof BarChart3> = {
   'gift': Gift,
   'headphones': Headphones,
   'help-circle': HelpCircle,
+  'git-branch': GitBranch,
+  'split': Split,
 };
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';

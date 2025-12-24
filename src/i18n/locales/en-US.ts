@@ -303,6 +303,11 @@ export const enUS: Locale = {
     confirmAllInSell: 'Confirm Sell',
     invalidAmount: 'Invalid amount',
     invalidPrice: 'Invalid price',
+    invalidTriggerPrice: 'Invalid trigger price',
+    invalidLimitPrice: 'Invalid limit price',
+    invalidStopPrice: 'Invalid stop price',
+    invalidStopLimitPrice: 'Invalid stop limit price',
+    invalidTrailingValue: 'Invalid trailing value',
     insufficientBalance: 'Insufficient balance',
   },
 
