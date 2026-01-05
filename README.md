@@ -1,159 +1,151 @@
 # TBT Paper Terminal
 
-### Institutional-Grade Crypto Trading Simulation
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/typescript-strict-green.svg)
+![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)
+![Platform](https://img.shields.io/badge/platform-mobile%20%7C%20desktop-lightgrey.svg)
 
-### 机构级加密货币仿真交易终端
+**Frontend-only Crypto Trading Simulation**. Connects to Binance Public WebSocket API.  
+**纯前端加密货币仿真交易终端**。直连 Binance 公共 WebSocket API。
 
-<div align="center">
-  <p>
-    <b>High-Performance • Risk-Free • Professional</b><br>
-    <b>高性能 • 零风险 • 专业级</b>
-  </p>
-  <p>
-    A production-ready simulation terminal proving that Javascript can handle institutional speeds.<br>
-    一个完全验证"JavaScript也能处理机构级高频数据"的生产级仿真终端。
-  </p>
-</div>
-
-<div align="center">
-  <img src="https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
-  <img src="https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
-  <img src="https://img.shields.io/badge/Architecture-Web_Worker-success?style=for-the-badge&logo=web" alt="Web Worker">
-  <img src="https://img.shields.io/badge/Performance-60_FPS-orange?style=for-the-badge&logo=speedtest" alt="Performance">
-</div>
-
-<br />
-
-<div align="center">
-  <!-- Hero: PC Trading Interface (Most Technical) -->
-  <img src="https://pub-4fa9a369b6ad485cb504f5317a258988.r2.dev/pc-%E4%BA%A4%E6%98%93.png" alt="PC Trading Interface (Trade View)" width="100%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-  <p><i>professional Grade Trading Interface / 专业级交易界面</i></p>
-</div>
+[Architecture Docs](docs/README_ARCHITECTURE.md) | [Performance Benchmarks](docs/benchmarks.md)
 
 ---
 
-## 🏗 Technical Architecture / 技术架构
+## 1. What it is / 项目定位
 
-> For a deep dive, read the **[Architecture Documentation](docs/README_ARCHITECTURE.md)**.<br>
-> 如需深入了解，请阅读 **[架构设计文档](docs/README_ARCHITECTURE.md)**。
+### ✅ It is
 
-### Data Flow Pipeline / 数据流管道
+* **High-Frequency Data Visualization**: Renders 50+ updates/sec OrderBook via `WebWorker` + `Canvas`.
+* **Dual-Platform UX**: Dedicated mobile routing (`/mobile/*`) vs Desktop dashboard.
+* **Financial Sandbox**: Risk-free simulation with strict `decimal.js` arithmetic.
+* **Zero-Backend**: Client-side matching engine and state persistence.
 
-We treat data as a stream, not a state.
-我们将数据视为流，而非静态状态。
+### ❌ It isn't
 
-```mermaid
-graph LR
-    Binance(Binance WS) -->|Raw JSON| Worker[Web Worker]
-    Worker -->|Normalize & Merge| Worker
-    Worker -.->|"Throttled Batch (250ms)"| Store[Zustand Store]
-    Store -->|Atomic Selector| Component[React UI]
-```
-
-### Key Engineering Decisions / 核心工程决策
-
-#### 1. Off-Main-Thread Architecture (Web Workers)
-
-**Problem**: Processing 50+ WebSocket messages/sec on the main thread causes UI jank.
-**Solution**: `src/worker/marketDataWorker.ts` handles all heavy lifting (parsing, delta merging).
-> **问题**：主线程直接处理 50+ QPS 的 WebSocket 推送会导致 UI 卡顿。
-> **方案**：所有计算密集型任务（解析、订单簿合并）均移至 Web Worker 处理，确保 UI 线程始终流畅。
-
-#### 2. Atomic Functionality (Zustand)
-
-**Solution**: Used `zustand` with granular selectors to surgically update only valid components.
-> **方案**：使用 Zustand 的原子化选择器，仅由于数据变动触发必要的组件重渲染，极大降低渲染开销。
-
-#### 3. Financial Precision (Decimal.js)
-
-**Solution**: Zero tolerance for floating-point errors. All math uses `decimal.js`.
-> **方案**：全链路采用 `decimal.js` 避免 IEEE 754 浮点数精度问题，确保资金计算绝对准确。
+* Not a real exchange (No custody, no settlement).
+* Not a trading bot (No automated execution strategies).
+* Not a "Get Rich Quick" tool.
 
 ---
 
-## ⚡ Performance / 性能指标
+## 2. Features & Implementation / 功能与实现
 
-Measurable metrics verified on `M1 Pro / Chrome 120` (Tested under heavy load).
+### 📊 Market Intelligence (行情系统)
 
-| Metric | Target | **TBT Actual** | Technique Used |
-| :--- | :--- | :--- | :--- |
-| **FPS (Heavy Load)** | 60 FPS | **58-60 FPS** | Worker Offloading |
-| **Input Latency** | < 16ms | **~8ms** | Non-blocking Render |
-| **WS Throughput** | 100 msg/s | **1,200+ msg/s** | Batch Processing |
+* **Order Book**: Incremental depth updates (`depthUpdate` stream).
+  * *Implementation*: `src/worker/marketDataWorker.ts` handles delta merging and backpressure.
+* **Real-time Charts**: 60fps candlestick rendering.
+  * *Implementation*: Integrated `lightweight-charts` with `ResizeObserver`.
+
+### ⚡ Trading Engine (交易核心)
+
+* **Order Types**: Limit, Market, Stop-Limit, OCO, Trailing Stop.
+  * *Implementation*: `src/store/tradingStore.ts` implements the matching logic.
+* **Position Management**: Isolated Margin methodology approximation.
+  * *Implementation*: `src/store/walletStore.ts`.
+
+### 🛡 Engineering Safety (工程保障)
+
+* **Precision Math**: NO floating point errors.
+  * *Evidence*: `src/utils/decimal.ts` wrapper used in all stores.
+* **Type Safety**: `strict: true` in `tsconfig.json`.
 
 ---
 
-## 📱 Mobile vs Desktop / 双端体验
+## 3. Mobile vs Desktop / 双端体验
 
-The application implements a "True Responsive" strategy, optimizing layouts for touch devices.
-应用采用"真响应式"策略，针对触控设备优化了布局与交互逻辑，而非简单的缩放。
+The project uses **adaptive routing** (not just CSS breakpoints) to serve distinct interaction models.
+项目使用**自适应路由**（而非单纯 CSS 媒体查询）来提供差异化的交互模型的。
 
-| **Desktop Pro / 桌面专业版** | **Mobile Lite / 移动便捷版** |
+See `src/components/Layout/AdaptiveLayout.tsx` for branching logic.
+
+| **Desktop Dashboard** | **Mobile App-Feel** |
 | :--- | :--- |
-| Multi-Panel Layout<br>多面板布局，全信息流展示 | Tabbed Interface<br>标签式切换，专注核心操作 |
-| Mouse Interaction<br>鼠标悬停与右键菜单支持 | Touch Optimized<br>大尺寸触控区与底部菜单 |
+| **High Information Density**<br>Simultaneous Chart/Depth/Trades.<br>Dense data tables. | **Simplified Flows**<br>Tab-based navigation (`src/pages/mobile/*`).<br>Touch-optimized tap targets. |
 | ![Desktop Overview](https://pub-4fa9a369b6ad485cb504f5317a258988.r2.dev/pc-%E6%80%BB%E8%A7%88.png) | ![Mobile Trading](https://pub-4fa9a369b6ad485cb504f5317a258988.r2.dev/%E6%89%8B%E6%9C%BA-%E4%BA%A4%E6%98%93.png) |
 
 ---
 
-## 💼 Business Features / 商业特性
+## 4. Architecture & Performance / 架构与性能
 
-This isn't just a tech demo. It's a white-label ready trading engine base.
-这不仅仅是一个技术Demo，由于其包含完整的核心业务逻辑，可直接作为白标交易所的前端基座。
+### 4.1 Data Flow / 数据流向
 
-* ✅ **Advanced Order Types / 高级委托**:
-    Limit (限价), Market (市价), Stop-Limit (止盈止损), Trailing Stop (追踪止损), OCO.
-* ✅ **Risk Engine / 风控引擎**:
-    Pre-trade balance checks & Margin calculation. (交易前余额检查与保证金计算)
-* ✅ **Asset Management / 资产管理**:
-    Real-time portfolio valuation. (实时资产估值)
-* ✅ **White Label Ready / 白标支持**:
-    Architected for easy theming and localization. (架构设计支持快速换肤与多语言)
+```mermaid
+graph LR
+    WS[Binance WebSocket] -->|JSON Stream| Worker[Web Worker]
+    Worker -->|Delta Merge & Queue| Worker
+    Worker -->|Throttled Interval (250ms)| Store[Zustand Store]
+    Store -->|Atomic Selector| UI[React Components]
+```
 
-<div align="center" style="gap: 10px; display: flex; flex-wrap: wrap; justify-content: center;">
-  <img src="https://pub-4fa9a369b6ad485cb504f5317a258988.r2.dev/pc-%E9%92%B1%E5%8C%85.png" width="45%" style="border-radius: 6px;">
-  <img src="https://pub-4fa9a369b6ad485cb504f5317a258988.r2.dev/%E6%89%8B%E6%9C%BA-%E8%B5%84%E9%87%91%E8%B4%A6%E5%8F%B7.png" width="45%" style="border-radius: 6px;">
-</div>
+### 4.2 Performance Tactics / 性能策略
 
----
+1. **Off-Main-Thread Processing (Worker)**
+    * *Why*: Parsing 100+ JSON messages/sec blocks UI interactions.
+    * *How*: `src/worker/marketDataWorker.ts` runs in a separate thread.
+    * *Evidence*: See `worker.ts` importing `OrderBookManager`.
 
-## 🚀 Quick Start / 快速开始
+2. **Render Throttling (Batching)**
+    * *Why*: React cannot reconcile 60fps state updates without lag.
+    * *How*: Worker accumulates updates and emits only 4 snapshots/sec to the Main Thread.
 
-1. **Clone & Install**
+3. **Atomic State Updates**
+    * *Why*: `Context API` triggers full-tree re-renders on price ticks.
+    * *How*: `useStore(state => state.specificSlice)` ensures only relevant cells re-render.
+    * *Evidence*: `src/store/marketStore.ts`.
 
-    ```bash
-    git clone https://github.com/TheNewMikeMusic/tbt-paper-terminal.git
-    npm install
-    ```
-
-2. **Run Development Environment**
-
-    ```bash
-    npm run dev
-    # Opens at http://localhost:5173
-    ```
+> See [docs/benchmarks.md](docs/benchmarks.md) for how to measure these metrics yourself.
 
 ---
 
-## 🤝 Services & Contact / 联系与合作
+## 5. Getting Started / 快速运行
 
-**Looking for a Senior Frontend Engineer? / 寻找高级前端工程师？**
+**Prerequisites**: Node.js 18+
 
-I specialize in high-performance web applications.
-我专注于高性能 Web 应用的架构与开发。
+```bash
+# 1. Clone
+git clone https://github.com/TheNewMikeMusic/tbt-paper-terminal.git
 
-* **Engineering**: Performance optimization & Scalable Architecture. (性能优化与架构设计)
-* **White-Label**: This terminal is available for licensing. (该终端支持商业授权)
+# 2. Install (using npm)
+npm install
 
-**Contact Me**:
+# 3. Dev Server
+npm run dev
+# -> http://localhost:5173
+```
 
-* [GitHub Profile](https://github.com/TheNewMikeMusic)
-* [Email](mailto:your-email@example.com) (Replace with your email)
-* [LinkedIn](https://linkedin.com/in/yourprofile) (Replace with your profile)
+**Environment Variables**:
+No `.env` required for default mode (Direct connection to Binance Public WS).
+
+---
+
+## 6. Engineering Standards / 工程标准
+
+* **TypeScript**: Strict mode enabled. No `any` allowed in core logic.
+* **State Management**: Domain-driven stores (`trading`, `wallet`, `market` split).
+* **Error Handling**: WebSocket exponential backoff (`src/worker/marketDataWorker.ts`).
+
+---
+
+## 7. Roadmap / 规划
+
+* [ ] **Replay Mode**: Record and replay market data for backtesting (Complexity: M).
+* [ ] **Auth System**: Integrate Supabase/Firebase for cloud persistence (Complexity: M).
+* [ ] **Exchange Adapter**: Abstract API layer to support OKX/Bybit (Complexity: L).
+
+---
+
+## 8. Author / 联系作者
+
+**Senior Frontend Engineer** specializing in Real-time Data Visualization and Performance.
+Open to technical consulting and integration projects.
+
+* **GitHub**: [TheNewMikeMusic](https://github.com/TheNewMikeMusic)
+* **Email**: (Add your email here)
+* **LinkedIn**: (Add your profile here)
 
 ---
 <p align="center">
-  <sub>All data sourced from Binance Public API. System is for paper trading simulation only.</sub><br>
-  <sub>数据源自 Binance 公共 API，本系统仅供仿真交易使用。</sub>
+  <sub>Data source: Binance Public API. Educational use only.</sub>
 </p>
