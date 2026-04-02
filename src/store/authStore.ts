@@ -21,10 +21,12 @@ useGatewayStore.subscribe((state) => {
   }
 });
 
-// Fire immediately on load
-const initialAuth = selectGatewayAuth(useGatewayStore.getState());
-if (initialAuth) {
-  useAuthStore.setState({ isAuthenticated: true });
-}
+// useGatewayStore uses zustand persist middleware — the subscription above
+// fires before rehydration with the initial (empty) state. We need to also
+// sync after persist has finished rehydrating from localStorage.
+useGatewayStore.persist.onFinishHydration((state) => {
+  const isAuth = selectGatewayAuth(state);
+  useAuthStore.setState({ isAuthenticated: isAuth });
+});
 
 export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;

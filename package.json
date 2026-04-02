@@ -11,6 +11,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@liq/api-client": "*",
+    "@liq/core": "*",
+    "@liq/onchain": "*",
+    "@liq/react": "*",
     "@tanstack/react-query": "^5.96.1",
     "connectkit": "^1.9.2",
     "decimal.js": "^10.4.3",

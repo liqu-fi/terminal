@@ -21,6 +21,8 @@ export const AuthPage: React.FC = () => {
 
   const handleAuth = () => {
     if (!isConnected) return;
+    // Phase 1 placeholder: accountId selection comes in Phase 3.
+    // alreadyBookMode=true skips the setBookMode tx for now.
     gatewayAuth.mutate({ accountId: 0n, alreadyBookMode: true });
   };
 

@@ -12,16 +12,15 @@ export function SettingsPage() {
   const { t, locale, setLocale } = useI18n();
 
   const [_activeSection, _setActiveSection] = useState<SettingsSection>('preferences');
-
-  if (isMobile) {
-    return <MobileAccountPage />;
-  }
-
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'system'>(() => {
     const stored = localStorage.getItem('theme');
     if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
     return 'dark';
   });
+
+  if (isMobile) {
+    return <MobileAccountPage />;
+  }
 
   const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
     setCurrentTheme(theme);

@@ -31,10 +31,21 @@ export const useTradingStore = create<TradingState>()((set) => ({
   getPosition: () => undefined,
   getOCOOrders: () => [],
   resetAccount: () => {},
-  cancelOrder: () => {},
-  createOrder: () => null,
-  createOCOOrder: () => null,
-  createTrailingStopOrder: () => null,
+  cancelOrder: () => {
+    console.warn('[tradingStore] Order cancellation not yet available (Phase 3)');
+  },
+  createOrder: () => {
+    console.warn('[tradingStore] Order submission not yet available (Phase 3)');
+    return null;
+  },
+  createOCOOrder: () => {
+    console.warn('[tradingStore] OCO order creation not yet available (Phase 3)');
+    return null;
+  },
+  createTrailingStopOrder: () => {
+    console.warn('[tradingStore] Trailing stop order creation not yet available (Phase 3)');
+    return null;
+  },
 }));
 
 export const selectFocusMode = (state: TradingState) => state.focusMode;
