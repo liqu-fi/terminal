@@ -9,24 +9,4 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
-  worker: {
-    format: 'es',
-  },
-  esbuild: {
-    drop: ['console', 'debugger'],
-  },
-  server: {
-    proxy: {
-      '/binance-api': {
-        target: 'https://api.binance.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/binance-api/, ''),
-      },
-    },
-  },
 });
-
-
-
-
-

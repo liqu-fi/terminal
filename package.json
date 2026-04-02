@@ -11,6 +11,8 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.96.1",
+    "connectkit": "^1.9.2",
     "decimal.js": "^10.4.3",
     "lightweight-charts": "^5.1.0",
     "lucide-react": "^0.561.0",
@@ -19,6 +21,8 @@
     "react-resizable-panels": "^4.0.8",
     "react-router-dom": "^7.11.0",
     "uuid": "^10.0.0",
+    "viem": "^2.47.6",
+    "wagmi": "^2.19.5",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
