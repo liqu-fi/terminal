@@ -2,10 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { AppProviders } from './providers/AppProviders';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/global.css';
 
-// Set initial theme before React renders
 const initialTheme = localStorage.getItem('theme') ?? 'dark';
 document.documentElement.setAttribute('data-theme', initialTheme);
 
@@ -17,10 +17,11 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <AppProviders>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </AppProviders>
     </ErrorBoundary>
   </StrictMode>
 );
-
