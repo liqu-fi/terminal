@@ -26,7 +26,8 @@ function LiqProviderWithOnchain({ children }: { children: ReactNode }) {
     () =>
       new LiqOnchain({
         chainId: env.chainId,
-        publicClient: publicClient!,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        publicClient: publicClient as any,
       }),
     [publicClient],
   );

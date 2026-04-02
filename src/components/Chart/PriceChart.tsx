@@ -2,8 +2,6 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createChart, IChartApi, ColorType, UTCTimestamp, LineSeries, CandlestickSeries, HistogramSeries, CrosshairMode } from 'lightweight-charts';
 import { handleApiError, logError } from '../../utils/errorHandler';
 import { useWatchlistStore, selectSelectedSymbol } from '../../store/watchlistStore';
-import { useAutomationStore } from '../../store/automationStore';
-import { useTradingStore } from '../../store/tradingStore';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useI18n } from '../../i18n';
 import { Icon } from '../Icon';
@@ -141,8 +139,8 @@ export function PriceChart() {
   const indicatorSeriesRef = useRef<Map<string, any>>(new Map());
   
   const selectedSymbol = useWatchlistStore(selectSelectedSymbol);
-  const triggers = useAutomationStore((state) => state.triggers);
-  const openOrders = useTradingStore((state) => state.orders.filter(o => o.status === 'open'));
+  const triggers: { enabled: boolean; symbol: string; triggerPrice?: string; condition: { threshold: string }; action: { side: string; type: string } }[] = [];
+  const openOrders: { symbol: string; price: string | null; side: string }[] = [];
   
   const [chartType, setChartType] = useState<ChartType>('candlestick');
   const [timeRange, setTimeRange] = useState<TimeRange>('15m');

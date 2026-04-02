@@ -7,10 +7,22 @@ export type OrderStatus =
   | 'partial'      // 部分成交
   | 'filled'       // 完全成交
   | 'cancelled'    // 已撤销
-  | 'rejected';    // 被拒绝（余额不足等）
+  | 'rejected'     // 被拒绝（余额不足等）
+  | 'expired'      // 已过期
+  | 'triggered';   // 已触发
 
 export type OrderSide = 'buy' | 'sell';
-export type OrderType = 'limit' | 'market';
+export type OrderType =
+  | 'limit'
+  | 'market'
+  | 'stop_limit'
+  | 'take_profit_limit'
+  | 'stop_market'
+  | 'take_profit_market'
+  | 'trailing_stop';
+
+export type TriggerDirection = 'above' | 'below';
+export type TrailingType = 'percent' | 'absolute';
 
 export interface PaperOrder {
   clientOrderId: string;   // 客户端生成的UUID
@@ -64,11 +76,13 @@ export interface AccountBalance {
 export const VALID_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['submitted', 'cancelled'],
   submitted: ['open', 'rejected'],
-  open: ['partial', 'filled', 'cancelled'],
+  open: ['partial', 'filled', 'cancelled', 'expired'],
   partial: ['filled', 'cancelled'],
   filled: [],
   cancelled: [],
   rejected: [],
+  expired: [],
+  triggered: ['filled', 'cancelled'],
 };
 
 // ===== 订单 UI 约束 =====
@@ -87,6 +101,8 @@ export const ORDER_UI_CONSTRAINTS: Record<OrderStatus, OrderUIConstraints> = {
   filled: { canCancel: false, canModify: false, displayStyle: 'success' },
   cancelled: { canCancel: false, canModify: false, displayStyle: 'cancelled' },
   rejected: { canCancel: false, canModify: false, displayStyle: 'error' },
+  expired: { canCancel: false, canModify: false, displayStyle: 'cancelled' },
+  triggered: { canCancel: false, canModify: false, displayStyle: 'active' },
 };
 
 

@@ -41,6 +41,8 @@ function getStatusConfig(status: OrderStatus) {
     filled: { text: 'Filled', className: styles.statusFilled || '' },
     cancelled: { text: 'Cancelled', className: styles.statusCancelled || '' },
     rejected: { text: 'Rejected', className: styles.statusRejected || '' },
+    expired: { text: 'Expired', className: styles.statusCancelled || '' },
+    triggered: { text: 'Triggered', className: styles.statusOpen || '' },
   };
   return configs[status] || { text: status, className: '' };
 }

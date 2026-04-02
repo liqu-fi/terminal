@@ -88,9 +88,8 @@ export function MarketsPage() {
             fetchSparkline(symbol).then(s => {
               setMarkets(prev => prev.map(m => m.symbol === symbol ? { ...m, sparkline: s } : m));
             });
-            calculateIndicators(symbol).then(ind => {
-              setMarkets(prev => prev.map(m => m.symbol === symbol ? { ...m, indicators: ind } : m));
-            });
+            const ind = calculateIndicators([]);
+            setMarkets(prev => prev.map(m => m.symbol === symbol ? { ...m, indicators: ind } : m));
           }, i * 100); // 100ms delay between each request
         }
       }

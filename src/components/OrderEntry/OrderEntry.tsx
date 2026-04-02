@@ -6,7 +6,7 @@ import { useI18n, formatMessage } from '../../i18n';
 import { toast } from '../Toast';
 import { Icon } from '../Icon';
 import { QuantitySlider } from './QuantitySlider';
-import type { OrderSide, OrderType, TriggerDirection, TrailingType } from '../../types/trading';
+import type { OrderSide, OrderType, TrailingType } from '../../types/trading';
 import styles from './OrderEntry.module.css';
 
 // Order type categories for UI
@@ -360,19 +360,6 @@ export function OrderEntry({ priceFromOrderBook, sideFromOrderBook, compact: _co
   const slippageEst = metrics?.slippageEst && metrics.slippageEst !== 'N/A' ? `${metrics.slippageEst}bp` : '—';
   const feeValue = total !== '0' ? (parseFloat(total) * 0.001).toFixed(2) : '0';
 
-  // Get order type label
-  const getOrderTypeLabel = (t: OrderType): string => {
-    const labels: Record<OrderType, string> = {
-      limit: 'Limit',
-      market: 'Market',
-      stop_limit: 'Stop-Limit',
-      take_profit_limit: 'TP-Limit',
-      stop_market: 'Stop-Market',
-      take_profit_market: 'TP-Market',
-      trailing_stop: 'Trailing',
-    };
-    return labels[t] || t;
-  };
 
   return (
     <div className={`card ${styles.container} ${focusMode ? styles.focused : ''} animate-fade`}>

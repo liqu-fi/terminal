@@ -5,10 +5,11 @@ import { LanguageToggle } from '../LanguageToggle';
 import { ToastContainer } from '../Toast';
 import { ShortcutsHelp } from '../ShortcutsHelp';
 import { SoundToggle } from '../SoundToggle';
-import { TopNav, AssetSnapshot, AccountMenu } from './index';
+import { TopNav, AssetSnapshot } from './index';
 import { Icon } from '../Icon';
 import { useI18n } from '../../i18n';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { ConnectKitButton } from 'connectkit';
 import { useAuthStore } from '../../store/authStore';
 import styles from './DesktopLayout.module.css';
 
@@ -67,7 +68,7 @@ export function DesktopLayout() {
           
           {isAuthenticated && (
             <div className={styles.accountWrapper}>
-              <AccountMenu />
+              <ConnectKitButton showBalance={false} />
             </div>
           )}
         </div>

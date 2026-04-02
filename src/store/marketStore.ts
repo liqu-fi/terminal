@@ -8,10 +8,6 @@ import type {
   DataConfidence,
   DataConfidenceLevel,
   NetworkHealth,
-  WorkerMessage,
-  OrderBookUpdatePayload,
-  TradeUpdatePayload,
-  ConnectionStatusPayload,
   LogPayload,
 } from '../types/market';
 import { CONFIDENCE_THRESHOLDS } from '../types/market';
@@ -37,17 +33,12 @@ interface MarketState {
   // Logs
   logs: LogPayload[];
   
-  // Worker reference
-  worker: Worker | null;
-  
   // Actions
   subscribe: (symbol: string) => void;
   unsubscribe: () => void;
   clearLogs: () => void;
 }
 
-const MAX_RECENT_TRADES = 50;
-const MAX_LOGS = 200;
 
 // 状态切换滞后配置（防止频繁切换）
 const LEVEL_UPGRADE_THRESHOLD = 2;   // 恢复到更好状态需要连续 2 次
@@ -228,7 +219,7 @@ function calculateConfidence(
 }
 
 export const useMarketStore = create<MarketState>()(
-  subscribeWithSelector((set, get) => ({
+  subscribeWithSelector((set, _get) => ({
     // Initial state
     connectionStatus: initialConnectionStatus,
     dataConfidence: getInitialDataConfidence(),
@@ -237,157 +228,23 @@ export const useMarketStore = create<MarketState>()(
     metrics: null,
     recentTrades: [],
     logs: [],
-    worker: null,
 
-    // Subscribe to a symbol
-    subscribe: (symbol: string) => {
-      let { worker } = get();
-
-      // Create worker if not exists
-      if (!worker) {
-        try {
-          worker = new Worker(
-            new URL('../worker/marketDataWorker.ts', import.meta.url),
-            { type: 'module' }
-          );
-
-          worker.onerror = (error) => {
-            console.error('Worker error:', error);
-            const t = useI18n.getState().t;
-            set({
-              connectionStatus: {
-                ...get().connectionStatus,
-                state: 'disconnected',
-              },
-              dataConfidence: {
-                ...get().dataConfidence,
-                level: 'stale',
-                reason: t.dataConfidence.workerInitFailed,
-              },
-            });
-          };
-
-          worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
-            const { type, payload } = event.data;
-            const state = get();
-
-            switch (type) {
-              case 'ORDERBOOK_UPDATE': {
-                const data = payload as OrderBookUpdatePayload;
-                // 使用 payload 中的 lastMessageTime 更新 connectionStatus，确保 timeSinceUpdate 计算准确
-                const updatedConnectionStatus = {
-                  ...state.connectionStatus,
-                  lastMessageTime: data.lastMessageTime,
-                };
-                const newConfidence = calculateConfidence(
-                  updatedConnectionStatus,
-                  data.orderBook,
-                  state.dataConfidence
-                );
-                set({
-                  orderBook: data.orderBook,
-                  metrics: data.metrics,
-                  connectionStatus: updatedConnectionStatus,
-                  dataConfidence: newConfidence,
-                });
-                break;
-              }
-              case 'TRADE_UPDATE': {
-                const data = payload as TradeUpdatePayload;
-                set((state) => ({
-                  recentTrades: [...data.trades, ...state.recentTrades].slice(0, MAX_RECENT_TRADES),
-                }));
-                break;
-              }
-              case 'CONNECTION_STATUS': {
-                const data = payload as ConnectionStatusPayload;
-                const currentState = get();
-                const newConfidence = calculateConfidence(
-                  data,
-                  currentState.orderBook,
-                  currentState.dataConfidence
-                );
-                set({ 
-                  connectionStatus: data,
-                  dataConfidence: newConfidence,
-                  networkHealth: data.networkHealth || null,
-                });
-                break;
-              }
-              case 'LOG': {
-                const data = payload as LogPayload;
-                set((state) => ({
-                  logs: [data, ...state.logs].slice(0, MAX_LOGS),
-                }));
-                break;
-              }
-            }
-          };
-
-          set({ worker });
-        } catch (err) {
-          console.error('Failed to create Worker:', err);
-          const t = useI18n.getState().t;
-          set({
-            connectionStatus: {
-              ...initialConnectionStatus,
-              state: 'disconnected',
-            },
-            dataConfidence: {
-              ...getInitialDataConfidence(),
-              level: 'stale',
-              reason: t.dataConfidence.workerCreateFailed,
-            },
-          });
-          return;
-        }
-      }
-
-      // Send subscribe message
-      worker.postMessage({
-        type: 'SUBSCRIBE',
-        payload: { symbol, streams: ['depth', 'trade'] },
-        timestamp: performance.now(),
-      });
-
-      // 重置滞后计数器
-      consecutiveLevelCounts = {
-        live: 0,
-        degraded: 0,
-        resyncing: 0,
-        stale: 0,
-      };
-
-      // Reset state
-      const t = useI18n.getState().t;
+    // Subscribe to a symbol (stub — worker removed)
+    subscribe: (_symbol: string) => {
       set({
         orderBook: null,
         metrics: null,
         recentTrades: [],
         connectionStatus: {
           ...initialConnectionStatus,
-          state: 'connecting',
+          state: 'disconnected',
         },
-        dataConfidence: {
-          ...getInitialDataConfidence(),
-          level: 'stale',
-          reason: t.dataConfidence.establishingConnection,
-        },
+        dataConfidence: getInitialDataConfidence(),
       });
     },
 
-    // Unsubscribe
+    // Unsubscribe (stub — worker removed)
     unsubscribe: () => {
-      const { worker } = get();
-      
-      if (worker) {
-        worker.postMessage({
-          type: 'UNSUBSCRIBE',
-          payload: {},
-          timestamp: performance.now(),
-        });
-      }
-
       set({
         orderBook: null,
         metrics: null,

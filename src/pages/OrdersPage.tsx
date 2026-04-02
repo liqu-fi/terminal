@@ -1,11 +1,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTradingStore } from '../store/tradingStore';
-import { useAutomationStore } from '../store/automationStore';
 import { useI18n } from '../i18n';
 import { Icon, IconName } from '../components/Icon';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { MobileOrdersPage } from './mobile';
-import { TriggerList, ExecutionLogList } from '../components/AutomationPanel';
 import type { PaperOrder, OrderStatus } from '../types/trading';
 import styles from './OrdersPage.module.css';
 
@@ -613,7 +611,7 @@ export function OrdersPage() {
   
   const orders = useTradingStore((state) => state.orders);
   const cancelOrder = useTradingStore((state) => state.cancelOrder);
-  const triggers = useAutomationStore((state) => state.triggers);
+  const triggers: unknown[] = [];
 
   // 时间过滤
   const filterByTime = useCallback((timestamp: number) => {
@@ -703,7 +701,7 @@ export function OrdersPage() {
       avgFillPrice,
       recentVolume,
       dailyVolumes,
-      triggerCount: triggers.filter(t => t.enabled).length,
+      triggerCount: triggers.length,
     };
   }, [orders, allTrades, openOrders.length, triggers]);
   
@@ -987,27 +985,9 @@ export function OrdersPage() {
         {activeTab === 'automation' && (
           <div className={styles.automationLayout}>
             <div className={styles.automationMain}>
-              <div className={styles.automationSection}>
-                <div className={styles.sectionHeader}>
-                  <h3 className={styles.sectionTitle}>
-                    <Icon name="zap" size="sm" />
-                    Active Triggers
-                  </h3>
-                  <span className={styles.sectionCount}>{triggers.length}</span>
-                </div>
-                <TriggerList />
-              </div>
-            </div>
-            <div className={styles.automationSidebar}>
-              <div className={styles.automationSection}>
-                <div className={styles.sectionHeader}>
-                  <h3 className={styles.sectionTitle}>
-                    <Icon name="scroll" size="sm" />
-                    Execution Log
-                  </h3>
-                </div>
-                <ExecutionLogList />
-              </div>
+              <p style={{ padding: '2rem', color: 'var(--text-secondary)' }}>
+                Automation triggers will be available after exchange integration.
+              </p>
             </div>
           </div>
         )}

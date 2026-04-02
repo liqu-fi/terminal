@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { useI18n } from '../../i18n';
-import { useAutomationStore } from '../../store/automationStore';
 import { toast } from '../Toast';
 import { Icon } from '../Icon';
 import styles from './TPSLForm.module.css';
@@ -16,7 +14,6 @@ interface TPSLFormProps {
 
 export function TPSLForm({ symbol, onClose }: TPSLFormProps) {
   const { t } = useI18n();
-  const addTrigger = useAutomationStore((state) => state.addTrigger);
 
   const [tpPrice, setTpPrice] = useState('');
   const [slPrice, setSlPrice] = useState('');
@@ -29,66 +26,8 @@ export function TPSLForm({ symbol, onClose }: TPSLFormProps) {
       return;
     }
 
-    const tpId = uuidv4();
-    const slId = uuidv4();
-
-    // Take Profit
-    if (tpPrice) {
-      addTrigger({
-        id: tpId,
-        symbol,
-        type: 'takeProfit',
-        enabled: true,
-        condition: {
-          priceSource: 'last',
-          operator: 'gte',
-          threshold: tpPrice,
-          direction: 'up',
-          debounceMs: 1000,
-          cooldownMs: 60000,
-        },
-        action: {
-          type: 'order',
-          side: 'sell',
-          orderType: 'market',
-          quantityMode: 'percent',
-          quantityValue: '100',
-        },
-        allowDegraded: false,
-        repeat: false,
-        linkedTriggerId: slPrice ? slId : undefined,
-      });
-    }
-
-    // Stop Loss
-    if (slPrice) {
-      addTrigger({
-        id: slId,
-        symbol,
-        type: 'stopLoss',
-        enabled: true,
-        condition: {
-          priceSource: 'last',
-          operator: 'lte',
-          threshold: slPrice,
-          direction: 'down',
-          debounceMs: 1000,
-          cooldownMs: 60000,
-        },
-        action: {
-          type: 'order',
-          side: 'sell',
-          orderType: 'market',
-          quantityMode: 'percent',
-          quantityValue: '100',
-        },
-        allowDegraded: false,
-        repeat: false,
-        linkedTriggerId: tpPrice ? tpId : undefined,
-      });
-    }
-
-    toast.success(t.common.success);
+    // Stub: automation store was removed, TP/SL will be handled via SDK later
+    toast.info('TP/SL not yet connected to exchange');
     onClose();
   };
 
@@ -144,4 +83,3 @@ export function TPSLForm({ symbol, onClose }: TPSLFormProps) {
     </div>
   );
 }
-

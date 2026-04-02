@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
 import { useMarketStore, selectMetrics, selectDataConfidence } from '../../../store/marketStore';
 import { useTradingStore } from '../../../store/tradingStore';
-import { useWalletStore } from '../../../store/walletStore';
 import { useWatchlistStore, selectSelectedSymbol } from '../../../store/watchlistStore';
 import { useI18n } from '../../../i18n';
 import { Icon } from '../../Icon';
 import { RiskRibbon } from '../../RiskRibbon';
-import { formatPrice } from '../../../services/marketDataService';
 import styles from './TradeOverview.module.css';
+
+function formatPrice(value: number): string {
+  if (value >= 1) return value.toFixed(2);
+  return value.toFixed(6);
+}
 
 interface TradeOverviewProps {
   onTradeClick?: (side: 'buy' | 'sell') => void;
@@ -19,7 +22,6 @@ export function TradeOverview({ onTradeClick }: TradeOverviewProps) {
   const dataConfidence = useMarketStore(selectDataConfidence);
   const selectedSymbol = useWatchlistStore(selectSelectedSymbol);
   const positions = useTradingStore((state) => state.positions);
-  const balances = useWalletStore((state) => state.balances);
 
   const baseAsset = selectedSymbol.replace('USDT', '');
   const currentPosition = positions.get(selectedSymbol);
@@ -30,7 +32,7 @@ export function TradeOverview({ onTradeClick }: TradeOverviewProps) {
     return [
       { label: t.metrics?.midPrice || 'Mid', value: formatPrice(parseFloat(metrics.mid)) },
       { label: t.metrics?.spread || 'Spread', value: `${(metrics.spreadBps || 0).toFixed(2)} bps` },
-      { label: t.metrics?.imbalance || 'Imbalance', value: `${((metrics.bidAskImbalance || 0) * 100).toFixed(1)}%`, 
+      { label: t.metrics?.imbalance || 'Imbalance', value: `${((metrics.bidAskImbalance || 0) * 100).toFixed(1)}%`,
         trend: (metrics.bidAskImbalance || 0) > 0.1 ? 'up' : (metrics.bidAskImbalance || 0) < -0.1 ? 'down' : 'neutral' },
       { label: t.metrics?.volatility || 'Volatility', value: (metrics.microVolatility || 0).toFixed(4) },
       { label: t.metrics?.liquidityScore || 'Liquidity', value: `${(metrics.liquidityScore || 0).toFixed(0)}/100` },
@@ -48,7 +50,7 @@ export function TradeOverview({ onTradeClick }: TradeOverviewProps) {
 
     const pnl = (currentPrice - avgEntryPrice) * qty;
     const pnlPercent = ((currentPrice - avgEntryPrice) / avgEntryPrice) * 100;
-    
+
     return {
       qty,
       avgEntryPrice,
@@ -133,8 +135,8 @@ export function TradeOverview({ onTradeClick }: TradeOverviewProps) {
                 <Icon name="edit" size="sm" />
                 {t.common?.edit || 'Adjust'}
               </button>
-              <button 
-                className={`${styles.posActionBtn} ${styles.marketClose}`} 
+              <button
+                className={`${styles.posActionBtn} ${styles.marketClose}`}
                 onClick={() => onTradeClick?.('sell')}
               >
                 <Icon name="zap" size="sm" />
@@ -166,31 +168,6 @@ export function TradeOverview({ onTradeClick }: TradeOverviewProps) {
           <RiskRibbon />
         </div>
       </section>
-
-      {/* 4. Account Balance Quick View */}
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <div className={styles.titleGroup}>
-            <Icon name="wallet" size="sm" />
-            <h3 className={styles.sectionTitle}>{t.wallet?.accountOverview || 'Wallet'}</h3>
-          </div>
-        </div>
-        <div className={styles.balanceInfo}>
-          <div className={styles.balanceMain}>
-            <span className={styles.balanceLabel}>{t.account?.available || 'Available USDT'}</span>
-            <span className={styles.balanceValue}>
-              ${(balances.find(b => b.asset === 'USDT')?.available || '0')}
-            </span>
-          </div>
-          <div className={styles.balanceSub}>
-            <span className={styles.balanceLabel}>{baseAsset} {t.account?.balance || 'Balance'}</span>
-            <span className={styles.balanceValue}>
-              {balances.find(b => b.asset === baseAsset)?.total || '0'} {baseAsset}
-            </span>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
-
