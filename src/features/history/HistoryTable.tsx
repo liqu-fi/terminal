@@ -1,0 +1,40 @@
+import { useAccountId, useTradesRestQuery } from "@liqcx/liq-react";
+
+import { fmtPrice, fmtQty } from "../../lib/format";
+
+export function HistoryTable() {
+  const accountId = useAccountId();
+  const { data: trades = [] } = useTradesRestQuery({ accountId, limit: 50 });
+
+  if (trades.length === 0)
+    return (
+      <div className="py-6 text-center text-sm text-muted">No trades yet.</div>
+    );
+
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-[11px] uppercase text-muted">
+          <th className="py-1">Time</th>
+          <th>Side</th>
+          <th>Size</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {trades.map((t) => (
+          <tr key={t.id} className="border-t border-border">
+            <td className="py-1 text-muted">
+              {new Date(t.timestamp).toLocaleTimeString()}
+            </td>
+            <td className={t.side === "BUY" ? "text-long" : "text-short"}>
+              {t.side}
+            </td>
+            <td>{fmtQty(t.size)}</td>
+            <td>{fmtPrice(t.price)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
