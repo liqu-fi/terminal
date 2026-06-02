@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local auth config — copy from .npmrc.example and fill GITHUB_TOKEN
+.npmrc
