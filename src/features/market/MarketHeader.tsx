@@ -1,6 +1,9 @@
 import { useAvailableMarginQuery, usePricesQuery } from "@liqcx/liq-react";
+import { useState } from "react";
 
 import { fmtPrice, fmtUsd, toNum } from "../../lib/format";
+import { DepositDialog } from "../account/DepositDialog";
+import { WithdrawDialog } from "../account/WithdrawDialog";
 import { MarketSelect } from "./MarketSelect";
 import { useFunding } from "./useFunding";
 import { useSelectedMarket } from "./MarketContext";
@@ -10,6 +13,8 @@ export function MarketHeader() {
   const { data: prices } = usePricesQuery(marketIds);
   const { data: funding } = useFunding(marketId);
   const { data: margins } = useAvailableMarginQuery();
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const info =
     marketId !== undefined ? prices?.[marketId.toString()] : undefined;
@@ -41,6 +46,25 @@ export function MarketHeader() {
           {margins ? fmtUsd(margins.available) : "—"}
         </span>
       </span>
+      <button
+        type="button"
+        className="text-[11px] text-accent"
+        onClick={() => setDepositOpen(true)}
+      >
+        Deposit
+      </button>
+      <button
+        type="button"
+        className="text-[11px] text-muted"
+        onClick={() => setWithdrawOpen(true)}
+      >
+        Withdraw
+      </button>
+      <DepositDialog open={depositOpen} onClose={() => setDepositOpen(false)} />
+      <WithdrawDialog
+        open={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+      />
     </div>
   );
 }
