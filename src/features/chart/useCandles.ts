@@ -18,7 +18,6 @@ export function useCandles(
   useEffect(() => {
     if (marketId === undefined) return;
     let live = true;
-    setCandles([]);
 
     client.candles
       .history(marketId, {
@@ -27,6 +26,7 @@ export function useCandles(
         to: new Date(),
       })
       .then((rows) => {
+        // Reset and replace in the async callback to avoid synchronous setState in effect body
         if (live) setCandles(rows);
       })
       .catch(() => {
