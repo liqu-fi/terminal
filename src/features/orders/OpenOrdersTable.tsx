@@ -1,0 +1,57 @@
+import { Side } from "@liqcx/liq-sdk";
+import {
+  useAccountId,
+  useConditionalOrders,
+  useOpenOrdersQuery,
+} from "@liqcx/liq-react";
+
+import { fmtPrice, fmtQty } from "../../lib/format";
+import { useSelectedMarket } from "../market/MarketContext";
+
+export function OpenOrdersTable() {
+  const { markets } = useSelectedMarket();
+  const accountId = useAccountId();
+  const { data: open = [] } = useOpenOrdersQuery(accountId);
+  const { data: conditional = [] } = useConditionalOrders();
+  const orders = [...open, ...conditional];
+
+  if (orders.length === 0)
+    return (
+      <div className="py-6 text-center text-sm text-muted">No open orders.</div>
+    );
+
+  const symbolOf = (id: string) =>
+    markets.find((m) => m.id.toString() === id)?.symbol ?? id;
+
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="text-left text-[11px] uppercase text-muted">
+          <th className="py-1">Market</th>
+          <th>Type</th>
+          <th>Side</th>
+          <th>Size</th>
+          <th>Price</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {orders.map((o) => {
+          const px = o.triggerPrice ?? o.limitPrice;
+          return (
+            <tr key={o.id} className="border-t border-border">
+              <td className="py-1 font-semibold">{symbolOf(o.marketId)}</td>
+              <td className="text-muted">{o.orderType}</td>
+              <td className={o.side === Side.BUY ? "text-long" : "text-short"}>
+                {o.side}
+              </td>
+              <td>{fmtQty(BigInt(o.sizeDelta))}</td>
+              <td>{px && px !== "0" ? fmtPrice(BigInt(px)) : "—"}</td>
+              <td className="text-muted">{o.status}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
