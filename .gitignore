@@ -25,3 +25,10 @@ dist-ssr
 
 # Local auth config — copy from .npmrc.example and fill GITHUB_TOKEN
 .npmrc
+
+# Environment
+.env
+
+# Playwright
+playwright-report
+test-results
