@@ -48,7 +48,13 @@ export function OpenOrdersTable() {
               <td className={o.side === Side.BUY ? "text-long" : "text-short"}>
                 {o.side}
               </td>
-              <td>{fmtQty(BigInt(o.sizeDelta))}</td>
+              <td>
+                {fmtQty(
+                  BigInt(o.sizeDelta) < 0n
+                    ? -BigInt(o.sizeDelta)
+                    : BigInt(o.sizeDelta),
+                )}
+              </td>
               <td>{px && px !== "0" ? fmtPrice(BigInt(px)) : "—"}</td>
               <td className="text-muted">{o.status}</td>
               <td>

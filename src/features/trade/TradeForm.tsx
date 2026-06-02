@@ -12,7 +12,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useSelectedMarket } from "../market/MarketContext";
 import { ConditionalFields } from "./ConditionalFields";
-import { acceptablePrice, computeSizeDelta } from "./orderMath";
+import { acceptablePrice, computeSizeDelta, leverageToSize } from "./orderMath";
 import { TradePreviewRow } from "./TradePreviewRow";
 import { useMarkPrice } from "./useMarkPrice";
 
@@ -22,21 +22,24 @@ type Tab = (typeof TABS)[number];
 const SLIPPAGE_BPS = 50n; // 0.5%
 
 export function TradeForm() {
-  const { marketId } = useSelectedMarket();
+  const { marketId, market } = useSelectedMarket();
   const accountId = useAccountId();
   const markPrice = useMarkPrice();
   const { data: margins } = useAvailableMarginQuery();
 
-  const market = useSubmitMarketOrder();
+  const submitMarket = useSubmitMarketOrder();
   const limit = useSubmitLimitOrder();
   const conditional = useSubmitConditionalOrder();
 
   const [tab, setTab] = useState<Tab>("Market");
   const [side, setSide] = useState<Side>(Side.BUY);
   const [size, setSize] = useState("");
+  const [leverage, setLeverage] = useState(2);
   const [limitPrice, setLimitPrice] = useState("");
   const [triggerPrice, setTriggerPrice] = useState("");
   const [triggerAbove, setTriggerAbove] = useState(true);
+
+  const maxLev = market?.maxLeverage ?? 25;
 
   const sizeQty = useMemo(() => {
     try {
@@ -47,20 +50,22 @@ export function TradeForm() {
   }, [size]);
   const sizeDelta = computeSizeDelta(sizeQty, side);
 
-  const pending = market.isPending || limit.isPending || conditional.isPending;
-  const error = market.error ?? limit.error ?? conditional.error;
+  const pending =
+    submitMarket.isPending || limit.isPending || conditional.isPending;
+  const error = submitMarket.error ?? limit.error ?? conditional.error;
   const insufficientMargin = !margins || margins.available === 0n;
   const disabled =
     pending ||
     accountId === undefined ||
     marketId === undefined ||
     sizeQty === 0n ||
-    insufficientMargin;
+    insufficientMargin ||
+    markPrice === 0n;
 
   async function submit() {
     if (accountId === undefined || marketId === undefined) return;
     if (tab === "Market") {
-      await market.mutateAsync({
+      await submitMarket.mutateAsync({
         accountId,
         marketId,
         sizeDelta,
@@ -133,6 +138,31 @@ export function TradeForm() {
           value={size}
           onChange={(e) => setSize(e.target.value)}
           placeholder="0.00"
+        />
+      </div>
+
+      <div>
+        <div className="mb-1 flex justify-between text-[10px] uppercase text-muted">
+          <span>Leverage</span>
+          <span className="text-text">{leverage}×</span>
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={maxLev}
+          step={1}
+          value={leverage}
+          onChange={(e) => {
+            const lev = Number(e.target.value);
+            setLeverage(lev);
+            const s = leverageToSize({
+              availableUsd: margins?.available ?? 0n,
+              leverage: lev,
+              markPrice,
+            });
+            setSize(Qty.fmt(Qty(s)));
+          }}
+          className="w-full accent-accent"
         />
       </div>
 
