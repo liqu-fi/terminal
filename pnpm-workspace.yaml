@@ -1,8 +1,8 @@
-# Optional native addons with pure-JS fallbacks (WalletConnect / crypto deps).
-# We don't run their build scripts; acknowledge them so `pnpm install` doesn't
-# error with ERR_PNPM_IGNORED_BUILDS in CI (pnpm 11 treats unacknowledged
-# ignored build scripts as fatal when CI=true).
-ignoredBuiltDependencies:
-  - bufferutil
-  - keccak
-  - utf-8-validate
+# Acknowledge build scripts for optional native addons (WalletConnect/crypto
+# deps) so `pnpm install` doesn't fail with ERR_PNPM_IGNORED_BUILDS in CI.
+# false = do not run the build script (pure-JS fallbacks are used). pnpm 11
+# writes this map itself when it finds unapproved build scripts.
+allowBuilds:
+  bufferutil: false
+  keccak: false
+  utf-8-validate: false
