@@ -1,6 +1,7 @@
 import { Side } from "@liqcx/liq-sdk";
 import {
   useAccountId,
+  useCancelOrderMutation,
   useConditionalOrders,
   useOpenOrdersQuery,
 } from "@liqcx/liq-react";
@@ -14,6 +15,7 @@ export function OpenOrdersTable() {
   const { data: open = [] } = useOpenOrdersQuery(accountId);
   const { data: conditional = [] } = useConditionalOrders();
   const orders = [...open, ...conditional];
+  const cancel = useCancelOrderMutation(accountId);
 
   if (orders.length === 0)
     return (
@@ -33,6 +35,7 @@ export function OpenOrdersTable() {
           <th>Size</th>
           <th>Price</th>
           <th>Status</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -48,6 +51,16 @@ export function OpenOrdersTable() {
               <td>{fmtQty(BigInt(o.sizeDelta))}</td>
               <td>{px && px !== "0" ? fmtPrice(BigInt(px)) : "—"}</td>
               <td className="text-muted">{o.status}</td>
+              <td>
+                <button
+                  type="button"
+                  className="text-[11px] text-short disabled:opacity-50"
+                  disabled={cancel.isPending}
+                  onClick={() => cancel.mutate(o.id)}
+                >
+                  Cancel
+                </button>
+              </td>
             </tr>
           );
         })}
