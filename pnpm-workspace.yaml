@@ -1,4 +1,8 @@
-allowBuilds:
-  bufferutil: set this to true or false
-  keccak: set this to true or false
-  utf-8-validate: set this to true or false
+# Optional native addons with pure-JS fallbacks (WalletConnect / crypto deps).
+# We don't run their build scripts; acknowledge them so `pnpm install` doesn't
+# error with ERR_PNPM_IGNORED_BUILDS in CI (pnpm 11 treats unacknowledged
+# ignored build scripts as fatal when CI=true).
+ignoredBuiltDependencies:
+  - bufferutil
+  - keccak
+  - utf-8-validate
