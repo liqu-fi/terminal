@@ -23,7 +23,9 @@ deposit → sign & submit orders → watch live updates**. Single-market, neutra
 2. **Configure the backend.**
    ```bash
    cp .env.example .env
-   # set VITE_GATEWAY_URL to your order-gateway origin
+   # set VITE_GATEWAY_URL to your order-gateway base URL, INCLUDING the API
+   # version path — e.g. https://gateway.example.com/v1 (the SDK appends bare
+   # routes like /markets, so the /v1 prefix must be part of this URL).
    ```
 3. **Install & run:**
    ```bash
