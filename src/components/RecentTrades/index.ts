@@ -1,6 +1,0 @@
-export { RecentTrades } from './RecentTrades';
-
-
-
-
-

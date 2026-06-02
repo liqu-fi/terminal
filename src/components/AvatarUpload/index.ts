@@ -1,3 +1,0 @@
-export { AvatarUpload } from './AvatarUpload';
-
-

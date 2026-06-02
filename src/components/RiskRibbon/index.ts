@@ -1,6 +1,0 @@
-export { RiskRibbon } from './RiskRibbon';
-
-
-
-
-

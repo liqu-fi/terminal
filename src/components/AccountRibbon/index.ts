@@ -1,3 +1,0 @@
-export { AccountRibbon } from './AccountRibbon';
-
-
