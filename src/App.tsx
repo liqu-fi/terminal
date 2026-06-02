@@ -1,3 +1,4 @@
+import { SessionGate } from "./features/auth/SessionGate";
 import { ConnectButton } from "./features/wallet/ConnectButton";
 
 export default function App() {
@@ -8,7 +9,13 @@ export default function App() {
         <div className="flex-1" />
         <ConnectButton />
       </header>
-      <main className="flex-1 p-4 text-muted">Connect a wallet to begin.</main>
+      <main className="flex flex-1 flex-col p-4">
+        <SessionGate>
+          <p className="text-long">
+            ✓ Authenticated — trading UI lands in P2/P3.
+          </p>
+        </SessionGate>
+      </main>
     </div>
   );
 }
