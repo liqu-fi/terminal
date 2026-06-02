@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@liqcx/liq-react": "^0.25.0",
+    "@liqcx/liq-sdk": "^0.25.0",
     "@tanstack/react-query": "^5.100.14",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
