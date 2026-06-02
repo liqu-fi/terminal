@@ -1,4 +1,4 @@
-import { Side } from "@liqcx/liq-sdk";
+import { Side } from "@liq/sdk";
 import { describe, expect, it } from "vitest";
 import {
   acceptablePrice,

@@ -27,7 +27,7 @@ jobs:
       - run: pnpm build
         env:
           VITE_DEPLOY_ENV: staging
-          VITE_GATEWAY_URL: https://staging-gateway.hype.cheap
+          VITE_GATEWAY_URL: https://your-gateway.example.com
 
   e2e:
     runs-on: ubuntu-latest
@@ -47,4 +47,4 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
         env:
-          VITE_GATEWAY_URL: https://staging-gateway.hype.cheap
+          VITE_GATEWAY_URL: https://your-gateway.example.com

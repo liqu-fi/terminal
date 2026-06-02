@@ -1,4 +1,4 @@
-import { useLiqClient } from "@liqcx/liq-react";
+import { useLiqClient } from "@liq/react";
 import { useQuery } from "@tanstack/react-query";
 
 /** Current funding snapshot for a market (no dedicated SDK hook exists). */

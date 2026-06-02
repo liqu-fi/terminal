@@ -1,4 +1,4 @@
-import { useAvailableMarginQuery, usePricesQuery } from "@liqcx/liq-react";
+import { useAvailableMarginQuery, usePricesQuery } from "@liq/react";
 import { useState } from "react";
 
 import { fmtPrice, fmtUsd, toNum } from "../../lib/format";

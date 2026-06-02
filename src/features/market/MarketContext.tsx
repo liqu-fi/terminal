@@ -1,4 +1,4 @@
-import { useMarketsQuery } from "@liqcx/liq-react";
+import { useMarketsQuery } from "@liq/react";
 import {
   createContext,
   useContext,

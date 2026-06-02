@@ -1,4 +1,4 @@
-import { useLiqOnchain } from "@liqcx/liq-react";
+import { useLiqOnchain } from "@liq/react";
 import { useQuery } from "@tanstack/react-query";
 
 /** Order/settlement mode of an SNX account NFT, or undefined while loading. */

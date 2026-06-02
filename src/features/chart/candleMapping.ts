@@ -1,4 +1,4 @@
-import type { ExchangeCandle } from "@liqcx/liq-sdk";
+import type { ExchangeCandle } from "@liq/sdk";
 import type { CandlestickData, UTCTimestamp } from "lightweight-charts";
 import { formatUnits } from "viem";
 

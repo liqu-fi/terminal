@@ -1,5 +1,5 @@
-import type { ExchangeCandle } from "@liqcx/liq-sdk";
-import { useLiqClient } from "@liqcx/liq-react";
+import type { ExchangeCandle } from "@liq/sdk";
+import { useLiqClient } from "@liq/react";
 import { useEffect, useState } from "react";
 
 type Interval = "1m" | "5m" | "15m" | "1h";

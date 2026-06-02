@@ -1,10 +1,10 @@
-import { Side } from "@liqcx/liq-sdk";
+import { Side } from "@liq/sdk";
 import {
   useAccountId,
   useCancelOrderMutation,
   useConditionalOrders,
   useOpenOrdersQuery,
-} from "@liqcx/liq-react";
+} from "@liq/react";
 
 import { fmtPrice, fmtQty } from "../../lib/format";
 import { useSelectedMarket } from "../market/MarketContext";

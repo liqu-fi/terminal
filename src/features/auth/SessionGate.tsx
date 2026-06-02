@@ -5,7 +5,7 @@ import {
   useGatewayAuthMutation,
   useGatewayStore,
   useWallet,
-} from "@liqcx/liq-react";
+} from "@liq/react";
 import type { ReactNode } from "react";
 
 import { Button } from "../../components/ui/Button";

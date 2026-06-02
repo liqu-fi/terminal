@@ -1,4 +1,4 @@
-import { useAccountId, useDepositMutation } from "@liqcx/liq-react";
+import { useAccountId, useDepositMutation } from "@liq/react";
 import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";

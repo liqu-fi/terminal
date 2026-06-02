@@ -1,4 +1,4 @@
-import { Margin } from "@liqcx/liq-sdk";
+import { Margin } from "@liq/sdk";
 import {
   liqQueryKeys,
   useAccountId,
@@ -6,7 +6,7 @@ import {
   useNetworkId,
   useTransactionMutation,
   useWallet,
-} from "@liqcx/liq-react";
+} from "@liq/react";
 import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";

@@ -1,5 +1,5 @@
-import { Price, Qty } from "@liqcx/liq-sdk";
-import { useDebounce, useTradePreview } from "@liqcx/liq-react";
+import { Price, Qty } from "@liq/sdk";
+import { useDebounce, useTradePreview } from "@liq/react";
 
 import { fmtPctFromBps, fmtPrice, fmtUsd } from "../../lib/format";
 

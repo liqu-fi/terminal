@@ -1,4 +1,4 @@
-import { useAccountId, useTradesRestQuery } from "@liqcx/liq-react";
+import { useAccountId, useTradesRestQuery } from "@liq/react";
 
 import { fmtPrice, fmtQty } from "../../lib/format";
 

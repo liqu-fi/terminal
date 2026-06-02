@@ -1,11 +1,11 @@
-import { Price, Qty, Side } from "@liqcx/liq-sdk";
+import { Price, Qty, Side } from "@liq/sdk";
 import {
   useAccountId,
   useAvailableMarginQuery,
   useSubmitConditionalOrder,
   useSubmitLimitOrder,
   useSubmitMarketOrder,
-} from "@liqcx/liq-react";
+} from "@liq/react";
 import { useMemo, useState } from "react";
 
 import { Button } from "../../components/ui/Button";

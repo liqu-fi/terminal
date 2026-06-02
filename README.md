@@ -1,29 +1,29 @@
-# LiqCx Reference Terminal
+# Reference Perp Trading Terminal
 
-A small, forkable **reference trading terminal** for [LiqCx](https://github.com/liqcx) — a
-decentralized perp-futures exchange (offchain orderbook, onchain settlement on a Synthetix V3 fork).
-It demonstrates the canonical way to build a trading UI on the published `@liqcx/liq-*` SDK:
-**connect → authenticate (SIWE) → create account & deposit → sign & submit orders → watch live
-updates**. Single-market, neutral-themed, MegaETH testnet. Fork it and reskin via design tokens.
+A small, forkable **reference trading terminal** for a decentralized perp-futures exchange
+(offchain orderbook, onchain settlement on a Synthetix V3 fork). It demonstrates the canonical way
+to build a trading UI on the `@liq/*` SDK: **connect → authenticate (SIWE) → create account &
+deposit → sign & submit orders → watch live updates**. Single-market, neutral-themed, testnet
+(chainId 6343). Fork it and reskin via design tokens.
 
-> Not the production app (that's `kwenta`). This is intentionally minimal and readable end-to-end.
+> Intentionally minimal and readable end-to-end — meant to be forked and white-labeled.
 
 ## Quickstart
 
-**Prereqs:** Node 24 + pnpm 11 (`proto use`), a browser wallet (MetaMask), and MegaETH testnet
-funds (chainId 6343).
+**Prereqs:** Node 24 + pnpm 11 (`proto use`), a browser wallet (MetaMask), and testnet funds
+(chainId 6343).
 
-1. **Authenticate to GitHub Packages.** The `@liqcx/liq-*` packages are published to GitHub
-   Packages, which requires a token even for public packages. Create a classic PAT with
-   `read:packages`, then:
+1. **Authenticate to the package registry.** The SDK packages are published to a GitHub Packages
+   registry (scope + URL are preconfigured in `.npmrc.example`), which needs a token even for read
+   access. Create a classic PAT with `read:packages`, then:
    ```bash
    cp .npmrc.example .npmrc
    export GITHUB_TOKEN=ghp_your_read_packages_token
    ```
-2. **Configure the backend.** Defaults to staging:
+2. **Configure the backend.**
    ```bash
    cp .env.example .env
-   # edit VITE_GATEWAY_URL to the staging order-gateway origin
+   # set VITE_GATEWAY_URL to your order-gateway origin
    ```
 3. **Install & run:**
    ```bash
@@ -36,27 +36,16 @@ funds (chainId 6343).
 > your `localhost`, set `VITE_GATEWAY_PROXY=true` and point `env.gatewayUrl` at `/gateway` to use
 > the bundled Vite dev proxy.
 
-### Known SDK packaging note
+### SDK packaging note
 
-The published `@liqcx/liq-*` packages' compiled `dist/` still import the **internal** `@liq/*`
-scope (e.g. `@liq/core`, `@liq/onchain`). External consumers must alias those bare specifiers back
-to the public `@liqcx/liq-*` packages.
-
-This repo handles it via npm-alias entries in `package.json`:
-
-```json
-"@liq/core":       "npm:@liqcx/liq-core@^0.25.0",
-"@liq/api-client": "npm:@liqcx/liq-api-client@^0.25.0",
-...
-```
-
-`kwenta` (the production frontend) does the same via `pnpm-workspace.yaml` overrides. The root-cause
-fix is in the SDK's `scripts/publish-liq.sh` (rewrite dist import specifiers at publish time); until
-that lands in a release, the aliases are required in every consumer.
+The SDK's compiled `dist/` imports bare `@liq/*` package specifiers. This repo resolves them via
+npm-alias entries in `package.json` (the `@liq/*` dependencies point at the published packages), so a
+plain `pnpm install` works straight after a clone. The clean fix is to rewrite those specifiers at
+SDK publish time; until then the aliases are required in every consumer.
 
 ## Trade lifecycle ↔ SDK calls
 
-Every step maps to a hook from `@liqcx/liq-react` (or a class from `@liqcx/liq-sdk`):
+Every step maps to a hook from `@liq/react` (or a class from `@liq/sdk`):
 
 | Step                     | What happens                                      | SDK                                            | Code                                        |
 | ------------------------ | ------------------------------------------------- | ---------------------------------------------- | ------------------------------------------- |
@@ -75,13 +64,13 @@ Every step maps to a hook from `@liqcx/liq-react` (or a class from `@liqcx/liq-s
 
 **Key facts:** auth is **SIWE** (personal_sign), not EIP-712 — only orders are EIP-712 signed.
 Order numeric fields are decimal strings of 18-dec bigints. `sizeDelta` is signed (negative = short).
-Both prod and staging are chainId 6343 — `VITE_DEPLOY_ENV` (baked into `process.env.DEPLOY_ENV` by
-Vite) selects the contract set.
+Both deploy environments share chainId 6343 — `VITE_DEPLOY_ENV` (baked into `process.env.DEPLOY_ENV`
+by Vite) selects the contract set.
 
 ## Where things live
 
-- `src/providers/` — `LiqSetup` builds `LiqClient` + `LiqOnchain` and mounts `<LiqProvider>`; the
-  JWT→client sync lives here.
+- `src/providers/` — `LiqSetup` builds the SDK client + onchain singletons and mounts the provider;
+  the JWT→client sync lives here.
 - `src/config/` — chain + wagmi config + typed env.
 - `src/features/<name>/` — one folder per concern (wallet, auth, market, chart, trade, positions,
   orders, history, account).
@@ -97,8 +86,8 @@ All colors/spacing/radii are CSS variables in `src/styles/tokens.css`, surfaced 
 
 - **Bracket orders (TP/SL attached to a position):** the convenience hooks don't wire `groupId`;
   drop to `client.orders.submit` with a shared `groupId` to link legs (cancel-other-on-fill).
-- **Turnkey session keys:** wrap the tree in `TurnkeyProviderWrapper` and use `useSessionKey` for
-  gasless/embedded-wallet signing.
+- **Session keys / embedded wallets:** wrap the tree in the SDK's session-key provider and use
+  `useSessionKey` for gasless signing.
 - **Multi-market dashboard, stats, funding charts, mobile layouts, i18n, faucet** — each is a
   self-contained add-on; the read hooks (`useStatsQuery`, `client.markets.getFundingHistory`,
   `useClaimFaucetMutation`) already exist in the SDK.

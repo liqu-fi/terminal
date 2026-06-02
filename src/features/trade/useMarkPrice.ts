@@ -1,4 +1,4 @@
-import { usePricesQuery } from "@liqcx/liq-react";
+import { usePricesQuery } from "@liq/react";
 
 import { useSelectedMarket } from "../market/MarketContext";
 

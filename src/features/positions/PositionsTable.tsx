@@ -1,5 +1,5 @@
-import { Side } from "@liqcx/liq-sdk";
-import { useEnrichedPositions } from "@liqcx/liq-react";
+import { Side } from "@liq/sdk";
+import { useEnrichedPositions } from "@liq/react";
 
 import { fmtPrice, fmtQty, fmtSignedUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/MarketContext";

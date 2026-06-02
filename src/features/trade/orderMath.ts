@@ -1,4 +1,4 @@
-import { Side } from "@liqcx/liq-sdk";
+import { Side } from "@liq/sdk";
 
 const WAD = 10n ** 18n;
 

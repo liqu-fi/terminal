@@ -2,7 +2,7 @@ import {
   useAccountId,
   useOpenOrdersQuery,
   useSseOrderUpdates,
-} from "@liqcx/liq-react";
+} from "@liq/react";
 import { useMemo } from "react";
 
 /** Keeps open orders / positions fresh by subscribing to their SSE channels. */

@@ -1,5 +1,5 @@
-import { LiqProvider, useGatewayStore } from "@liqcx/liq-react";
-import { LiqClient, LiqOnchain } from "@liqcx/liq-sdk";
+import { LiqProvider, useGatewayStore } from "@liq/react";
+import { LiqClient, LiqOnchain } from "@liq/sdk";
 import { type ReactNode, useEffect, useMemo } from "react";
 import { createPublicClient, http } from "viem";
 import { useChainId, useWalletClient } from "wagmi";
