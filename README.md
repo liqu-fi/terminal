@@ -1,73 +1,108 @@
-# React + TypeScript + Vite
+# LiqCx Reference Terminal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A small, forkable **reference trading terminal** for [LiqCx](https://github.com/liqcx) — a
+decentralized perp-futures exchange (offchain orderbook, onchain settlement on a Synthetix V3 fork).
+It demonstrates the canonical way to build a trading UI on the published `@liqcx/liq-*` SDK:
+**connect → authenticate (SIWE) → create account & deposit → sign & submit orders → watch live
+updates**. Single-market, neutral-themed, MegaETH testnet. Fork it and reskin via design tokens.
 
-Currently, two official plugins are available:
+> Not the production app (that's `kwenta`). This is intentionally minimal and readable end-to-end.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Quickstart
 
-## React Compiler
+**Prereqs:** Node 24 + pnpm 11 (`proto use`), a browser wallet (MetaMask), and MegaETH testnet
+funds (chainId 6343).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Authenticate to GitHub Packages.** The `@liqcx/liq-*` packages are published to GitHub
+   Packages, which requires a token even for public packages. Create a classic PAT with
+   `read:packages`, then:
+   ```bash
+   cp .npmrc.example .npmrc
+   export GITHUB_TOKEN=ghp_your_read_packages_token
+   ```
+2. **Configure the backend.** Defaults to staging:
+   ```bash
+   cp .env.example .env
+   # edit VITE_GATEWAY_URL to the staging order-gateway origin
+   ```
+3. **Install & run:**
+   ```bash
+   pnpm install
+   pnpm dev
+   ```
+   Open the printed URL, connect your wallet, and follow the on-screen CTAs.
 
-## Expanding the ESLint configuration
+> **CORS:** the SPA calls the gateway (REST + SSE) directly. If the gateway origin doesn't allow
+> your `localhost`, set `VITE_GATEWAY_PROXY=true` and point `env.gatewayUrl` at `/gateway` to use
+> the bundled Vite dev proxy.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Known SDK packaging note
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+The published `@liqcx/liq-*` packages' compiled `dist/` still import the **internal** `@liq/*`
+scope (e.g. `@liq/core`, `@liq/onchain`). External consumers must alias those bare specifiers back
+to the public `@liqcx/liq-*` packages.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+This repo handles it via npm-alias entries in `package.json`:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```json
+"@liq/core":       "npm:@liqcx/liq-core@^0.25.0",
+"@liq/api-client": "npm:@liqcx/liq-api-client@^0.25.0",
+...
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+`kwenta` (the production frontend) does the same via `pnpm-workspace.yaml` overrides. The root-cause
+fix is in the SDK's `scripts/publish-liq.sh` (rewrite dist import specifiers at publish time); until
+that lands in a release, the aliases are required in every consumer.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Trade lifecycle ↔ SDK calls
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Every step maps to a hook from `@liqcx/liq-react` (or a class from `@liqcx/liq-sdk`):
+
+| Step                     | What happens                                      | SDK                                            | Code                                        |
+| ------------------------ | ------------------------------------------------- | ---------------------------------------------- | ------------------------------------------- |
+| Connect                  | wagmi wallet connect                              | wagmi `useConnect`                             | `features/wallet/ConnectButton.tsx`         |
+| Create account           | mint SNX account NFT                              | `useCreateAccountMutation`                     | `features/auth/SessionGate.tsx`             |
+| Sign in                  | SIWE personal_sign → JWT (+ book mode + register) | `useGatewayAuthMutation`                       | `features/auth/SessionGate.tsx`             |
+| Deposit                  | USDC→sUSDC→modifyCollateral multicall             | `useDepositMutation`                           | `features/account/DepositDialog.tsx`        |
+| Markets / price          | list + live price                                 | `useMarketsQuery`, `usePricesQuery`            | `features/market/*`                         |
+| Chart                    | candles backfill + live 1m                        | `client.candles.history/subscribe`             | `features/chart/*`                          |
+| Preview                  | fees / fill / impact                              | `useTradePreview`                              | `features/trade/TradePreviewRow.tsx`        |
+| Submit (market/limit)    | sign EIP-712 order → POST                         | `useSubmitMarketOrder` / `useSubmitLimitOrder` | `features/trade/TradeForm.tsx`              |
+| Conditional (TP/SL/Stop) | standalone trigger order                          | `useSubmitConditionalOrder`                    | `features/trade/TradeForm.tsx`              |
+| Positions / orders       | live state                                        | `useEnrichedPositions`, `useOpenOrdersQuery`   | `features/positions/*`, `features/orders/*` |
+| Cancel                   | cancel resting order                              | `useCancelOrderMutation`                       | `features/orders/OpenOrdersTable.tsx`       |
+| Live updates             | order status over SSE                             | `useSseOrderUpdates`                           | `features/userinfo/useLiveOrders.ts`        |
+
+**Key facts:** auth is **SIWE** (personal_sign), not EIP-712 — only orders are EIP-712 signed.
+Order numeric fields are decimal strings of 18-dec bigints. `sizeDelta` is signed (negative = short).
+Both prod and staging are chainId 6343 — `VITE_DEPLOY_ENV` (baked into `process.env.DEPLOY_ENV` by
+Vite) selects the contract set.
+
+## Where things live
+
+- `src/providers/` — `LiqSetup` builds `LiqClient` + `LiqOnchain` and mounts `<LiqProvider>`; the
+  JWT→client sync lives here.
+- `src/config/` — chain + wagmi config + typed env.
+- `src/features/<name>/` — one folder per concern (wallet, auth, market, chart, trade, positions,
+  orders, history, account).
+- `src/lib/format.ts` — the single tested formatting layer (WAD bigint → display).
+- `src/styles/tokens.css` — design tokens.
+
+## Reskin
+
+All colors/spacing/radii are CSS variables in `src/styles/tokens.css`, surfaced to Tailwind v4 via
+`@theme` in `src/styles/index.css`. Change the tokens; the whole UI follows. No component edits needed.
+
+## Extend here
+
+- **Bracket orders (TP/SL attached to a position):** the convenience hooks don't wire `groupId`;
+  drop to `client.orders.submit` with a shared `groupId` to link legs (cancel-other-on-fill).
+- **Turnkey session keys:** wrap the tree in `TurnkeyProviderWrapper` and use `useSessionKey` for
+  gasless/embedded-wallet signing.
+- **Multi-market dashboard, stats, funding charts, mobile layouts, i18n, faucet** — each is a
+  self-contained add-on; the read hooks (`useStatsQuery`, `client.markets.getFundingHistory`,
+  `useClaimFaucetMutation`) already exist in the SDK.
+
+## License
+
+Apache-2.0.
