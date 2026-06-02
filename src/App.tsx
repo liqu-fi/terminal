@@ -1,14 +1,14 @@
-import { Button } from "./components/ui/Button";
-import { Card } from "./components/ui/Card";
+import { ConnectButton } from "./features/wallet/ConnectButton";
 
 export default function App() {
   return (
-    <div className="p-6">
-      <Card className="p-4 inline-flex gap-3">
-        <Button variant="long">Long</Button>
-        <Button variant="short">Short</Button>
-        <Button variant="primary">Connect</Button>
-      </Card>
+    <div className="flex min-h-full flex-col">
+      <header className="flex items-center gap-3 border-b border-border bg-surface-2 px-4 py-2">
+        <span className="font-bold tracking-wide">◢ terminal</span>
+        <div className="flex-1" />
+        <ConnectButton />
+      </header>
+      <main className="flex-1 p-4 text-muted">Connect a wallet to begin.</main>
     </div>
   );
 }
