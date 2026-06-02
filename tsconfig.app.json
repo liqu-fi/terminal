@@ -19,7 +19,21 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@liq/core": [
+        "./node_modules/.pnpm/@liqcx+liq-core@0.25.0_viem@2.52.0_typescript@6.0.3_zod@4.4.3__zod@4.4.3/node_modules/@liqcx/liq-core/dist/index.d.ts"
+      ],
+      "@liq/onchain": [
+        "./node_modules/.pnpm/@liqcx+liq-onchain@0.25.0_viem@2.52.0_typescript@6.0.3_zod@4.4.3__zod@4.4.3/node_modules/@liqcx/liq-onchain/dist/index.d.ts"
+      ],
+      "@liq/api-client": [
+        "./node_modules/.pnpm/@liqcx+liq-api-client@0.25.0_viem@2.52.0_typescript@6.0.3_zod@4.4.3__zod@4.4.3/node_modules/@liqcx/liq-api-client/dist/index.d.ts"
+      ],
+      "@liq/subgraph": [
+        "./node_modules/.pnpm/@liqcx+liq-subgraph@0.25.0_graphql@16.14.0_viem@2.52.0_typescript@6.0.3_zod@4.4.3__zod@4.4.3/node_modules/@liqcx/liq-subgraph/dist/index.d.ts"
+      ]
+    }
   },
   "include": ["src"]
 }
