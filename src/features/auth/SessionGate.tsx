@@ -1,6 +1,6 @@
 import {
   selectIsAuthenticated,
-  useAccountId,
+  useAccountQuery,
   useCreateAccountMutation,
   useGatewayAuthMutation,
   useGatewayStore,
@@ -16,19 +16,36 @@ import { useOrderMode } from "./useOrderMode";
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
   const wallet = useWallet();
-  const accountId = useAccountId();
+  // Pull the query's loading flag, not just `useAccountId()`: the latter
+  // collapses "still loading" and "no account" into a single `undefined`,
+  // which would flash the create-account CTA before the on-chain lookup
+  // resolves (see sessionStage).
+  const { data: accountIds, isLoading: accountsLoading } = useAccountQuery();
+  const accountId = accountIds?.[0];
   const isAuthenticated = useGatewayStore(selectIsAuthenticated);
   const { data: orderMode } = useOrderMode(accountId);
 
   const createAccount = useCreateAccountMutation();
   const auth = useGatewayAuthMutation();
 
-  const stage = sessionStage({ wallet, accountId, isAuthenticated });
+  const stage = sessionStage({
+    wallet,
+    accountId,
+    accountsLoading,
+    isAuthenticated,
+  });
 
   if (stage === "disconnected") {
     return (
       <Centered testid="session-disconnected">
         <ConnectButton />
+      </Centered>
+    );
+  }
+  if (stage === "loading") {
+    return (
+      <Centered testid="session-loading">
+        <p className="text-muted">Loading account…</p>
       </Centered>
     );
   }

@@ -9,6 +9,7 @@ export class AppPage {
   readonly connectButton: Locator;
   readonly walletAddressButton: Locator;
   readonly disconnectedGate: Locator;
+  readonly loadingGate: Locator;
   readonly noAccountGate: Locator;
   readonly createAccountButton: Locator;
   readonly needsSigninGate: Locator;
@@ -20,6 +21,7 @@ export class AppPage {
     this.connectButton = page.getByTestId("connect-wallet-button");
     this.walletAddressButton = page.getByTestId("wallet-address-button");
     this.disconnectedGate = page.getByTestId("session-disconnected");
+    this.loadingGate = page.getByTestId("session-loading");
     this.noAccountGate = page.getByTestId("session-no-account");
     this.createAccountButton = page.getByTestId("create-account-button");
     this.needsSigninGate = page.getByTestId("session-needs-signin");

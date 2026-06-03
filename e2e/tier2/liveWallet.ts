@@ -53,18 +53,48 @@ export async function installLiveWallet(
           const [, typedData] = params as [string, string];
           const parsed = JSON.parse(typedData) as {
             domain: Record<string, unknown>;
-            types: Record<string, unknown>;
+            types: Record<string, { name: string; type: string }[]>;
             primaryType: string;
             message: Record<string, unknown>;
           };
-          const types = { ...(parsed.types as Record<string, unknown>) };
+          const types = { ...parsed.types };
           delete types.EIP712Domain; // viem derives the domain separately
+
+          // eth_signTypedData_v4 carries every numeric field as a JSON string,
+          // but viem's signTypedData hashes the string differently from the
+          // bigint it represents — signing the raw parsed message yields a hash
+          // that recovers the WRONG signer (gateway: INVALID_SIGNATURE "Unknown
+          // signer"). Coerce numeric fields back to bigint per the type schema
+          // (and domain.chainId) so the injected wallet signs the canonical
+          // EIP-712 hash, exactly as a real wallet would.
+          const isNumeric = (t: string) => /^u?int\d*$/.test(t);
+          const coerce = (
+            typeName: string,
+            value: Record<string, unknown>,
+          ): Record<string, unknown> => {
+            const out: Record<string, unknown> = {};
+            for (const field of types[typeName] ?? []) {
+              const v = value[field.name];
+              if (isNumeric(field.type)) out[field.name] = BigInt(v as string);
+              else if (types[field.type] && v && typeof v === "object")
+                out[field.name] = coerce(
+                  field.type,
+                  v as Record<string, unknown>,
+                );
+              else out[field.name] = v;
+            }
+            return out;
+          };
+          const domain = { ...parsed.domain };
+          if (domain.chainId !== undefined)
+            domain.chainId = BigInt(domain.chainId as string);
+
           return wallet.signTypedData({
             account,
-            domain: parsed.domain,
+            domain,
             types: types as never,
             primaryType: parsed.primaryType as never,
-            message: parsed.message,
+            message: coerce(parsed.primaryType, parsed.message),
           });
         }
         case "eth_sendTransaction": {
