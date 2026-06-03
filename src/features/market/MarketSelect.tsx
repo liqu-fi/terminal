@@ -1,4 +1,4 @@
-import { useSelectedMarket } from "./MarketContext";
+import { useSelectedMarket } from "./useSelectedMarket";
 
 export function MarketSelect() {
   const { markets, marketId, setMarketId } = useSelectedMarket();

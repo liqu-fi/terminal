@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { useSelectedMarket } from "../market/MarketContext";
+import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { acceptablePrice, computeSizeDelta, leverageToSize } from "./orderMath";
 import { TradePreviewRow } from "./TradePreviewRow";

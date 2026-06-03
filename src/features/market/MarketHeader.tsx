@@ -6,7 +6,7 @@ import { DepositDialog } from "../account/DepositDialog";
 import { WithdrawDialog } from "../account/WithdrawDialog";
 import { MarketSelect } from "./MarketSelect";
 import { useFunding } from "./useFunding";
-import { useSelectedMarket } from "./MarketContext";
+import { useSelectedMarket } from "./useSelectedMarket";
 
 export function MarketHeader() {
   const { marketId, marketIds } = useSelectedMarket();
