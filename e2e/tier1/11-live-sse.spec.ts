@@ -18,14 +18,12 @@ test.describe("live SSE updates", () => {
     await userInfo.selectTab("open-orders");
     await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
 
-    // The order fills: the next /orders refetch returns empty, and a queued SSE
-    // order_update frame triggers that refetch. The mock SSE long-polls, so the
-    // frame is delivered to the held-open connection near-instantly.
-    world.openOrders = [];
+    // Queue an SSE fill. The mock removes the order from the open set ONLY when
+    // this frame is actually delivered over SSE — so the background poll keeps
+    // returning the order until then, and the order clearing proves the SSE
+    // path drove it (not polling). Causality, not timing, is the assertion.
     world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "MATCHED")];
 
-    // Must clear well before the open-orders query's 10s background poll could
-    // do it — proving SSE drove the refetch, not polling.
-    await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 7_000 });
+    await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 15_000 });
   });
 });

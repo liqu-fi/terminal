@@ -72,22 +72,62 @@ function restSubmittedOrder(
 }
 
 const SSE_LONGPOLL_MS = 20_000;
+const OPEN_STATUSES = new Set(["PENDING", "PARTIALLY_FILLED", "TRIGGER_PENDING"]);
 
 /**
  * Long-poll the SSE stream: hold the connection open until a frame is queued
- * (or we time out), then flush it and close. This keeps a single live
- * connection instead of an empty-response reconnect storm (which grows the
- * SDK's backoff and starves real frame delivery), so a pushed frame is
- * delivered near-instantly — making the SSE path genuinely testable.
+ * (or we time out), then return a snapshot of the queued frames. The caller
+ * clears + applies them ONLY after a successful fulfill, so a frame can't be
+ * lost to a stale/aborted connection (the app reconnects when its channel set
+ * changes after orders load; that abandoned request must not consume the frame
+ * meant for the live one).
  */
-async function sseLongPoll(world: MockWorld): Promise<string> {
+async function sseLongPoll(world: MockWorld): Promise<string[]> {
   const deadline = Date.now() + SSE_LONGPOLL_MS;
   while (Date.now() < deadline && world.sseFrames.length === 0) {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  const frames = world.sseFrames;
-  world.sseFrames = []; // atomic read-and-clear
-  return frames.join("");
+  return [...world.sseFrames];
+}
+
+function parseSseOrderUpdate(
+  raw: string,
+): { orderId: string; status: string } | null {
+  const match = raw.match(/data:\s*(\{.*\})/s);
+  if (!match) return null;
+  try {
+    const evt = JSON.parse(match[1]) as {
+      type?: string;
+      data?: { orderId?: string; status?: string };
+    };
+    if (evt.type === "order_update" && evt.data?.orderId) {
+      return {
+        orderId: String(evt.data.orderId),
+        status: String(evt.data.status ?? ""),
+      };
+    }
+  } catch {
+    /* not a JSON order_update frame */
+  }
+  return null;
+}
+
+/**
+ * A delivered order_update with a terminal status removes that order from the
+ * open/conditional sets — exactly what the real gateway reflects on the next
+ * fetch. Crucially this happens ONLY on delivery, so a subsequent /orders
+ * refetch (whether triggered by the SSE invalidation or the background poll)
+ * observes the change only because the frame was actually delivered.
+ */
+function applySseEffects(world: MockWorld, frames: string[]): void {
+  for (const raw of frames) {
+    const update = parseSseOrderUpdate(raw);
+    if (!update || OPEN_STATUSES.has(update.status)) continue;
+    world.openOrders = world.openOrders.filter((o) => o.id !== update.orderId);
+    world.conditionalOrders = world.conditionalOrders.filter(
+      (o) => o.id !== update.orderId,
+    );
+  }
 }
 
 export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
@@ -99,7 +139,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- SSE ---------------------------------------------------------------
     if (path.endsWith("/sse")) {
-      const body = await sseLongPoll(world);
+      const frames = await sseLongPoll(world);
       try {
         await route.fulfill({
           status: 200,
@@ -108,10 +148,16 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
             "cache-control": "no-cache",
             connection: "keep-alive",
           },
-          body,
+          body: frames.join(""),
         });
+        // Apply + clear ONLY after a delivery that landed on a live connection.
+        if (frames.length > 0) {
+          applySseEffects(world, frames);
+          world.sseFrames = [];
+        }
       } catch {
-        // page/context closed while we were holding the connection — ignore.
+        // Stale/aborted connection (or page closed): leave the frame queued so
+        // the live connection still receives it.
       }
       return;
     }
