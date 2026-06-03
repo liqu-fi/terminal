@@ -6,7 +6,11 @@ import { defineConfig, devices } from "@playwright/test";
  * no secrets, no live backend, runnable in CI. Tier 2 (live staging) has its own
  * config at e2e/tier2/playwright.live.config.ts and is opt-in via E2E_LIVE.
  */
-const PORT = 5173;
+// Overridable via E2E_PORT: with a fixed port + `reuseExistingServer`, a stray
+// dev server from a sibling app (e.g. another vite on 5173) gets silently
+// reused and the whole suite runs against the wrong app. An override lets a
+// polluted default be sidestepped without editing this file.
+const PORT = Number(process.env.E2E_PORT) || 5173;
 
 // Inline env wins over any inherited process.env in Vite's loadEnv, so these
 // origins are deterministic regardless of the surrounding shell / CI.

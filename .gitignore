@@ -28,6 +28,7 @@ dist-ssr
 
 # Environment
 .env
+.env.e2e
 
 # Playwright
 playwright-report
