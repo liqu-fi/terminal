@@ -45,6 +45,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GT_READ }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # Tier 1 is hermetic: the Playwright config launches the dev server with
+      # fixed mock gateway/RPC origins, so no secrets or live backend are needed.
+      # Tier 2 (live, e2e/tier2) is opt-in via E2E_LIVE and not run in CI.
       - run: pnpm test:e2e
-        env:
-          VITE_GATEWAY_URL: https://your-gateway.example.com

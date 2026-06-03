@@ -8,11 +8,16 @@ export function HistoryTable() {
 
   if (trades.length === 0)
     return (
-      <div className="py-6 text-center text-sm text-muted">No trades yet.</div>
+      <div
+        className="py-6 text-center text-sm text-muted"
+        data-testid="history-empty"
+      >
+        No trades yet.
+      </div>
     );
 
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-sm" data-testid="history-table">
       <thead>
         <tr className="text-left text-[11px] uppercase text-muted">
           <th className="py-1">Time</th>
@@ -23,7 +28,11 @@ export function HistoryTable() {
       </thead>
       <tbody>
         {trades.map((t) => (
-          <tr key={t.id} className="border-t border-border">
+          <tr
+            key={t.id}
+            className="border-t border-border"
+            data-testid={`trade-row-${t.id}`}
+          >
             <td className="py-1 text-muted">
               {new Date(t.timestamp).toLocaleTimeString()}
             </td>

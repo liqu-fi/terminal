@@ -8,7 +8,7 @@ import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 export function Terminal() {
   const { marketId } = useSelectedMarket();
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3" data-testid="terminal-root">
       <MarketHeader />
       <div className="flex flex-1 gap-3">
         {/* LEFT: trade form */}

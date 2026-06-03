@@ -23,7 +23,10 @@ export function TradePreviewRow({
 
   if (!enabled || !preview) return null;
   return (
-    <div className="rounded-[var(--radius-sm)] border border-border bg-surface-2 p-2 text-[11px] text-muted">
+    <div
+      className="rounded-[var(--radius-sm)] border border-border bg-surface-2 p-2 text-[11px] text-muted"
+      data-testid="trade-preview"
+    >
       <Row label="Est. fill" value={fmtPrice(preview.fillPrice)} />
       <Row label="Fee" value={fmtUsd(preview.fee)} />
       <Row label="Price impact" value={fmtPctFromBps(preview.priceImpact)} />

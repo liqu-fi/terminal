@@ -27,18 +27,19 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   if (stage === "disconnected") {
     return (
-      <Centered>
+      <Centered testid="session-disconnected">
         <ConnectButton />
       </Centered>
     );
   }
   if (stage === "no-account") {
     return (
-      <Centered>
+      <Centered testid="session-no-account">
         <p className="text-muted">No SNX account yet.</p>
         <Button
           disabled={createAccount.isPending}
           onClick={() => createAccount.mutate(undefined)}
+          data-testid="create-account-button"
         >
           {createAccount.isPending ? "Creating…" : "Create Account"}
         </Button>
@@ -48,7 +49,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   if (stage === "needs-signin") {
     const alreadyBookMode = orderMode === "BOOK";
     return (
-      <Centered>
+      <Centered testid="session-needs-signin">
         <p className="text-muted">Sign in to the gateway (SIWE).</p>
         <Button
           disabled={auth.isPending || accountId === undefined}
@@ -56,6 +57,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
             accountId !== undefined &&
             auth.mutate({ accountId, alreadyBookMode })
           }
+          data-testid="signin-button"
         >
           {auth.isPending
             ? "Signing…"
@@ -69,9 +71,18 @@ export function SessionGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function Centered({ children }: { children: ReactNode }) {
+function Centered({
+  children,
+  testid,
+}: {
+  children: ReactNode;
+  testid?: string;
+}) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3">
+    <div
+      className="flex flex-1 flex-col items-center justify-center gap-3"
+      data-testid={testid}
+    >
       {children}
     </div>
   );
