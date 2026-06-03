@@ -26,23 +26,23 @@ export function MarketHeader() {
         : "text-text";
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4" data-testid="market-header">
       <MarketSelect />
-      <span className={`text-sm font-bold ${dirColor}`}>
+      <span className={`text-sm font-bold ${dirColor}`} data-testid="market-price">
         {info ? `$${fmtPrice(info.price)}` : "—"}
         {info?.change === "up" ? " ▲" : info?.change === "down" ? " ▼" : ""}
       </span>
       <span className="text-xs text-muted">
         funding{" "}
         {/* NOTE: confirm funding rate scale (WAD per period) before relying on this number */}
-        <span className="text-text">
+        <span className="text-text" data-testid="funding-rate">
           {funding ? `${(toNum(funding.rate) * 100).toFixed(4)}%` : "—"}
         </span>
       </span>
       <div className="flex-1" />
       <span className="text-xs text-muted">
         margin{" "}
-        <span className="font-semibold text-text">
+        <span className="font-semibold text-text" data-testid="available-margin">
           {margins ? fmtUsd(margins.available) : "—"}
         </span>
       </span>
@@ -50,6 +50,7 @@ export function MarketHeader() {
         type="button"
         className="text-[11px] text-accent"
         onClick={() => setDepositOpen(true)}
+        data-testid="open-deposit-button"
       >
         Deposit
       </button>
@@ -57,6 +58,7 @@ export function MarketHeader() {
         type="button"
         className="text-[11px] text-muted"
         onClick={() => setWithdrawOpen(true)}
+        data-testid="open-withdraw-button"
       >
         Withdraw
       </button>

@@ -98,7 +98,10 @@ export function TradeForm() {
 
   const long = side === Side.BUY;
   return (
-    <div className="flex w-[240px] shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3">
+    <div
+      className="flex w-[240px] shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
+      data-testid="trade-form"
+    >
       <div className="flex gap-1 text-[11px]">
         {TABS.map((t) => (
           <button
@@ -106,6 +109,8 @@ export function TradeForm() {
             type="button"
             onClick={() => setTab(t)}
             className={`flex-1 rounded-[var(--radius-sm)] py-1 ${tab === t ? "bg-surface-2 text-text" : "text-muted"}`}
+            data-testid={`trade-tab-${tabSlug(t)}`}
+            aria-pressed={tab === t}
           >
             {t}
           </button>
@@ -117,6 +122,8 @@ export function TradeForm() {
           variant={long ? "long" : "ghost"}
           className="flex-1"
           onClick={() => setSide(Side.BUY)}
+          data-testid="side-long-button"
+          aria-pressed={long}
         >
           Long
         </Button>
@@ -124,6 +131,8 @@ export function TradeForm() {
           variant={!long ? "short" : "ghost"}
           className="flex-1"
           onClick={() => setSide(Side.SELL)}
+          data-testid="side-short-button"
+          aria-pressed={!long}
         >
           Short
         </Button>
@@ -138,13 +147,16 @@ export function TradeForm() {
           value={size}
           onChange={(e) => setSize(e.target.value)}
           placeholder="0.00"
+          data-testid="size-input"
         />
       </div>
 
       <div>
         <div className="mb-1 flex justify-between text-[10px] uppercase text-muted">
           <span>Leverage</span>
-          <span className="text-text">{leverage}×</span>
+          <span className="text-text" data-testid="leverage-value">
+            {leverage}×
+          </span>
         </div>
         <input
           type="range"
@@ -152,6 +164,7 @@ export function TradeForm() {
           max={maxLev}
           step={1}
           value={leverage}
+          data-testid="leverage-slider"
           onChange={(e) => {
             const lev = Number(e.target.value);
             setLeverage(lev);
@@ -176,6 +189,7 @@ export function TradeForm() {
             value={limitPrice}
             onChange={(e) => setLimitPrice(e.target.value)}
             placeholder="0.00"
+            data-testid="limit-price-input"
           />
         </div>
       )}
@@ -199,16 +213,32 @@ export function TradeForm() {
         variant={long ? "long" : "short"}
         disabled={disabled}
         onClick={() => void submit()}
+        data-testid="submit-order-button"
       >
         {pending ? "Submitting…" : `${long ? "Buy / Long" : "Sell / Short"}`}
       </Button>
 
       {insufficientMargin && (
-        <p className="text-[10px] text-muted">
+        <p className="text-[10px] text-muted" data-testid="insufficient-margin">
           No available margin — deposit to trade.
         </p>
       )}
-      {error && <p className="text-[10px] text-short">{error.message}</p>}
+      {error && (
+        <p className="text-[10px] text-short" data-testid="trade-error">
+          {error.message}
+        </p>
+      )}
     </div>
   );
+}
+
+const TAB_SLUG: Record<Tab, string> = {
+  Market: "market",
+  Limit: "limit",
+  Stop: "stop",
+  "Take Profit": "take-profit",
+};
+
+function tabSlug(tab: Tab): string {
+  return TAB_SLUG[tab];
 }

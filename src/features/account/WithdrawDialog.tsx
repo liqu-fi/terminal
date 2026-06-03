@@ -52,27 +52,38 @@ export function WithdrawDialog({
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <h3 className="mb-3 text-sm font-semibold">Withdraw sUSDC</h3>
-      <Input
-        inputMode="decimal"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder="100"
-      />
-      {withdraw.error && (
-        <p className="mt-2 text-[11px] text-short">{withdraw.error.message}</p>
-      )}
-      <div className="mt-3 flex gap-2">
-        <Button variant="ghost" className="flex-1" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          className="flex-1"
-          disabled={withdraw.isPending || !amount || accountId === undefined}
-          onClick={() => void onWithdraw()}
-        >
-          {withdraw.isPending ? "Withdrawing…" : "Withdraw"}
-        </Button>
+      <div data-testid="withdraw-dialog">
+        <h3 className="mb-3 text-sm font-semibold">Withdraw sUSDC</h3>
+        <Input
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="100"
+          data-testid="withdraw-amount-input"
+        />
+        {withdraw.error && (
+          <p className="mt-2 text-[11px] text-short" data-testid="withdraw-error">
+            {withdraw.error.message}
+          </p>
+        )}
+        <div className="mt-3 flex gap-2">
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={onClose}
+            data-testid="withdraw-cancel-button"
+          >
+            Cancel
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={withdraw.isPending || !amount || accountId === undefined}
+            onClick={() => void onWithdraw()}
+            data-testid="withdraw-submit-button"
+          >
+            {withdraw.isPending ? "Withdrawing…" : "Withdraw"}
+          </Button>
+        </div>
       </div>
     </Dialog>
   );

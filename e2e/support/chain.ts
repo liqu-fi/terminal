@@ -1,0 +1,238 @@
+/**
+ * Pure-function chain logic for the mock JSON-RPC layer:
+ *  - `handleEthCall`  decodes an eth_call (incl. Multicall3 aggregate3 batches)
+ *    and returns ABI-encoded result hex, computed from the MockWorld.
+ *  - `applyWrite`     decodes an eth_sendTransaction's calldata (incl. forwarder
+ *    aggregate3 batches), mutates the MockWorld, and returns receipt logs.
+ *
+ * Everything is encoded/decoded with viem so the shapes match what the SDK
+ * (also viem-based) expects to parse back.
+ */
+import {
+  decodeAbiParameters,
+  encodeAbiParameters,
+  encodeEventTopics,
+  type AbiFunction,
+  type Hex,
+  stringToHex,
+  toFunctionSelector,
+} from "viem";
+
+import {
+  classify,
+  combinedAbi,
+  multicall3Abi,
+  perpsMarketProxyAbi,
+} from "./contracts";
+import {
+  findAccount,
+  type MockWorld,
+  type ReceiptLog,
+} from "./world";
+
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+/**
+ * Bring a collateral amountDelta to 18 decimals. A 6-dec amount (e.g. USDC
+ * 200_000000) is below 1e12 for realistic test sizes and gets scaled up; an
+ * already-18-dec amount (e.g. 200e18) is far above 1e12 and is left as-is.
+ */
+function normaliseToWad(delta: bigint): bigint {
+  const abs = delta < 0n ? -delta : delta;
+  if (abs === 0n) return 0n;
+  return abs < 10n ** 12n ? delta * 10n ** 12n : delta;
+}
+
+// selector -> abi function item, for every read/write function the SDK uses.
+const REGISTRY = new Map<string, AbiFunction>();
+for (const item of combinedAbi) {
+  if (item.type === "function") {
+    REGISTRY.set(toFunctionSelector(item), item as AbiFunction);
+  }
+}
+const AGGREGATE3_SELECTOR = toFunctionSelector(
+  multicall3Abi[0] as AbiFunction,
+);
+
+function selectorOf(data: string): string {
+  return data.slice(0, 10);
+}
+function bodyOf(data: string): Hex {
+  return ("0x" + data.slice(10)) as Hex;
+}
+
+/** Result of a single decoded call (for aggregate3 fan-out). */
+interface CallResult {
+  success: boolean;
+  returnData: Hex;
+}
+
+/**
+ * Encode the ABI result of one eth_call against the world. Throws to signal a
+ * revert (caller turns that into a failed multicall entry / JSON-RPC error).
+ */
+function encodeSingleCall(world: MockWorld, to: string, data: string): Hex {
+  const selector = selectorOf(data);
+  const item = REGISTRY.get(selector);
+  if (!item) throw new Error(`unhandled selector ${selector} on ${to}`);
+
+  const args =
+    item.inputs.length > 0
+      ? (decodeAbiParameters(item.inputs, bodyOf(data)) as readonly unknown[])
+      : [];
+  const result = computeRead(world, to, item.name, args);
+  return encodeAbiParameters(item.outputs, result) as Hex;
+}
+
+/** Compute the (array of) output values for a read. */
+function computeRead(
+  world: MockWorld,
+  to: string,
+  name: string,
+  args: readonly unknown[],
+): unknown[] {
+  const logical = classify(to);
+  switch (name) {
+    case "balanceOf": {
+      if (logical === "perpsAccountProxy") {
+        return [BigInt(world.accounts.length)];
+      }
+      // ERC-20 token balance — plenty for deposit flows.
+      return [1_000_000n * 10n ** 18n];
+    }
+    case "tokenOfOwnerByIndex": {
+      const index = Number(args[1]);
+      const account = world.accounts[index];
+      if (!account) throw new Error("token index out of range");
+      return [account.id];
+    }
+    case "getAvailableMargin": {
+      const account = findAccount(world, args[0] as bigint);
+      return [account?.available ?? 0n];
+    }
+    case "getWithdrawableMargin": {
+      const account = findAccount(world, args[0] as bigint);
+      return [account?.withdrawable ?? 0n];
+    }
+    case "getOrderMode": {
+      const account = findAccount(world, args[0] as bigint);
+      const mode = account?.orderMode ?? "ONCHAIN";
+      return [stringToHex(mode, { size: 16 })];
+    }
+    case "canLiquidate": {
+      return [false];
+    }
+    case "getOpenPosition": {
+      const account = findAccount(world, args[0] as bigint);
+      const marketId = (args[1] as bigint).toString();
+      const pos = account?.positions.find((p) => p.marketId === marketId);
+      if (!pos) return [0n, 0n, 0n];
+      return [pos.totalPnl, pos.accruedFunding, pos.positionSize];
+    }
+    case "indexPrice": {
+      return [world.indexPrice];
+    }
+    case "allowance": {
+      return [MAX_UINT256];
+    }
+    case "decimals": {
+      return [logical === "usdc" ? 6 : 18];
+    }
+    default:
+      throw new Error(`no read handler for ${name}`);
+  }
+}
+
+/** Handle an eth_call (single or Multicall3 aggregate3). Returns result hex. */
+export function handleEthCall(world: MockWorld, to: string, data: string): Hex {
+  if (selectorOf(data) === AGGREGATE3_SELECTOR) {
+    const [calls] = decodeAbiParameters(
+      multicall3Abi[0].inputs,
+      bodyOf(data),
+    ) as unknown as [
+      ReadonlyArray<{ target: string; allowFailure: boolean; callData: Hex }>,
+    ];
+    const results: CallResult[] = calls.map((call) => {
+      try {
+        return {
+          success: true,
+          returnData: encodeSingleCall(world, call.target, call.callData),
+        };
+      } catch {
+        return { success: false, returnData: "0x" };
+      }
+    });
+    return encodeAbiParameters(multicall3Abi[0].outputs, [results]) as Hex;
+  }
+  return encodeSingleCall(world, to, data);
+}
+
+/**
+ * Apply a write (eth_sendTransaction calldata) to the world. Recurses into
+ * forwarder aggregate3 batches. Returns receipt logs (e.g. AccountCreated).
+ */
+export function applyWrite(
+  world: MockWorld,
+  to: string,
+  data: string,
+): ReceiptLog[] {
+  const selector = selectorOf(data);
+
+  if (selector === AGGREGATE3_SELECTOR) {
+    const [calls] = decodeAbiParameters(
+      multicall3Abi[0].inputs,
+      bodyOf(data),
+    ) as unknown as [
+      ReadonlyArray<{ target: string; callData: Hex }>,
+    ];
+    return calls.flatMap((call) => applyWrite(world, call.target, call.callData));
+  }
+
+  const item = REGISTRY.get(selector);
+  if (!item) return []; // unknown write (e.g. approve variants) — no-op success
+  const args =
+    item.inputs.length > 0
+      ? (decodeAbiParameters(item.inputs, bodyOf(data)) as readonly unknown[])
+      : [];
+
+  switch (item.name) {
+    case "createAccount": {
+      const requestedId = args[0] as bigint | undefined;
+      const id = requestedId ?? world.accountCounter++;
+      world.accounts.push({
+        id,
+        orderMode: "ONCHAIN",
+        available: 0n,
+        withdrawable: 0n,
+        positions: [],
+      });
+      const topics = encodeEventTopics({
+        abi: perpsMarketProxyAbi,
+        eventName: "AccountCreated",
+        args: { accountId: id, owner: world.wallet as Hex },
+      });
+      return [{ address: to, topics, data: "0x" }];
+    }
+    case "setBookMode": {
+      const account = findAccount(world, args[0] as bigint);
+      if (account) account.orderMode = (args[1] as boolean) ? "BOOK" : "ONCHAIN";
+      return [];
+    }
+    case "modifyCollateral": {
+      const account = findAccount(world, args[0] as bigint);
+      const amountDelta = args[2] as bigint;
+      world.lastCollateralDelta = amountDelta;
+      if (account) {
+        // Normalise to 18-dec so the displayed margin reflects the real amount
+        // regardless of the collateral token's decimals (6-dec USDC vs 18-dec).
+        const wad = normaliseToWad(amountDelta);
+        const next = account.available + wad;
+        account.available = next < 0n ? 0n : next;
+        account.withdrawable = account.available;
+      }
+      return [];
+    }
+    default:
+      return [];
+  }
+}

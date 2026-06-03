@@ -9,14 +9,16 @@ export function PositionsTable() {
   const { data: positions = [], isLoading } =
     useEnrichedPositions(allMarketIds);
 
-  if (isLoading) return <Empty>Loading positions…</Empty>;
-  if (positions.length === 0) return <Empty>No open positions.</Empty>;
+  if (isLoading)
+    return <Empty testid="positions-loading">Loading positions…</Empty>;
+  if (positions.length === 0)
+    return <Empty testid="positions-empty">No open positions.</Empty>;
 
   const symbolOf = (id: bigint) =>
     markets.find((m) => m.id === id)?.symbol ?? id.toString();
 
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-sm" data-testid="positions-table">
       <thead>
         <tr className="text-left text-[11px] uppercase text-muted">
           <th className="py-1">Market</th>
@@ -30,7 +32,11 @@ export function PositionsTable() {
         {positions.map((p) => {
           const long = p.side === Side.BUY;
           return (
-            <tr key={p.marketId.toString()} className="border-t border-border">
+            <tr
+              key={p.marketId.toString()}
+              className="border-t border-border"
+              data-testid={`position-row-${p.marketId.toString()}`}
+            >
               <td
                 className={`py-1 font-semibold ${long ? "text-long" : "text-short"}`}
               >
@@ -50,6 +56,16 @@ export function PositionsTable() {
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="py-6 text-center text-sm text-muted">{children}</div>;
+function Empty({
+  children,
+  testid,
+}: {
+  children: React.ReactNode;
+  testid?: string;
+}) {
+  return (
+    <div className="py-6 text-center text-sm text-muted" data-testid={testid}>
+      {children}
+    </div>
+  );
 }

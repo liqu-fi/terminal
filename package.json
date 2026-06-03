@@ -11,7 +11,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -b",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:live": "playwright test --config e2e/tier2/playwright.live.config.ts"
   },
   "dependencies": {
     "@liq/api-client": "npm:@liqcx/liq-api-client@^0.25.0",
