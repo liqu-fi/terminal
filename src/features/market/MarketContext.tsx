@@ -1,28 +1,10 @@
 import { useMarketsQuery } from "@liq/react";
+import { useMemo, useState, type ReactNode } from "react";
+
 import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-
-type MarketSummary = NonNullable<
-  ReturnType<typeof useMarketsQuery>["data"]
->[number];
-
-type MarketCtx = {
-  markets: MarketSummary[];
-  marketId: bigint | undefined;
-  market: MarketSummary | undefined;
-  setMarketId: (id: bigint) => void;
-  /** memoized [marketId] for single-market array-param hooks */
-  marketIds: bigint[];
-  /** memoized list of all market ids (for cross-market positions) */
-  allMarketIds: bigint[];
-};
-
-const Ctx = createContext<MarketCtx | null>(null);
+  type MarketCtx,
+  SelectedMarketContext,
+} from "./useSelectedMarket";
 
 export function MarketProvider({ children }: { children: ReactNode }) {
   const { data: markets = [] } = useMarketsQuery();
@@ -44,12 +26,9 @@ export function MarketProvider({ children }: { children: ReactNode }) {
     marketIds,
     allMarketIds,
   };
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
-
-export function useSelectedMarket(): MarketCtx {
-  const ctx = useContext(Ctx);
-  if (!ctx)
-    throw new Error("useSelectedMarket must be used within MarketProvider");
-  return ctx;
+  return (
+    <SelectedMarketContext.Provider value={value}>
+      {children}
+    </SelectedMarketContext.Provider>
+  );
 }

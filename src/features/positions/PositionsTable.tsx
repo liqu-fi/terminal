@@ -2,7 +2,7 @@ import { Side } from "@liq/sdk";
 import { useEnrichedPositions } from "@liq/react";
 
 import { fmtPrice, fmtQty, fmtSignedUsd } from "../../lib/format";
-import { useSelectedMarket } from "../market/MarketContext";
+import { useSelectedMarket } from "../market/useSelectedMarket";
 
 export function PositionsTable() {
   const { markets, allMarketIds } = useSelectedMarket();

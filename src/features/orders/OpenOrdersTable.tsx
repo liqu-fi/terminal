@@ -7,7 +7,7 @@ import {
 } from "@liq/react";
 
 import { fmtPrice, fmtQty } from "../../lib/format";
-import { useSelectedMarket } from "../market/MarketContext";
+import { useSelectedMarket } from "../market/useSelectedMarket";
 
 export function OpenOrdersTable() {
   const { markets } = useSelectedMarket();
