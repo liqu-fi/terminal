@@ -1,5 +1,5 @@
 import { enterTerminal } from "../pages/flows";
-import { WAD } from "../support/constants";
+import { MARKET, MARKET_ETH, WAD } from "../support/constants";
 import { expect, test } from "../support/fixtures";
 import { readyWorld } from "../support/world";
 
@@ -64,6 +64,23 @@ test.describe("market data", () => {
     // rest of the terminal stays functional — the no-data path must not crash.
     await expect(page.locator("canvas").first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("market-price")).toContainText("70,000");
+  });
+
+  test("switching the market updates the header selection", async ({
+    page,
+    world,
+  }) => {
+    const { market } = await enterTerminal(page, world, () =>
+      readyWorld({ markets: [MARKET, MARKET_ETH] }),
+    );
+    // defaults to the first market, with both options available
+    await expect(market.marketSelect).toHaveValue("200");
+    await expect(market.marketSelect).toContainText("BTC");
+    await expect(market.marketSelect).toContainText("ETH");
+
+    await market.marketSelect.selectOption("201");
+    await expect(market.marketSelect).toHaveValue("201"); // switched to ETH
+    await expect(market.price).toBeVisible(); // header still renders the new market
   });
 
   test("a negative funding rate renders with its sign", async ({

@@ -87,7 +87,7 @@ test.describe("trade form gating & controls", () => {
 
     await trade.setLeverage(5);
     await expect(trade.leverageValue).toHaveText("5×");
-    // moving leverage computes a size from available margin
-    await expect(trade.sizeInput).not.toHaveValue("");
+    // size = availableUsd * leverage / markPrice = 5,000 * 5 / 70,000 ≈ 0.3571
+    await expect(trade.sizeInput).toHaveValue(/^0\.3571/);
   });
 });

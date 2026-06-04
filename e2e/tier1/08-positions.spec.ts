@@ -1,4 +1,4 @@
-import { WAD } from "../support/constants";
+import { MARKET, MARKET_ETH, WAD } from "../support/constants";
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 import { longPositionFixture, readyWorld } from "../support/world";
@@ -51,5 +51,25 @@ test.describe("positions", () => {
     await expect(row).toContainText("↓"); // short side glyph (long renders ↑)
     // the market cell color is purely side-driven (long ⇒ text-long)
     await expect(row.locator("td").first()).toHaveClass(/text-short/);
+  });
+
+  test("renders positions across multiple markets", async ({ page, world }) => {
+    const { userInfo } = await enterTerminal(page, world, () => {
+      const w = readyWorld({ markets: [MARKET, MARKET_ETH] });
+      w.accounts[0].positions = [
+        longPositionFixture({ marketId: "200" }), // BTC long
+        longPositionFixture({
+          marketId: "201", // ETH short
+          positionSize: -WAD,
+          totalPnl: -25n * WAD,
+        }),
+      ];
+      return w;
+    });
+
+    await userInfo.selectTab("positions");
+    // both rows render with the right symbol (keyed on a unique marketId)
+    await expect(userInfo.positionRow("200")).toContainText("BTC");
+    await expect(userInfo.positionRow("201")).toContainText("ETH");
   });
 });

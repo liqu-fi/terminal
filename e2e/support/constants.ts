@@ -20,7 +20,16 @@ export const CHAIN_ID_HEX = "0x18c7"; // 6343
 export const TEST_ADDRESS =
   "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" as const;
 
-/** The single market the reference terminal trades. */
+export interface Market {
+  id: string;
+  symbol: string;
+  pythFeedId: string;
+  /** 18-dec min size */
+  minSize: string;
+  maxLeverage: number;
+}
+
+/** The default market the reference terminal trades. */
 export const MARKET = {
   id: "200",
   symbol: "BTC",
@@ -29,7 +38,17 @@ export const MARKET = {
   /** 18-dec min size = 0.001 */
   minSize: "1000000000000000000",
   maxLeverage: 25,
-} as const;
+} as const satisfies Market;
+
+/** A second market, for multi-market scenarios (seed via `markets` in the world). */
+export const MARKET_ETH = {
+  id: "201",
+  symbol: "ETH",
+  pythFeedId:
+    "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  minSize: "1000000000000000000",
+  maxLeverage: 50,
+} as const satisfies Market;
 
 /** 10^18 helper for building 18-decimal fixture values. */
 export const WAD = 10n ** 18n;
