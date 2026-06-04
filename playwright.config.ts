@@ -24,6 +24,9 @@ const E2E_ENV = [
 
 export default defineConfig({
   testDir: "./e2e/tier1",
+  // Warm Vite's dep-optimize once before the parallel workers start, so the
+  // one-time cost doesn't slow (and flake) the opening test wave. See the file.
+  globalSetup: "./e2e/support/globalSetup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

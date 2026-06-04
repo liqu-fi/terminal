@@ -54,6 +54,20 @@ const AGGREGATE3_SELECTOR = toFunctionSelector(
   multicall3Abi[0] as AbiFunction,
 );
 
+/** Selector of the collateral write — used to mark a reverting deposit/withdraw. */
+export const MODIFY_COLLATERAL_SELECTOR = toFunctionSelector(
+  combinedAbi.find(
+    (i) => i.type === "function" && i.name === "modifyCollateral",
+  ) as AbiFunction,
+);
+
+/** Selector of the enable-book write — lets specs assert it was (or wasn't) sent. */
+export const SET_BOOK_MODE_SELECTOR = toFunctionSelector(
+  combinedAbi.find(
+    (i) => i.type === "function" && i.name === "setBookMode",
+  ) as AbiFunction,
+);
+
 function selectorOf(data: string): string {
   return data.slice(0, 10);
 }
@@ -219,6 +233,9 @@ export function applyWrite(
       return [];
     }
     case "modifyCollateral": {
+      // A reverting tx changes no state — the mock chain returns a 0x0 receipt
+      // (see mockChain.buildReceipt) and the SDK surfaces it as a tx error.
+      if (world.faults.collateralReverts) return [];
       const account = findAccount(world, args[0] as bigint);
       const amountDelta = args[2] as bigint;
       world.lastCollateralDelta = amountDelta;

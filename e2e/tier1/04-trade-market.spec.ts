@@ -1,3 +1,5 @@
+import { Qty } from "@liq/sdk";
+
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
@@ -14,8 +16,9 @@ test.describe("market orders", () => {
     const order = world.submittedOrders.at(-1)!;
     expect(order.orderType).toBe("MARKET");
     expect(order.side).toBe("BUY");
-    // BUY ⇒ positive signed sizeDelta
-    expect(String(order.sizeDelta).startsWith("-")).toBe(false);
+    // BUY 0.5 ⇒ +0.5 in 18-dec WAD (pins the sign AND the magnitude/scaling,
+    // computed via the SDK's own parser so it can't drift from the app's)
+    expect(order.sizeDelta).toBe(Qty.parse("0.5").toString());
     await expect(trade.sizeInput).toHaveValue("");
   });
 

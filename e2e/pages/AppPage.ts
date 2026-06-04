@@ -4,6 +4,14 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
+// The two onboarding gates wait on the heaviest async chains in the suite:
+// create-account → needs-signin, and (enable-book on-chain tx + SIWE) → terminal.
+// `globalSetup` warms Vite's dep-optimize so these don't pay that one-time cost,
+// but the opening wave still boots several heavy wagmi/viem apps in parallel, so
+// the cold-onboarding path runs ~2x its warm/isolation time. This budget sits
+// safely under the 30s per-test timeout (which still backstops a genuine hang).
+const ONBOARD_GATE_TIMEOUT = 25_000;
+
 export class AppPage {
   readonly brand: Locator;
   readonly connectButton: Locator;
@@ -41,12 +49,14 @@ export class AppPage {
 
   async createAccount(): Promise<void> {
     await this.createAccountButton.click();
-    await expect(this.needsSigninGate).toBeVisible({ timeout: 15_000 });
+    await expect(this.needsSigninGate).toBeVisible({
+      timeout: ONBOARD_GATE_TIMEOUT,
+    });
   }
 
   async signIn(): Promise<void> {
     await this.signinButton.click();
-    await expect(this.terminal).toBeVisible({ timeout: 15_000 });
+    await expect(this.terminal).toBeVisible({ timeout: ONBOARD_GATE_TIMEOUT });
   }
 
   /** From a connected wallet that already owns a perps account → terminal. */

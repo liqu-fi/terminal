@@ -6,7 +6,7 @@
  * state that subsequent reads (accounts.list) and gateway responses observe —
  * exactly like a real backend, but deterministic and in-process.
  */
-import { MARKET, TEST_ADDRESS, WAD } from "./constants";
+import { MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
 
 export type OrderMode = "BOOK" | "ONCHAIN" | "RECENTLY_CHANGED";
 
@@ -78,7 +78,7 @@ export interface MockWorld {
   indexPrice: bigint;
   /** gateway mark price (GET /markets/:id/price), 18-dec */
   price: bigint;
-  markets: Array<typeof MARKET>;
+  markets: Market[];
   funding: {
     rate: string;
     velocity: string;
@@ -101,12 +101,15 @@ export interface MockWorld {
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
 
-  // --- gateway fault injection (per-endpoint next-response override) ---
+  // --- fault injection ---
   faults: {
+    // gateway: per-endpoint next-response status override
     submitOrderStatus?: number;
     marketsStatus?: number;
     authVerifyStatus?: number;
     cancelStatus?: number;
+    // chain: make modifyCollateral (deposit/withdraw) txs revert on-chain
+    collateralReverts?: boolean;
   };
 
   // --- recordings (assertable from specs) ---
@@ -155,6 +158,7 @@ function defaultCandles(price: bigint): MockWorld["candles"] {
 export interface ScenarioOptions {
   accounts?: AccountFixture[];
   price?: bigint;
+  markets?: Market[];
   openOrders?: GatewayOrder[];
   conditionalOrders?: GatewayOrder[];
   trades?: TradeRow[];
@@ -168,7 +172,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     accounts: opts.accounts ?? [],
     indexPrice: price,
     price,
-    markets: [MARKET],
+    markets: opts.markets ?? [MARKET],
     funding: {
       rate: "1000000000000000", // 0.001 -> "0.1000%"
       velocity: "0",

@@ -37,6 +37,22 @@ test.describe("trade form gating & controls", () => {
     await expect(trade.submitButton).toBeDisabled();
   });
 
+  test("submit stays disabled while there is no mark price", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world, () => {
+      const w = readyWorld(); // funded BOOK account → margin is fine
+      w.price = 0n; // gateway has no mark price yet → markPrice resolves to 0n
+      return w;
+    });
+
+    await trade.setSize("0.5");
+    // it's the missing price gating submit, not the margin…
+    await expect(trade.insufficientMargin).toBeHidden();
+    await expect(trade.submitButton).toBeDisabled();
+  });
+
   test("tabs reveal the right fields", async ({ page, world }) => {
     const { trade } = await enterTerminal(page, world);
 
@@ -71,7 +87,7 @@ test.describe("trade form gating & controls", () => {
 
     await trade.setLeverage(5);
     await expect(trade.leverageValue).toHaveText("5×");
-    // moving leverage computes a size from available margin
-    await expect(trade.sizeInput).not.toHaveValue("");
+    // size = availableUsd * leverage / markPrice = 5,000 * 5 / 70,000 ≈ 0.3571
+    await expect(trade.sizeInput).toHaveValue(/^0\.3571/);
   });
 });
