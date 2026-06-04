@@ -51,6 +51,21 @@ test.describe("market data", () => {
     await expect(market.price).toHaveClass(/text-short/);
   });
 
+  test("an empty candle history leaves the chart and terminal usable", async ({
+    page,
+    world,
+  }) => {
+    await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.candles = []; // gateway returns no history
+      return w;
+    });
+    // the chart still mounts (the canvas is created regardless of data) and the
+    // rest of the terminal stays functional — the no-data path must not crash.
+    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("market-price")).toContainText("70,000");
+  });
+
   test("a negative funding rate renders with its sign", async ({
     page,
     world,

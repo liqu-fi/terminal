@@ -83,4 +83,18 @@ test.describe("deposit & withdraw", () => {
     await expect(deposit.submitButton).toBeDisabled(); // cleared again
     expect(world.lastCollateralDelta).toBe(0n); // nothing was ever sent
   });
+
+  test("cancelling the deposit dialog closes it without sending a tx", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world);
+    await market.openDeposit();
+    await expect(deposit.root).toBeVisible();
+    await deposit.amountInput.fill("100"); // even with an amount entered…
+
+    await deposit.cancelButton.click();
+    await expect(deposit.root).toBeHidden(); // …cancel just dismisses
+    expect(world.lastCollateralDelta).toBe(0n); // no collateral tx was sent
+  });
 });

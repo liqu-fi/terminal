@@ -21,6 +21,24 @@ test.describe("error states", () => {
     await expect(trade.sizeInput).toHaveValue("0.5");
   });
 
+  test("a failed order submit can be retried once the fault clears", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    world.faults.submitOrderStatus = 500;
+
+    await trade.setSize("0.5");
+    await trade.submit();
+    await expect(trade.tradeError).toBeVisible();
+
+    // the input survived the error, so clearing the fault + resubmitting works
+    delete world.faults.submitOrderStatus;
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(1);
+    await expect(trade.sizeInput).toHaveValue(""); // success clears the form
+  });
+
   test("a failed cancel leaves the order in place", async ({ page, world }) => {
     const { userInfo } = await enterTerminal(page, world, () =>
       readyWorld({ openOrders: [limitOrderFixture()] }),

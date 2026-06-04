@@ -72,4 +72,17 @@ test.describe("live SSE updates", () => {
     await expect(userInfo.orderRow("ord-a")).toBeHidden({ timeout: 15_000 });
     await expect(userInfo.orderRow("ord-b")).toBeVisible(); // sibling untouched
   });
+
+  test("an SSE fill refetches the account margin", async ({ page, world }) => {
+    const { market } = await enterTerminal(page, world, () =>
+      readyWorld({ openOrders: [limitOrderFixture()] }),
+    );
+    await expect(market.margin).toHaveText(/\$5,000\.00/);
+
+    // The fill consumes margin on-chain; the order_update SSE frame invalidates
+    // the account query (not just orders), so the displayed margin refetches.
+    world.accounts[0].available = 4_000n * WAD;
+    world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "MATCHED")];
+    await expect(market.margin).toHaveText(/\$4,000\.00/, { timeout: 15_000 });
+  });
 });
