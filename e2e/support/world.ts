@@ -101,12 +101,15 @@ export interface MockWorld {
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
 
-  // --- gateway fault injection (per-endpoint next-response override) ---
+  // --- fault injection ---
   faults: {
+    // gateway: per-endpoint next-response status override
     submitOrderStatus?: number;
     marketsStatus?: number;
     authVerifyStatus?: number;
     cancelStatus?: number;
+    // chain: make modifyCollateral (deposit/withdraw) txs revert on-chain
+    collateralReverts?: boolean;
   };
 
   // --- recordings (assertable from specs) ---

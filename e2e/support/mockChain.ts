@@ -6,7 +6,7 @@
 import type { Page } from "@playwright/test";
 import { numberToHex } from "viem";
 
-import { handleEthCall } from "./chain";
+import { handleEthCall, MODIFY_COLLATERAL_SELECTOR } from "./chain";
 import type { MockWorld } from "./world";
 
 const ZERO_HASH = "0x" + "00".repeat(32);
@@ -22,6 +22,10 @@ class RpcRevert extends Error {}
 
 function buildReceipt(world: MockWorld, hash: string) {
   const tx = world.sentTxs.find((t) => t.hash === hash);
+  // A deposit/withdraw fault makes its modifyCollateral tx report a reverted
+  // receipt, which the SDK turns into a deposit-error / withdraw-error.
+  const reverted =
+    !!world.faults.collateralReverts && tx?.kind === MODIFY_COLLATERAL_SELECTOR;
   const logs = (world.receipts[hash] ?? []).map((log, i) => ({
     ...log,
     blockHash: ZERO_HASH,
@@ -43,7 +47,7 @@ function buildReceipt(world: MockWorld, hash: string) {
     contractAddress: null,
     logs,
     logsBloom: LOGS_BLOOM,
-    status: "0x1",
+    status: reverted ? "0x0" : "0x1",
     type: "0x2",
     effectiveGasPrice: "0x3b9aca00",
   };

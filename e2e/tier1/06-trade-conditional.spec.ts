@@ -1,3 +1,5 @@
+import { Price } from "@liq/sdk";
+
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
@@ -15,7 +17,10 @@ test.describe("conditional orders", () => {
     await expect
       .poll(() => world.submittedOrders.at(-1)?.orderType)
       .toBe("STOP_MARKET");
-    expect(world.submittedOrders.at(-1)?.triggerPrice).toBeTruthy();
+    const stop = world.submittedOrders.at(-1)!;
+    // the typed $80,000 trigger reaches the gateway in 18-dec WAD, long side
+    expect(stop.triggerPrice).toBe(Price.parse("80000").toString());
+    expect(stop.side).toBe("BUY");
 
     await userInfo.selectTab("open-orders");
     await expect(userInfo.orderRow("srv-1")).toBeVisible();
@@ -33,5 +38,8 @@ test.describe("conditional orders", () => {
     await expect
       .poll(() => world.submittedOrders.at(-1)?.orderType)
       .toBe("TAKE_PROFIT_MARKET");
+    expect(world.submittedOrders.at(-1)?.triggerPrice).toBe(
+      Price.parse("90000").toString(),
+    );
   });
 });

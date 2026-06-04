@@ -1,3 +1,5 @@
+import { Price } from "@liq/sdk";
+
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
@@ -17,7 +19,11 @@ test.describe("limit orders", () => {
     await expect.poll(() => world.submittedOrders.at(-1)?.orderType).toBe(
       "LIMIT",
     );
-    expect(world.submittedOrders.at(-1)?.limitPrice).toBeTruthy();
+    // the typed $65,000 limit reaches the gateway in 18-dec WAD (via the SDK's
+    // own parser, so the expected value tracks the app's encoding)
+    expect(world.submittedOrders.at(-1)?.limitPrice).toBe(
+      Price.parse("65000").toString(),
+    );
 
     await userInfo.selectTab("open-orders");
     await expect(userInfo.ordersTable).toBeVisible();

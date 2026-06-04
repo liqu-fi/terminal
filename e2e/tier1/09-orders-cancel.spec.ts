@@ -1,3 +1,4 @@
+import { WAD } from "../support/constants";
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 import {
@@ -17,12 +18,15 @@ test.describe("open orders", () => {
 
     await userInfo.selectTab("open-orders");
     await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
-    // resting limit shows its limit price ($60,000)
+    // resting limit shows its side, type, size (1) and limit price ($60,000)
+    await expect(userInfo.orderRow("ord-limit-1")).toContainText("BUY");
+    await expect(userInfo.orderRow("ord-limit-1")).toContainText("LIMIT");
     await expect(userInfo.orderRow("ord-limit-1")).toContainText("60,000");
-    // conditional shows its trigger price ($80,000) + type
+    // conditional shows its side, type and trigger price ($80,000)
     await expect(userInfo.orderRow("ord-cond-1")).toBeVisible();
-    await expect(userInfo.orderRow("ord-cond-1")).toContainText("80,000");
+    await expect(userInfo.orderRow("ord-cond-1")).toContainText("SELL");
     await expect(userInfo.orderRow("ord-cond-1")).toContainText("STOP_MARKET");
+    await expect(userInfo.orderRow("ord-cond-1")).toContainText("80,000");
   });
 
   test("cancels a resting order", async ({ page, world }) => {
@@ -36,5 +40,32 @@ test.describe("open orders", () => {
 
     await expect(userInfo.ordersEmpty).toBeVisible();
     expect(world.cancelledOrderIds).toContain("ord-limit-1");
+  });
+
+  test("cancelling one order leaves the others in place", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({
+        openOrders: [
+          limitOrderFixture({ id: "ord-A" }),
+          limitOrderFixture({
+            id: "ord-B",
+            limitPrice: (65_000n * WAD).toString(),
+          }),
+        ],
+      }),
+    );
+
+    await userInfo.selectTab("open-orders");
+    await expect(userInfo.orderRow("ord-A")).toBeVisible();
+    await expect(userInfo.orderRow("ord-B")).toBeVisible();
+
+    await userInfo.cancelOrder("ord-A");
+
+    await expect(userInfo.orderRow("ord-A")).toBeHidden();
+    await expect(userInfo.orderRow("ord-B")).toBeVisible(); // the sibling survives
+    expect(world.cancelledOrderIds).toEqual(["ord-A"]);
   });
 });

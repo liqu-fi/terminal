@@ -15,6 +15,10 @@ test.describe("error states", () => {
     await trade.submit();
 
     await expect(trade.tradeError).toBeVisible();
+    // the attempt actually reached the gateway, and the failed submit preserves
+    // the user's input (the form only clears on success)
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
+    await expect(trade.sizeInput).toHaveValue("0.5");
   });
 
   test("a failed cancel leaves the order in place", async ({ page, world }) => {
@@ -43,5 +47,10 @@ test.describe("error states", () => {
 
     await expect(app.terminal).toBeVisible();
     await expect(page.getByTestId("market-price")).toContainText("—");
+    // a causal anchor: markets genuinely failed to load ⇒ the selector has zero
+    // options (the "—" price alone also matches the brief initial-load state).
+    await expect(
+      page.getByTestId("market-select").locator("option"),
+    ).toHaveCount(0);
   });
 });
