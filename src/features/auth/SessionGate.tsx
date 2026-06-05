@@ -11,7 +11,6 @@ import type { ReactNode } from "react";
 import { Button } from "../../components/ui/Button";
 import { ConnectButton } from "../wallet/ConnectButton";
 import { sessionStage } from "./sessionStage";
-import { useOrderMode } from "./useOrderMode";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
@@ -23,7 +22,6 @@ export function SessionGate({ children }: { children: ReactNode }) {
   const { data: accountIds, isLoading: accountsLoading } = useAccountQuery();
   const accountId = accountIds?.[0];
   const isAuthenticated = useGatewayStore(selectIsAuthenticated);
-  const { data: orderMode } = useOrderMode(accountId);
 
   const createAccount = useCreateAccountMutation();
   const auth = useGatewayAuthMutation();
@@ -64,23 +62,17 @@ export function SessionGate({ children }: { children: ReactNode }) {
     );
   }
   if (stage === "needs-signin") {
-    const alreadyBookMode = orderMode === "BOOK";
     return (
       <Centered testid="session-needs-signin">
         <p className="text-muted">Sign in to the gateway (SIWE).</p>
         <Button
           disabled={auth.isPending || accountId === undefined}
           onClick={() =>
-            accountId !== undefined &&
-            auth.mutate({ accountId, alreadyBookMode })
+            accountId !== undefined && auth.mutate({ accountId })
           }
           data-testid="signin-button"
         >
-          {auth.isPending
-            ? "Signing…"
-            : alreadyBookMode
-              ? "Sign In"
-              : "Enable Book Orders & Sign In"}
+          {auth.isPending ? "Signing…" : "Sign In"}
         </Button>
       </Centered>
     );
