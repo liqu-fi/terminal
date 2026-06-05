@@ -16,11 +16,20 @@ export function DepositDialog({
   const deposit = useDepositMutation();
   const [amount, setAmount] = useState("");
 
-  async function onDeposit() {
+  // `mutate` (not `mutateAsync`): a failed deposit must surface via the
+  // mutation's `error` (rendered below), not reject this handler — a rejected
+  // `void onDeposit()` would otherwise log an unhandled promise rejection.
+  function onDeposit() {
     if (accountId === undefined || !amount) return;
-    await deposit.mutateAsync({ amount, accountId });
-    setAmount("");
-    onClose();
+    deposit.mutate(
+      { amount, accountId },
+      {
+        onSuccess: () => {
+          setAmount("");
+          onClose();
+        },
+      },
+    );
   }
 
   return (
@@ -51,7 +60,7 @@ export function DepositDialog({
           <Button
             className="flex-1"
             disabled={deposit.isPending || !amount || accountId === undefined}
-            onClick={() => void onDeposit()}
+            onClick={onDeposit}
             data-testid="deposit-submit-button"
           >
             {deposit.isPending ? "Depositing…" : "Deposit"}
