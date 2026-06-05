@@ -34,13 +34,14 @@ test.describe("boot + onboarding", () => {
     await app.goto();
     await app.signInToTerminal();
     await expect(app.terminal).toBeVisible();
-    // already in BOOK mode ⇒ sign-in must NOT send a redundant enable-book tx
+    // 0.26 dropped the enable-book tx: sign-in is a plain SIWE step and never
+    // emits an on-chain setBookMode write.
     expect(world.sentTxs.some((t) => t.kind === SET_BOOK_MODE_SELECTOR)).toBe(
       false,
     );
   });
 
-  test("cold onboarding: connect → create account → enable book + sign-in", async ({
+  test("cold onboarding: connect → create account → sign-in", async ({
     page,
     world,
   }) => {
@@ -49,18 +50,20 @@ test.describe("boot + onboarding", () => {
     await app.onboard();
     await expect(app.terminal).toBeVisible();
     expect(world.accounts).toHaveLength(1);
-    expect(world.accounts[0].orderMode).toBe("BOOK");
-    // the freshly minted account (#1) was the one registered + book-enabled…
-    expect(world.registeredAccountIds).toContain("1");
+    // the freshly minted account (#1) stays in its creation state (ONCHAIN):
+    // 0.26 onboards via SIWE alone and sends no on-chain enable-book tx…
+    expect(world.accounts[0].orderMode).toBe("ONCHAIN");
     expect(world.sentTxs.some((t) => t.kind === SET_BOOK_MODE_SELECTOR)).toBe(
-      true,
+      false,
     );
+    // …and it is the account registered with the gateway
+    expect(world.registeredAccountIds).toContain("1");
     // …and the SIWE payload carries the gateway nonce + the (mock) signature
     expect(world.authVerifyRequests[0].message).toContain("e2e-nonce-1");
     expect(world.authVerifyRequests[0].signature).toBe("0x" + "11".repeat(65));
   });
 
-  test("pre-existing ONCHAIN account: enable book + sign-in (no redundant mint)", async ({
+  test("pre-existing ONCHAIN account: sign-in (no enable-book, no redundant mint)", async ({
     page,
     world,
   }) => {
@@ -69,19 +72,25 @@ test.describe("boot + onboarding", () => {
     await app.goto();
     await app.connect();
 
-    // The account exists, so there is no create CTA — straight to sign-in, and
-    // since it isn't BOOK yet the CTA enables book orders rather than plain SIWE.
+    // The account exists, so there is no create CTA — straight to sign-in. 0.26
+    // dropped the enable-book step, so the CTA is a plain SIWE "Sign In" even for
+    // an account that is not (yet) in BOOK mode.
     await expect(app.needsSigninGate).toBeVisible();
-    await expect(app.signinButton).toHaveText(/Enable Book Orders/);
+    await expect(app.signinButton).toHaveText(/Sign In/);
     await app.signIn();
 
     await expect(app.terminal).toBeVisible();
-    // No second account was minted — the existing one was flipped to BOOK in place.
+    // No second account was minted, and the existing one is NOT flipped on-chain:
+    // it stays ONCHAIN (0.26 removed the enable-book tx; BOOK is the gateway default).
     expect(world.accounts).toHaveLength(1);
     expect(world.accounts[0].id).toBe(1n);
-    expect(world.accounts[0].orderMode).toBe("BOOK");
+    expect(world.accounts[0].orderMode).toBe("ONCHAIN");
     expect(world.registeredAccountIds).toContain("1");
     expect(world.authVerifyRequests).toHaveLength(1);
+    // …and no on-chain enable-book write happened during sign-in
+    expect(world.sentTxs.some((t) => t.kind === SET_BOOK_MODE_SELECTOR)).toBe(
+      false,
+    );
   });
 
   test("a failed SIWE verify keeps the user on the sign-in gate, then recovers", async ({
