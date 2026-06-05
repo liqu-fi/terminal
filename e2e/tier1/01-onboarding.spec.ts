@@ -108,6 +108,13 @@ test.describe("boot + onboarding", () => {
     await app.signinButton.click();
     await expect(app.terminal).toBeHidden();
     await expect(app.needsSigninGate).toBeVisible();
+    // Barrier: wait until the rejected verify has actually landed. This proves
+    // the first attempt fully failed and leaves NO request in flight. Without it
+    // the attempt can still be mid-flight (mock SIWE resolves in ~ms) when we
+    // clear the fault below, letting that same request succeed on its own and
+    // advance to the terminal — which then races the explicit retry click and
+    // flakes as an "element detached from the DOM" timeout.
+    await expect.poll(() => world.authVerifyRejections).toBe(1);
     // the 401 short-circuits before the gateway records the verify payload
     expect(world.authVerifyRequests).toHaveLength(0);
 

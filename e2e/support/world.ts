@@ -120,6 +120,8 @@ export interface MockWorld {
   sentTxs: RecordedTx[];
   authNonceRequests: number;
   authVerifyRequests: Array<{ message: string; signature: string }>;
+  /** Count of `/auth/verify` calls rejected by `faults.authVerifyStatus`. */
+  authVerifyRejections: number;
   registeredAccountIds: string[];
 
   // --- SSE frames to emit on the next /sse connection ---
@@ -192,6 +194,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     sentTxs: [],
     authNonceRequests: 0,
     authVerifyRequests: [],
+    authVerifyRejections: 0,
     registeredAccountIds: [],
     sseFrames: [],
     receipts: {},

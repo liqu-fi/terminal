@@ -170,6 +170,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
     if (path.endsWith("/auth/verify")) {
       if (world.faults.authVerifyStatus) {
+        world.authVerifyRejections += 1;
         await error(route, world.faults.authVerifyStatus, "unauthorized");
         return;
       }
