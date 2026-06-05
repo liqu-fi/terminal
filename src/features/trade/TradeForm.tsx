@@ -62,38 +62,62 @@ export function TradeForm() {
     insufficientMargin ||
     markPrice === 0n;
 
-  async function submit() {
+  // `mutate` (not `mutateAsync`): a rejected submit surfaces via the mutation's
+  // `error` (the trade-error row below), never as an unhandled rejection from
+  // the click handler. `Price.parse` can throw on un-parseable input, so it's
+  // guarded; the form is cleared only after a confirmed submit (onSuccess).
+  function submit() {
     if (accountId === undefined || marketId === undefined) return;
+    const onSuccess = () => setSize("");
+
     if (tab === "Market") {
-      await submitMarket.mutateAsync({
-        accountId,
-        marketId,
-        sizeDelta,
-        side,
-        acceptablePrice: acceptablePrice(markPrice, side, SLIPPAGE_BPS),
-      });
-    } else if (tab === "Limit") {
-      const lp = Price.parse(limitPrice);
-      await limit.mutateAsync({
-        accountId,
-        marketId,
-        sizeDelta,
-        side,
-        limitPrice: lp,
-        acceptablePrice: lp,
-      });
-    } else {
-      await conditional.mutateAsync({
-        accountId,
-        marketId,
-        sizeDelta,
-        side,
-        orderType: tab === "Stop" ? "STOP_MARKET" : "TAKE_PROFIT_MARKET",
-        triggerPrice: Price.parse(triggerPrice),
-        triggerAbove,
-      });
+      submitMarket.mutate(
+        {
+          accountId,
+          marketId,
+          sizeDelta,
+          side,
+          acceptablePrice: acceptablePrice(markPrice, side, SLIPPAGE_BPS),
+        },
+        { onSuccess },
+      );
+      return;
     }
-    setSize("");
+
+    // Limit / Stop / Take Profit all need a parsed price.
+    let price: bigint;
+    try {
+      price = Price.parse(tab === "Limit" ? limitPrice : triggerPrice);
+    } catch {
+      return; // un-parseable price — nothing to submit
+    }
+
+    if (tab === "Limit") {
+      limit.mutate(
+        {
+          accountId,
+          marketId,
+          sizeDelta,
+          side,
+          limitPrice: price,
+          acceptablePrice: price,
+        },
+        { onSuccess },
+      );
+    } else {
+      conditional.mutate(
+        {
+          accountId,
+          marketId,
+          sizeDelta,
+          side,
+          orderType: tab === "Stop" ? "STOP_MARKET" : "TAKE_PROFIT_MARKET",
+          triggerPrice: price,
+          triggerAbove,
+        },
+        { onSuccess },
+      );
+    }
   }
 
   const long = side === Side.BUY;
@@ -212,7 +236,7 @@ export function TradeForm() {
       <Button
         variant={long ? "long" : "short"}
         disabled={disabled}
-        onClick={() => void submit()}
+        onClick={submit}
         data-testid="submit-order-button"
       >
         {pending ? "Submitting…" : `${long ? "Buy / Long" : "Sell / Short"}`}
