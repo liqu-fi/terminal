@@ -45,9 +45,12 @@ export function WithdrawDialog({
     },
   });
 
-  async function onWithdraw() {
+  // `mutate` (not `mutateAsync`): a failed withdraw surfaces via the mutation's
+  // `error` (rendered below) and `onTransactionError`; rejecting this handler
+  // would log an unhandled promise rejection via the `void onWithdraw()` call.
+  function onWithdraw() {
     if (accountId === undefined || !amount) return;
-    await withdraw.mutateAsync({ accountId, amount: Margin.parse(amount) });
+    withdraw.mutate({ accountId, amount: Margin.parse(amount) });
   }
 
   return (
@@ -78,7 +81,7 @@ export function WithdrawDialog({
           <Button
             className="flex-1"
             disabled={withdraw.isPending || !amount || accountId === undefined}
-            onClick={() => void onWithdraw()}
+            onClick={onWithdraw}
             data-testid="withdraw-submit-button"
           >
             {withdraw.isPending ? "Withdrawing…" : "Withdraw"}
