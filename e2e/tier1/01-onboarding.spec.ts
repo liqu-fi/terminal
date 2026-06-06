@@ -117,6 +117,9 @@ test.describe("boot + onboarding", () => {
     await expect.poll(() => world.authVerifyRejections).toBe(1);
     // the 401 short-circuits before the gateway records the verify payload
     expect(world.authVerifyRequests).toHaveLength(0);
+    // the failure is surfaced inline, not swallowed — otherwise the click reads
+    // as a "dead button" (the original bug this gate guards against).
+    await expect(app.signinError).toBeVisible();
 
     // Clearing the fault and retrying recovers — proving it's a retryable gate,
     // not a silent dead-end or a silent advance.

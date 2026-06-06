@@ -6,16 +6,29 @@ describe("sessionStage", () => {
     expect(
       sessionStage({
         wallet: null,
+        wrongChain: false,
         accountId: undefined,
         accountsLoading: false,
         isAuthenticated: false,
       }),
     ).toBe("disconnected");
   });
+  it("returns wrong-chain when connected on the wrong network", () => {
+    expect(
+      sessionStage({
+        wallet: "0x1",
+        wrongChain: true,
+        accountId: 1n,
+        accountsLoading: false,
+        isAuthenticated: true,
+      }),
+    ).toBe("wrong-chain");
+  });
   it("returns loading while the account query is in flight", () => {
     expect(
       sessionStage({
         wallet: "0x1",
+        wrongChain: false,
         accountId: undefined,
         accountsLoading: true,
         isAuthenticated: false,
@@ -26,6 +39,7 @@ describe("sessionStage", () => {
     expect(
       sessionStage({
         wallet: "0x1",
+        wrongChain: false,
         accountId: undefined,
         accountsLoading: false,
         isAuthenticated: false,
@@ -36,6 +50,7 @@ describe("sessionStage", () => {
     expect(
       sessionStage({
         wallet: "0x1",
+        wrongChain: false,
         accountId: 1n,
         accountsLoading: false,
         isAuthenticated: false,
@@ -46,6 +61,7 @@ describe("sessionStage", () => {
     expect(
       sessionStage({
         wallet: "0x1",
+        wrongChain: false,
         accountId: 1n,
         accountsLoading: false,
         isAuthenticated: true,

@@ -7,13 +7,61 @@ import {
   useWallet,
 } from "@liq/react";
 import type { ReactNode } from "react";
+import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
+import { env } from "../../config/env";
 import { Button } from "../../components/ui/Button";
 import { ConnectButton } from "../wallet/ConnectButton";
 import { sessionStage } from "./sessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <WalletDebug />
+      <SessionGateInner>{children}</SessionGateInner>
+    </>
+  );
+}
+
+// Integrator-facing diagnostic overlay: live wagmi wallet state (status, chain,
+// walletClient) so a misconfigured wallet/chain is visible at a glance during
+// onboarding. Read-only, so `pointer-events-none` keeps it from intercepting
+// clicks on the app underneath.
+function WalletDebug() {
+  const account = useAccount();
+  const chainId = useChainId();
+  const wc = useWalletClient();
+  const rows: [string, string][] = [
+    ["account.status", account.status],
+    ["account.isConnected", String(account.isConnected)],
+    ["account.address", account.address ?? "—"],
+    ["account.chainId", String(account.chainId ?? "—")],
+    ["connector", account.connector?.name ?? "—"],
+    ["useChainId()", String(chainId)],
+    ["env.chainId", String(env.chainId)],
+    ["walletClient.data", wc.data ? "present" : "undefined"],
+    ["walletClient.account", wc.data?.account?.address ?? "—"],
+    ["walletClient.chain", String(wc.data?.chain?.id ?? "—")],
+    ["walletClient.status", wc.status],
+    ["walletClient.error", wc.error?.message ?? "—"],
+  ];
+  return (
+    <div
+      className="pointer-events-none fixed bottom-2 left-2 z-50 max-w-[92vw] rounded border border-border bg-surface-2 p-2 font-mono text-[11px] leading-tight text-muted"
+      data-testid="wallet-debug"
+    >
+      <div className="mb-1 font-semibold text-text">wallet debug (temporary)</div>
+      {rows.map(([k, v]) => (
+        <div key={k}>
+          {k}: <span className="text-text">{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SessionGateInner({ children }: { children: ReactNode }) {
   const wallet = useWallet();
   // Pull the query's loading flag, not just `useAccountId()`: the latter
   // collapses "still loading" and "no account" into a single `undefined`,
@@ -23,11 +71,22 @@ export function SessionGate({ children }: { children: ReactNode }) {
   const accountId = accountIds?.[0];
   const isAuthenticated = useGatewayStore(selectIsAuthenticated);
 
+  // Detect a wallet on the wrong network via the CONNECTOR's chain
+  // (`useAccount().chainId`), NOT `useChainId()`: the latter returns the wagmi
+  // config's chain (6343) even while the wallet sits on an unconfigured chain,
+  // so it can't see the mismatch. On a mismatched chain wagmi builds no
+  // walletClient, so every on-chain write (createAccount) and the SIWE sign-in
+  // fail with "walletClient is required" / "Wallet not connected".
+  const account = useAccount();
+  const wrongChain = account.isConnected && account.chainId !== env.chainId;
+  const switchChain = useSwitchChain();
+
   const createAccount = useCreateAccountMutation();
   const auth = useGatewayAuthMutation();
 
   const stage = sessionStage({
     wallet,
+    wrongChain,
     accountId,
     accountsLoading,
     isAuthenticated,
@@ -37,6 +96,23 @@ export function SessionGate({ children }: { children: ReactNode }) {
     return (
       <Centered testid="session-disconnected">
         <ConnectButton />
+      </Centered>
+    );
+  }
+  if (stage === "wrong-chain") {
+    return (
+      <Centered testid="session-wrong-chain">
+        <p className="text-muted">
+          Wrong network. Switch your wallet to MegaETH (chainId {env.chainId}).
+        </p>
+        <Button
+          disabled={switchChain.isPending}
+          onClick={() => switchChain.switchChain({ chainId: env.chainId })}
+          data-testid="switch-chain-button"
+        >
+          {switchChain.isPending ? "Switching…" : "Switch to MegaETH"}
+        </Button>
+        <ErrorLine error={switchChain.error} testid="switch-chain-error" />
       </Centered>
     );
   }
@@ -58,6 +134,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
         >
           {createAccount.isPending ? "Creating…" : "Create Account"}
         </Button>
+        <ErrorLine error={createAccount.error} testid="create-account-error" />
       </Centered>
     );
   }
@@ -74,6 +151,25 @@ export function SessionGate({ children }: { children: ReactNode }) {
         >
           {auth.isPending ? "Signing…" : "Sign In"}
         </Button>
+        <ErrorLine error={auth.error} testid="signin-error" />
+        <pre
+          className="max-w-[92vw] overflow-auto whitespace-pre-wrap text-left font-mono text-[10px] text-muted"
+          data-testid="signin-debug"
+        >
+          {JSON.stringify(
+            {
+              accountId: accountId?.toString() ?? null,
+              status: auth.status,
+              isPending: auth.isPending,
+              isError: auth.isError,
+              failureCount: auth.failureCount,
+              error: auth.error?.message ?? null,
+            },
+            null,
+            2,
+          )}
+          {auth.error?.stack ? `\n\nSTACK:\n${auth.error.stack}` : ""}
+        </pre>
       </Centered>
     );
   }
@@ -94,5 +190,21 @@ function Centered({
     >
       {children}
     </div>
+  );
+}
+
+/** Surfaces a mutation error inline so a failed CTA isn't a silent dead-end. */
+function ErrorLine({
+  error,
+  testid,
+}: {
+  error: Error | null;
+  testid: string;
+}) {
+  if (!error) return null;
+  return (
+    <p className="text-sm text-short" role="alert" data-testid={testid}>
+      {error.message}
+    </p>
   );
 }
