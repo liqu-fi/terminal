@@ -46,6 +46,7 @@ export class TradePanel {
   readonly submitButton: Locator;
   readonly insufficientMargin: Locator;
   readonly tradeError: Locator;
+  readonly preview: Locator;
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("trade-form");
@@ -61,6 +62,7 @@ export class TradePanel {
     this.submitButton = page.getByTestId("submit-order-button");
     this.insufficientMargin = page.getByTestId("insufficient-margin");
     this.tradeError = page.getByTestId("trade-error");
+    this.preview = page.getByTestId("trade-preview");
   }
 
   tab(tab: TradeTab): Locator {

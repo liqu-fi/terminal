@@ -146,6 +146,20 @@ function computeRead(
     case "indexPrice": {
       return [world.indexPrice];
     }
+    case "getOrderFees": {
+      return [world.orderFees.maker, world.orderFees.taker];
+    }
+    case "skew": {
+      return [world.skew];
+    }
+    case "fillPrice": {
+      // Fill == the caller-supplied price: a flat book with zero impact, so
+      // preview assertions stay arithmetic (fee/notional) not market-model.
+      return [args[2] as bigint];
+    }
+    case "getSettlementRewardCost": {
+      return [0n];
+    }
     case "allowance": {
       return [MAX_UINT256];
     }

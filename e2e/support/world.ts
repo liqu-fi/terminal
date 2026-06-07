@@ -81,6 +81,10 @@ export interface MockWorld {
   indexPrice: bigint;
   /** gateway mark price (GET /markets/:id/price), 18-dec */
   price: bigint;
+  /** getOrderFees read — WAD fee ratios (default 2bp maker / 6bp taker). */
+  orderFees: { maker: bigint; taker: bigint };
+  /** Market skew read — positive by default so a BUY previews as the taker side. */
+  skew: bigint;
   markets: Market[];
   funding: {
     rate: string;
@@ -191,6 +195,8 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     accounts: opts.accounts ?? [],
     indexPrice: price,
     price,
+    orderFees: { maker: 2n * 10n ** 14n, taker: 6n * 10n ** 14n },
+    skew: WAD,
     markets: opts.markets ?? [MARKET],
     funding: {
       rate: "1000000000000000", // 0.001 -> "0.1000%"
