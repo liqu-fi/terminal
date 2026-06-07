@@ -8,10 +8,10 @@
 
 Close every functional-coverage gap in the terminal's e2e suite, across both tiers:
 
-- **Tier 1** (hermetic; mock gateway + mock chain + injected wallet; runs in CI) — 52 tests today.
+- **Tier 1** (hermetic; mock gateway + mock chain + injected wallet; runs in CI) — 49 tests today.
 - **Tier 2** (live staging; real gateway/RPC/wallet; opt-in via `E2E_LIVE=1`) — 4 tests today.
 
-Target: 65 Tier 1 tests, 7 Tier 2 tests. Approach: **thematically additive** — extend the
+Target: 62 Tier 1 tests, 7 Tier 2 tests. Approach: **thematically additive** — extend the
 existing numbered spec files where the theme already exists, new files only for genuinely new
 themes. Mock-infrastructure extensions live in `e2e/support/`.
 
@@ -63,11 +63,17 @@ still fails loud.
 
 ### 1c. `GET /orders/nonce` (`mockGateway.ts`, `world.ts`)
 
-- `world.orderNonce: bigint`, default `7n` (non-zero so seeding is observable), plus a
+- `world.orderNonce: bigint`, default `8_888_888_888_888_888_888n` — it must sit **above** the
+  client's timestamp-derived initial nonce (`BigInt(Date.now()) * 1000n + rand`, ≈1.8e15): the
+  SDK's `syncNonce` is monotonic-max, so a low server value would be invisible. Plus a
   `world.orderNonceRequests` counter.
 - The route is matched **before** the single-order regex (today `/orders/nonce` is mis-matched as
   `orderId="nonce"` → `null`).
 - Response: `{ nextNonce: world.orderNonce.toString() }`.
+- New one-shot fault `faults.submitNonceConflictExpected?: string`: the next `POST /orders`
+  returns 422 with the gateway envelope
+  `{ error: { code: "INVALID_NONCE", details: { expected } } }` — exactly what the SDK's
+  `withNonceRetry` parses to resync-and-retry.
 
 ### 1d. Candle SSE fixture + channel recording (`world.ts`, `mockGateway.ts`)
 
@@ -87,11 +93,11 @@ still fails loud.
 
 ### 1f. Page objects
 
-- `AppPage`: `wrongChainStage`, `switchChainButton`, `switchChainError`, `createAccountError`,
-  `walletDebug`, `signinDebug` locators.
+- `AppPage`: `wrongChainGate`, `switchChainButton`, `switchChainError`, `createAccountError`,
+  `walletDebug`, `signinDebug` locators (the `*Gate` suffix matches the existing convention).
 - `TradePanel`: `preview` locator (`data-testid="trade-preview"`).
 
-## Section 2 — new Tier 1 tests (13; suite 52 → 65)
+## Section 2 — new Tier 1 tests (13; suite 49 → 62)
 
 | File | Test |
 |------|------|
@@ -101,9 +107,9 @@ still fails loud.
 | | debug overlays: `wallet-debug` visible with `pointer-events: none` (never intercepts clicks); `signin-debug` renders the status JSON |
 | `03-deposit-withdraw` (+2) | withdraw submit is gated on a non-empty amount |
 | | cancelling the withdraw dialog closes it without sending a tx |
-| `04-trade-market` (+1) | **#443 regression**: the client seeds its order nonce from the gateway — first submit carries nonce 7, second nonce 8 |
+| `04-trade-market` (+1) | **#443 regression**: the client seeds its order nonce from the gateway (first submit carries exactly the server value) AND recovers from a 422 `INVALID_NONCE` — the SDK resyncs to `details.expected` and auto-retries with no surfaced error |
 | `11-live-sse` (+1) | the chart subscribes to `candles:200:1m` (asserted via recorded SSE channels) and survives a streamed closed bar (smoke — bar math stays unit-tested in `candleMapping.test.ts`) |
-| `14-trade-preview` (new, +3) | entering a size reveals the preview: Est. fill $70,000.00, Fee $42.00 (6bp taker on $70k), Impact 0.00% (fill == mark at zero skew), Notional $70,000.00 |
+| `14-trade-preview` (new, +3) | entering a size reveals the preview: Est. fill "70,000" (`fmtPrice`, no $ prefix), Fee $42.00 (6bp taker on $70k — the world's default `skew` is +1 WAD so a BUY is the taker side), Impact 0.00% (mock fill == mark), Notional $70,000.00 |
 | | changing size 1 → 2 doubles the notional |
 | | clearing the size hides the preview (300ms debounce tolerated by expect timeout) |
 | `15-session-persistence` (new, +2) | a reload with a persisted JWT returns to the terminal **without a second SIWE** (`signRequests` unchanged, no new `/auth/verify`; clicking connect is tolerated if wagmi doesn't auto-reconnect) |
@@ -117,7 +123,7 @@ Note: leverage-slider → size is already covered in `07-trade-gating`; not dupl
 |------|----------|---------------|
 | `live-deposit-withdraw.live.spec.ts` | deposit a small amount (~$5) → margin grows → withdraw the same → margin returns ≈ to start. Real USDC→sUSDC multicall + `modifyCollateral` on staging | yes — round-trip returns the funds |
 | `live-conditional.live.spec.ts` | stop-market trigger priced never to fire → `TRIGGER_PENDING` row in Open Orders → cancel → row clears | yes — order is cancelled |
-| `live-onboarding.live.spec.ts` | **gated behind `E2E_LIVE_ONBOARDING=1`** (on top of `E2E_LIVE`): freshly derived wallet (outside the worker pool) → gas via faucet → connect → Create Account (mints an NFT) → SIWE → terminal with $0 margin and the deposit hint | NFT remains on staging — hence the flag; runs are deliberate |
+| `live-onboarding.live.spec.ts` | **gated behind `E2E_LIVE_ONBOARDING=1`** (on top of `E2E_LIVE`): freshly derived wallet (per-run index far outside the worker pool) → gas funded by a small ETH transfer from the index-0 pool wallet (the faucet dispenses fUSDC, not ETH) → connect → Create Account (mints an NFT) → SIWE → terminal with $0 margin and the deposit hint | NFT remains on staging — hence the flag; runs are deliberate |
 
 Plumbing: `E2E_LIVE_ONBOARDING` joins `e2e/tier2/env.ts` + `.env.e2e.example`; same
 `test.skip(!gate.ok)` gating pattern. `playwright.live.config.ts` already matches
@@ -136,7 +142,7 @@ Plumbing: `E2E_LIVE_ONBOARDING` joins `e2e/tier2/env.ts` + `.env.e2e.example`; s
 5. **`chainChanged` wiring** — if the wagmi connector needs more events, the wrong-chain test
    fails loudly on the UI transition; debugged at implementation time.
 
-**Verification:** full `pnpm test:e2e` (65 tests) green locally; `pnpm test:e2e:live` against
+**Verification:** full `pnpm test:e2e` (62 tests) green locally; `pnpm test:e2e:live` against
 staging with `.env.e2e.local` secrets, including one `E2E_LIVE_ONBOARDING=1` run. CI unchanged:
 Tier 1 is hermetic; Tier 2 stays opt-in.
 
