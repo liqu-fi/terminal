@@ -22,6 +22,7 @@ export class AppPage {
   readonly createAccountButton: Locator;
   readonly needsSigninGate: Locator;
   readonly signinButton: Locator;
+  readonly signinError: Locator;
   readonly terminal: Locator;
 
   constructor(private readonly page: Page) {
@@ -34,6 +35,7 @@ export class AppPage {
     this.createAccountButton = page.getByTestId("create-account-button");
     this.needsSigninGate = page.getByTestId("session-needs-signin");
     this.signinButton = page.getByTestId("signin-button");
+    this.signinError = page.getByTestId("signin-error");
     this.terminal = page.getByTestId("terminal-root");
   }
 
