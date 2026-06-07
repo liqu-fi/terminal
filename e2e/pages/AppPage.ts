@@ -20,6 +20,7 @@ export class AppPage {
   readonly loadingGate: Locator;
   readonly noAccountGate: Locator;
   readonly createAccountButton: Locator;
+  readonly createAccountError: Locator;
   readonly needsSigninGate: Locator;
   readonly signinButton: Locator;
   readonly signinError: Locator;
@@ -36,6 +37,7 @@ export class AppPage {
     this.loadingGate = page.getByTestId("session-loading");
     this.noAccountGate = page.getByTestId("session-no-account");
     this.createAccountButton = page.getByTestId("create-account-button");
+    this.createAccountError = page.getByTestId("create-account-error");
     this.needsSigninGate = page.getByTestId("session-needs-signin");
     this.signinButton = page.getByTestId("signin-button");
     this.signinError = page.getByTestId("signin-error");

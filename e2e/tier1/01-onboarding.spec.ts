@@ -170,4 +170,27 @@ test.describe("boot + onboarding", () => {
     await expect(app.wrongChainGate).toBeVisible();
     expect(world.chainId).toBe(1); // the wallet never moved
   });
+
+  test("a rejected create-account tx surfaces the error and recovers on retry", async ({
+    page,
+    world,
+  }) => {
+    // default freshWorld: connected wallet, no perps account
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+    await expect(app.noAccountGate).toBeVisible();
+
+    world.faults.walletSendRejects = true;
+    await app.createAccountButton.click();
+    // The wallet rejection lands in the ErrorLine — not a silent dead button.
+    await expect(app.createAccountError).toBeVisible();
+    await expect(app.noAccountGate).toBeVisible(); // still gated
+    expect(world.accounts).toHaveLength(0); // nothing was minted
+
+    delete world.faults.walletSendRejects;
+    await app.createAccountButton.click();
+    await expect(app.needsSigninGate).toBeVisible({ timeout: 25_000 });
+    expect(world.accounts).toHaveLength(1);
+  });
 });
