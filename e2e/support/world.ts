@@ -73,6 +73,9 @@ export interface RecordedTx {
 
 export interface MockWorld {
   wallet: string;
+  /** Chain the injected wallet reports (eth_chainId / net_version); mutable —
+   * wallet_switchEthereumChain rewrites it and emits chainChanged. */
+  chainId: number;
   accounts: AccountFixture[];
   /** index price (onchain indexPrice + entry-price math), 18-dec */
   indexPrice: bigint;
@@ -110,6 +113,9 @@ export interface MockWorld {
     cancelStatus?: number;
     // chain: make modifyCollateral (deposit/withdraw) txs revert on-chain
     collateralReverts?: boolean;
+    // wallet: reject the next wallet_switchEthereumChain / every eth_sendTransaction
+    switchChainRejects?: boolean;
+    walletSendRejects?: boolean;
   };
 
   // --- recordings (assertable from specs) ---
@@ -123,6 +129,8 @@ export interface MockWorld {
   /** Count of `/auth/verify` calls rejected by `faults.authVerifyStatus`. */
   authVerifyRejections: number;
   registeredAccountIds: string[];
+  /** Signing methods the wallet performed (personal_sign, eth_signTypedData_v4, …). */
+  signRequests: string[];
 
   // --- SSE frames to emit on the next /sse connection ---
   sseFrames: string[];
@@ -171,6 +179,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
   const price = opts.price ?? 70_000n * WAD;
   return {
     wallet: TEST_ADDRESS,
+    chainId: 6343,
     accounts: opts.accounts ?? [],
     indexPrice: price,
     price,
@@ -196,6 +205,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     authVerifyRequests: [],
     authVerifyRejections: 0,
     registeredAccountIds: [],
+    signRequests: [],
     sseFrames: [],
     receipts: {},
     txCounter: 0,

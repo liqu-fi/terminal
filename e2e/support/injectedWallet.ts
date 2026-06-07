@@ -10,7 +10,7 @@
 import type { Page } from "@playwright/test";
 import { numberToHex } from "viem";
 
-import { CHAIN_ID_HEX, TEST_ADDRESS } from "./constants";
+import { TEST_ADDRESS } from "./constants";
 import { applyWrite, handleEthCall } from "./chain";
 import { type MockWorld, nextTxHash } from "./world";
 
@@ -31,9 +31,9 @@ export async function installWallet(
     async (method: string, params: unknown[]): Promise<unknown> => {
       switch (method) {
         case "eth_chainId":
-          return CHAIN_ID_HEX;
+          return numberToHex(world.chainId);
         case "net_version":
-          return "6343";
+          return String(world.chainId);
         case "eth_requestAccounts":
           state.connected = true;
           return [TEST_ADDRESS.toLowerCase()];
@@ -43,8 +43,12 @@ export async function installWallet(
         case "eth_sign":
         case "eth_signTypedData":
         case "eth_signTypedData_v4":
+          world.signRequests.push(method);
           return DUMMY_SIG;
         case "eth_sendTransaction": {
+          if (world.faults.walletSendRejects) {
+            throw new Error("User rejected the request");
+          }
           const tx = (params[0] ?? {}) as { to?: string; data?: string };
           const to = (tx.to ?? "").toLowerCase();
           const data = tx.data ?? "0x";
@@ -68,7 +72,14 @@ export async function installWallet(
           return numberToHex(world.blockNumber);
         case "eth_getBalance":
           return "0x56bc75e2d63100000"; // 100 ETH
-        case "wallet_switchEthereumChain":
+        case "wallet_switchEthereumChain": {
+          if (world.faults.switchChainRejects) {
+            throw new Error("User rejected the request");
+          }
+          const target = (params[0] ?? {}) as { chainId?: string };
+          if (target.chainId) world.chainId = Number.parseInt(target.chainId, 16);
+          return null;
+        }
         case "wallet_addEthereumChain":
           return null;
         case "wallet_requestPermissions":
@@ -89,18 +100,27 @@ export async function installWallet(
         isE2E: true,
         chainId: "0x18c7",
         selectedAddress: address,
-        request: ({
+        request: async ({
           method,
           params,
         }: {
           method: string;
           params?: unknown[];
-        }) =>
-          (
+        }) => {
+          const result = await (
             window as unknown as {
               __e2eWalletRequest: (m: string, p: unknown[]) => Promise<unknown>;
             }
-          ).__e2eWalletRequest(method, params ?? []),
+          ).__e2eWalletRequest(method, params ?? []);
+          // A successful chain switch must notify wagmi exactly like a real
+          // wallet does; a rejected one threw above and emits nothing.
+          if (method === "wallet_switchEthereumChain") {
+            const target = (params?.[0] ?? {}) as { chainId?: string };
+            if (target.chainId)
+              for (const fn of listeners["chainChanged"] ?? []) fn(target.chainId);
+          }
+          return result;
+        },
         on(event: string, fn: (...a: unknown[]) => void) {
           (listeners[event] ??= []).push(fn);
           return provider;

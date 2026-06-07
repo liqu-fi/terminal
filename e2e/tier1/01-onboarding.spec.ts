@@ -128,4 +128,46 @@ test.describe("boot + onboarding", () => {
     await expect(app.terminal).toBeVisible();
     expect(world.authVerifyRequests).toHaveLength(1);
   });
+
+  test("a wallet on a foreign chain is gated until it switches to MegaETH", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.chainId = 1; // wallet sits on Ethereum mainnet, not MegaETH
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+
+    // Gated: neither create-account nor sign-in is reachable on the wrong chain.
+    await expect(app.wrongChainGate).toBeVisible();
+    await expect(app.needsSigninGate).toBeHidden();
+
+    // Switching chains advances to the SIWE step (the account exists), then
+    // sign-in lands in the terminal — the full recovery path.
+    await app.switchChainButton.click();
+    await expect(app.needsSigninGate).toBeVisible();
+    expect(world.chainId).toBe(6343); // the wallet actually switched
+    await app.signIn();
+    await expect(app.terminal).toBeVisible();
+  });
+
+  test("a rejected chain switch surfaces the error and stays gated", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.chainId = 1;
+    world.faults.switchChainRejects = true;
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+    await expect(app.wrongChainGate).toBeVisible();
+
+    await app.switchChainButton.click();
+    // The rejection is surfaced inline (no silent dead button) and the gate holds.
+    await expect(app.switchChainError).toBeVisible();
+    await expect(app.wrongChainGate).toBeVisible();
+    expect(world.chainId).toBe(1); // the wallet never moved
+  });
 });
