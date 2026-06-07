@@ -8,13 +8,18 @@ import { expect, test } from "./liveFixtures";
 
 // A per-run derivation index far outside the pooled accounts (0…accountCount):
 // every run onboards a genuinely fresh wallet. Module-load time is fine — the
-// file is collected once per run.
-const FRESH_INDEX = 100_000 + (Date.now() % 900_000);
+// file is collected once per run. The ~2.5h window makes index reuse (which
+// would hit an already-onboarded wallet and break the no-account gate) unlikely
+// even for back-to-back scheduled runs.
+const FRESH_INDEX = 100_000 + (Date.now() % 9_000_000);
 
 test.use({ liveWalletIndex: FRESH_INDEX });
 
 test.describe("live: cold onboarding", () => {
-  test.describe.configure({ timeout: liveEnv.fillTimeoutMs * 2 + 120_000 });
+  // Budget for fundGas (capped 60s receipt wait) PLUS the four sequential
+  // fill-timeout gates of the onboarding flow, so a slow chain aborts on a
+  // meaningful assertion rather than the describe ceiling.
+  test.describe.configure({ timeout: liveEnv.fillTimeoutMs * 3 + 180_000 });
 
   test.beforeEach(() => {
     const gate = liveConfigured();

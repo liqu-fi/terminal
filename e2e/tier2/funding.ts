@@ -30,5 +30,8 @@ export async function fundGas(to: `0x${string}`, eth: string): Promise<void> {
   });
   const pub = createPublicClient({ chain, transport: http(liveEnv.rpcUrl) });
   const hash = await wallet.sendTransaction({ to, value: parseEther(eth) });
-  await pub.waitForTransactionReceipt({ hash });
+  // Cap the wait so a stuck tx surfaces well inside the onboarding spec's
+  // describe budget instead of stacking viem's 180s default on top of the
+  // test's own fill-timeout assertions.
+  await pub.waitForTransactionReceipt({ hash, timeout: 60_000 });
 }

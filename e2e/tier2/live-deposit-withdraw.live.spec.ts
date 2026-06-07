@@ -39,13 +39,16 @@ test.describe("live: deposit & withdraw", () => {
       .poll(margin, { timeout: liveEnv.fillTimeoutMs })
       .toBeGreaterThanOrEqual(start + 4.5);
 
-    const funded = await margin();
     await market.openWithdraw();
     const withdraw = new WithdrawDialog(page);
     await withdraw.withdraw(AMOUNT);
     await expect(withdraw.root).toBeHidden({ timeout: liveEnv.fillTimeoutMs });
+    // The round-trip returns the funds: margin falls back to ~start (same
+    // tolerance), proving the withdraw debited what the deposit credited.
+    // Asserting against `start` — not a re-read `funded` — sidesteps a NaN
+    // hang if the display briefly flips to "—" during query invalidation.
     await expect
       .poll(margin, { timeout: liveEnv.fillTimeoutMs })
-      .toBeLessThanOrEqual(funded - 4.5);
+      .toBeLessThanOrEqual(start + 0.5);
   });
 });

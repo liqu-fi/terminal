@@ -17,7 +17,7 @@ export interface LiveEnv {
   accountCount: number;
   /** Opt-in: run the cold-onboarding spec (mints an account NFT per run). */
   onboarding: boolean;
-  /** worker-index → derivation index offset, to spread workers across accounts */
+  /** Upper bound (ms) for an on-chain settlement / fill to land on staging. */
   fillTimeoutMs: number;
 }
 
