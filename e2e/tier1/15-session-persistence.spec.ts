@@ -1,4 +1,3 @@
-import { AppPage } from "../pages/AppPage";
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
@@ -7,13 +6,14 @@ test.describe("session persistence", () => {
     page,
     world,
   }) => {
-    await enterTerminal(page, world);
+    // `app`'s locators are lazy, so the same instance resolves against the
+    // post-reload DOM — no need to reconstruct it after page.reload().
+    const { app } = await enterTerminal(page, world);
     expect(world.authVerifyRequests).toHaveLength(1);
     const signs = world.signRequests.length;
 
     await page.reload();
 
-    const app = new AppPage(page);
     // wagmi auto-reconnects the injected wallet; the JWT comes back from
     // localStorage('liq-gateway') — so the terminal returns with zero clicks…
     await expect(app.terminal).toBeVisible({ timeout: 25_000 });
@@ -27,13 +27,15 @@ test.describe("session persistence", () => {
     page,
     world,
   }) => {
-    await enterTerminal(page, world);
+    const { app } = await enterTerminal(page, world);
     await expect.poll(() => world.orderNonceRequests).toBeGreaterThan(0);
     const before = world.orderNonceRequests;
 
     await page.reload();
-    await expect(new AppPage(page).terminal).toBeVisible({ timeout: 25_000 });
+    await expect(app.terminal).toBeVisible({ timeout: 25_000 });
     // The restored token re-arms useGatewayNonceSync — a fresh seed is fetched.
+    // `> before` (not `=== before + 1`): tolerant of a reconnect that
+    // legitimately re-arms the sync more than once.
     await expect.poll(() => world.orderNonceRequests).toBeGreaterThan(before);
   });
 });
