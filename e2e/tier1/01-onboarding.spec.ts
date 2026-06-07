@@ -193,4 +193,25 @@ test.describe("boot + onboarding", () => {
     await expect(app.needsSigninGate).toBeVisible({ timeout: 25_000 });
     expect(world.accounts).toHaveLength(1);
   });
+
+  test("integrator debug overlays render and never intercept clicks", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    const app = new AppPage(page);
+    await app.goto();
+    // The wallet overlay is up from boot and is click-transparent by CSS —
+    // that property is exactly what keeps it from blocking the app's CTAs.
+    await expect(app.walletDebug).toBeVisible();
+    await expect(app.walletDebug).toHaveCSS("pointer-events", "none");
+
+    await app.connect();
+    // The sign-in stage shows the auth-state JSON dump.
+    await expect(app.signinDebug).toBeVisible();
+    await expect(app.signinDebug).toContainText('"status"');
+    // …and the CTA underneath the fixed overlay still works end-to-end.
+    await app.signIn();
+    await expect(app.terminal).toBeVisible();
+  });
 });
