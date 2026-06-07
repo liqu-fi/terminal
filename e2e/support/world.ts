@@ -116,6 +116,9 @@ export interface MockWorld {
     // wallet: reject the next wallet_switchEthereumChain / every eth_sendTransaction
     switchChainRejects?: boolean;
     walletSendRejects?: boolean;
+    // gateway: one-shot 422 INVALID_NONCE on the next POST /orders, naming
+    // the expected nonce (drives the SDK's resync-and-retry path)
+    submitNonceConflictExpected?: string;
   };
 
   // --- recordings (assertable from specs) ---
@@ -131,6 +134,9 @@ export interface MockWorld {
   registeredAccountIds: string[];
   /** Signing methods the wallet performed (personal_sign, eth_signTypedData_v4, …). */
   signRequests: string[];
+  /** GET /orders/nonce — the seed the gateway hands the client, and a counter. */
+  orderNonce: bigint;
+  orderNonceRequests: number;
 
   // --- SSE frames to emit on the next /sse connection ---
   sseFrames: string[];
@@ -206,6 +212,11 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     authVerifyRejections: 0,
     registeredAccountIds: [],
     signRequests: [],
+    // Must exceed the SDK's timestamp-derived initial nonce (BigInt(Date.now())
+    // * 1000n ≈ 1.8e15): syncNonce is monotonic-MAX, so a lower seed would be
+    // invisible. 8.8e18 stays above it for centuries.
+    orderNonce: 8_888_888_888_888_888_888n,
+    orderNonceRequests: 0,
     sseFrames: [],
     receipts: {},
     txCounter: 0,

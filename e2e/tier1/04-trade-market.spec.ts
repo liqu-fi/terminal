@@ -38,4 +38,33 @@ test.describe("market orders", () => {
       true,
     );
   });
+
+  test("seeds the order nonce from the gateway and recovers from INVALID_NONCE (#443)", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    // The client store boots with a timestamp-derived nonce (~1.8e15); the
+    // gateway seed is higher, so after the sync lands the FIRST submit must
+    // carry exactly the server value — proving the seed, not the local guess.
+    await expect.poll(() => world.orderNonceRequests).toBeGreaterThan(0);
+
+    await trade.setSize("0.5");
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBe(1);
+    expect(String(world.submittedOrders[0].nonce)).toBe("8888888888888888888");
+    await expect(trade.sizeInput).toHaveValue(""); // confirmed submit resets
+
+    // Now the gateway rejects the next nonce and names the one it expects:
+    // the SDK must resync to it and retry the SAME order — with no surfaced
+    // error and no user interaction.
+    world.faults.submitNonceConflictExpected = "9000000000000000000";
+    await trade.setSize("0.25");
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBe(3); // reject + retry
+    expect(String(world.submittedOrders[1].nonce)).toBe("8888888888888888889");
+    expect(String(world.submittedOrders[2].nonce)).toBe("9000000000000000000");
+    await expect(trade.tradeError).toBeHidden(); // recovery, not failure
+    await expect(trade.sizeInput).toHaveValue("");
+  });
 });
