@@ -89,12 +89,19 @@ function SessionGateInner({ children }: { children: ReactNode }) {
   // the wrong chain. staleTime: Infinity prevents an automatic re-fetch, so we
   // force one here whenever the query is in error state and we're on the right
   // chain. This ensures the sign-in button is not silently broken post-switch.
-  const walletClient = useWalletClient();
+  // Destructure so the effect depends on these fields, not the whole query
+  // object (whose identity changes every render) — keeps exhaustive-deps happy
+  // and the effect from re-running needlessly.
+  const {
+    data: walletClientData,
+    isError: walletClientErrored,
+    refetch: refetchWalletClient,
+  } = useWalletClient();
   useEffect(() => {
-    if (!wrongChain && walletClient.isError) {
-      void walletClient.refetch();
+    if (!wrongChain && walletClientErrored) {
+      void refetchWalletClient();
     }
-  }, [wrongChain, walletClient.isError, walletClient.refetch]);
+  }, [wrongChain, walletClientErrored, refetchWalletClient]);
 
   const stage = sessionStage({
     wallet,
@@ -155,7 +162,9 @@ function SessionGateInner({ children }: { children: ReactNode }) {
       <Centered testid="session-needs-signin">
         <p className="text-muted">Sign in to the gateway (SIWE).</p>
         <Button
-          disabled={auth.isPending || accountId === undefined || !walletClient.data}
+          disabled={
+            auth.isPending || accountId === undefined || !walletClientData
+          }
           onClick={() =>
             accountId !== undefined && auth.mutate({ accountId })
           }
