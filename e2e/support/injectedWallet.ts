@@ -98,7 +98,9 @@ export async function installWallet(
       const provider = {
         isMetaMask: true,
         isE2E: true,
-        chainId: "0x18c7",
+        // NOTE: deliberately no static `chainId` property — it would go stale
+        // after wallet_switchEthereumChain. Consumers (wagmi) read the chain
+        // via eth_chainId requests and chainChanged events, both world-backed.
         selectedAddress: address,
         request: async ({
           method,

@@ -14,7 +14,6 @@ export const RPC_URL = "https://rpc.e2e.local";
 
 /** MegaETH testnet chain id used across the app. */
 export const CHAIN_ID = 6343;
-export const CHAIN_ID_HEX = "0x18c7"; // 6343
 
 /** Deterministic test wallet (address only — signing is mocked, no key needed). */
 export const TEST_ADDRESS =

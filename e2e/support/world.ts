@@ -6,7 +6,7 @@
  * state that subsequent reads (accounts.list) and gateway responses observe —
  * exactly like a real backend, but deterministic and in-process.
  */
-import { MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
+import { CHAIN_ID, MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
 
 export type OrderMode = "BOOK" | "ONCHAIN" | "RECENTLY_CHANGED";
 
@@ -179,7 +179,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
   const price = opts.price ?? 70_000n * WAD;
   return {
     wallet: TEST_ADDRESS,
-    chainId: 6343,
+    chainId: CHAIN_ID,
     accounts: opts.accounts ?? [],
     indexPrice: price,
     price,
