@@ -12,9 +12,12 @@ test.describe("trade preview", () => {
     await trade.setSize("1");
     // 300ms debounce + onchain multicall, then the row appears:
     await expect(trade.preview).toBeVisible();
-    // 1 BTC @ $70k mark, flat mock fill, positive default skew ⇒ BUY is taker:
-    await expect(trade.preview).toContainText("Est. fill");
-    await expect(trade.preview).toContainText("70,000"); // fill == mark
+    // 1 BTC @ $70k mark, flat mock fill, positive default skew ⇒ BUY is taker.
+    // The fill assertion is row-paired (label+value in one row div): a bare
+    // containText("70,000") would also match the notional's "$70,000.00".
+    await expect(
+      trade.preview.locator("div").filter({ hasText: "Est. fill" }),
+    ).toContainText("70,000"); // fill == mark
     await expect(trade.preview).toContainText("$42.00"); // 6bp taker fee
     await expect(trade.preview).toContainText("0.00%"); // zero impact
     await expect(trade.preview).toContainText("$70,000.00"); // notional

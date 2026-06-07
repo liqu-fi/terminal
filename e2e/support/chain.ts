@@ -155,6 +155,8 @@ function computeRead(
     case "fillPrice": {
       // Fill == the caller-supplied price: a flat book with zero impact, so
       // preview assertions stay arithmetic (fee/notional) not market-model.
+      // args[2] is `price` per the ABI [marketId, orderSize, price] — if an
+      // SDK upgrade reorders the call, fix the index here.
       return [args[2] as bigint];
     }
     case "getSettlementRewardCost": {
