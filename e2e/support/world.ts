@@ -140,6 +140,8 @@ export interface MockWorld {
 
   // --- SSE frames to emit on the next /sse connection ---
   sseFrames: string[];
+  /** channels query-param of every SSE connection the app opened. */
+  sseConnections: string[][];
 
   // --- receipts the mock chain returns for sent txs ---
   receipts: Record<string, ReceiptLog[]>;
@@ -218,6 +220,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     orderNonce: 8_888_888_888_888_888_888n,
     orderNonceRequests: 0,
     sseFrames: [],
+    sseConnections: [],
     receipts: {},
     txCounter: 0,
     accountCounter: 1n,
@@ -330,6 +333,28 @@ export function sseOrderUpdateFrame(orderId: string, status: string): string {
     type: "order_update",
     channel: `order:${orderId}`,
     data: { orderId, status },
+  };
+  return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+/** A raw SSE frame carrying a CLOSED 1m candle bar on `candles:{id}:1m`. */
+export function sseCandleFrame(
+  marketId: string,
+  bar: {
+    bucketStartTs: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
+    volume: string;
+    tradeCount: number;
+    lastTradePrice: string | null;
+  },
+): string {
+  const event = {
+    type: "candle",
+    channel: `candles:${marketId}:1m`,
+    data: bar,
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }

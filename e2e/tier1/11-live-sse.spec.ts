@@ -4,6 +4,7 @@ import { expect, test } from "../support/fixtures";
 import {
   limitOrderFixture,
   readyWorld,
+  sseCandleFrame,
   sseOrderUpdateFrame,
 } from "../support/world";
 
@@ -84,5 +85,53 @@ test.describe("live SSE updates", () => {
     world.accounts[0].available = 4_000n * WAD;
     world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "MATCHED")];
     await expect(market.margin).toHaveText(/\$4,000\.00/, { timeout: 15_000 });
+  });
+
+  test("the chart subscribes to 1m candles and redraws on a streamed bar", async ({
+    page,
+    world,
+  }) => {
+    const { app } = await enterTerminal(page, world);
+    // The chart's channel is part of some SSE connection's channel set.
+    await expect
+      .poll(() =>
+        world.sseConnections.some((c) => c.includes("candles:200:1m")),
+      )
+      .toBe(true);
+
+    // Pixel-hash every canvas: a new bar far from the flat 70k history forces
+    // an autoscale + redraw, so the hash MUST change when the bar lands.
+    const canvasHash = () =>
+      page.evaluate(() => {
+        let h = 5381;
+        for (const c of Array.from(document.querySelectorAll("canvas"))) {
+          const s = (c as HTMLCanvasElement).toDataURL();
+          for (let i = 0; i < s.length; i++)
+            h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+        }
+        return h;
+      });
+    await expect(page.locator("canvas").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    const before = await canvasHash();
+
+    const lastTs = world.candles.at(-1)!.timestamp;
+    const p80k = (80_000n * WAD).toString();
+    world.sseFrames = [
+      sseCandleFrame("200", {
+        bucketStartTs: lastTs + 60,
+        open: p80k,
+        high: p80k,
+        low: p80k,
+        close: p80k,
+        volume: WAD.toString(),
+        tradeCount: 1,
+        lastTradePrice: p80k,
+      }),
+    ];
+    await expect.poll(() => world.sseFrames.length).toBe(0); // delivered
+    await expect.poll(canvasHash, { timeout: 15_000 }).not.toBe(before);
+    await expect(app.terminal).toBeVisible(); // still healthy
   });
 });

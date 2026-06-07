@@ -139,6 +139,9 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- SSE ---------------------------------------------------------------
     if (path.endsWith("/sse")) {
+      world.sseConnections.push(
+        (url.searchParams.get("channels") ?? "").split(","),
+      );
       const frames = await sseLongPoll(world);
       try {
         await route.fulfill({
