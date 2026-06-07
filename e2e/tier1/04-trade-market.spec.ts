@@ -47,6 +47,9 @@ test.describe("market orders", () => {
     // The client store boots with a timestamp-derived nonce (~1.8e15); the
     // gateway seed is higher, so after the sync lands the FIRST submit must
     // carry exactly the server value — proving the seed, not the local guess.
+    // (Soft barrier: this clears when the GET hits the mock, a few microtasks
+    // before the .then applies syncNonce — but the fill+click round-trips
+    // below dwarf that gap, and a miss fails loudly on the nonce assertion.)
     await expect.poll(() => world.orderNonceRequests).toBeGreaterThan(0);
 
     await trade.setSize("0.5");
@@ -58,6 +61,7 @@ test.describe("market orders", () => {
     // Now the gateway rejects the next nonce and names the one it expects:
     // the SDK must resync to it and retry the SAME order — with no surfaced
     // error and no user interaction.
+    // ~1.1e17 above the seed — a server-side jump the client can't predict.
     world.faults.submitNonceConflictExpected = "9000000000000000000";
     await trade.setSize("0.25");
     await trade.submit();

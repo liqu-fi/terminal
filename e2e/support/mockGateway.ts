@@ -231,6 +231,9 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- order nonce (must precede the order matchers: "/orders/nonce" would
     // otherwise be captured by the single-order regex as orderId="nonce") ----
+    // Static — the mock never advances orderNonce on submits, unlike the real
+    // gateway. A test fetching the nonce twice gets the same seed; fine for
+    // current specs (the SDK's syncNonce is monotonic-max, a stale seed no-ops).
     if (path.endsWith("/orders/nonce")) {
       world.orderNonceRequests += 1;
       await send(route, { nextNonce: world.orderNonce.toString() });
