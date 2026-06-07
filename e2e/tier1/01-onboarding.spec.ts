@@ -184,6 +184,9 @@ test.describe("boot + onboarding", () => {
     world.faults.walletSendRejects = true;
     await app.createAccountButton.click();
     // The wallet rejection lands in the ErrorLine — not a silent dead button.
+    // (No expect.poll barrier à la the SIWE test: the reject is a synchronous
+    // throw in the wallet — the visible ErrorLine itself proves the mutation
+    // settled, so nothing is in flight when the fault clears below.)
     await expect(app.createAccountError).toBeVisible();
     await expect(app.noAccountGate).toBeVisible(); // still gated
     expect(world.accounts).toHaveLength(0); // nothing was minted
