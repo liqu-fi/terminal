@@ -21,9 +21,9 @@ export function OpenOrdersTable() {
   const cancel = useCancelOrderMutation(accountId);
 
   // The SDK's cancel mutation invalidates only the OPEN orders query, not the
-  // conditional one (liqcx/monorepo — useCancelOrderMutation onSuccess), so a
-  // cancelled trigger order lingers until the next 60s poll. Invalidate the
-  // conditional query here too; the root fix belongs in @liq/react.
+  // conditional one (liqcx/monorepo#453), so a cancelled trigger order lingers
+  // until the next 60s poll. Invalidate the conditional query here too; the
+  // root fix belongs in @liq/react.
   const cancelOrder = (id: string) =>
     cancel.mutate(id, {
       onSuccess: () =>
