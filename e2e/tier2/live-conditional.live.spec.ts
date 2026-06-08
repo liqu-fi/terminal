@@ -12,22 +12,14 @@ test.describe("live: conditional orders", () => {
   });
 
   test("places and cancels a stop-market trigger order", async ({ page }) => {
-    // BLOCKED UPSTREAM (monorepo, not the terminal). The conditional submit
-    // deterministically fails `400 INVALID_SIGNATURE "Unknown signer"`: the
-    // SDK's `useSubmitConditionalOrder` POST body OMITS the signed
-    // `triggerAbove` field, so the gateway re-hashes the order with its default
-    // (`dto.triggerAbove ?? false` in submit-order.handler.ts) while the
-    // terminal signed `true` → recovers a different address. MARKET/LIMIT sign
-    // `triggerAbove=false` (= the default), which is why only conditional
-    // orders break. Confirmed by recovering the signer from the exact EIP-712
-    // `Order` the terminal signs (filed against monorepo with a repro).
-    //
-    // The terminal signs correctly; Tier 1 06/09/14 cover the conditional UI
-    // flow. Remove this fixme once the SDK sends `triggerAbove` in the body.
-    test.fixme(
-      true,
-      "SDK conditional submit omits the signed triggerAbove → gateway INVALID_SIGNATURE",
-    );
+    // Re-enabled after the SDK conditional-submit fix shipped. Previously the
+    // gateway rejected this with `400 INVALID_SIGNATURE "Unknown signer"`: the
+    // SDK's `useSubmitConditionalOrder` POST body omitted the signed
+    // `triggerAbove`, so the gateway re-hashed the order with its default
+    // (`dto.triggerAbove ?? false`) while the terminal signed `true`. Fixed in
+    // @liqcx/liq-react@0.27.2 (liqcx/monorepo#449): the submit body now carries
+    // `triggerAbove`, so the gateway reconstructs the exact signed order.
+    // Gated by `liveConfigured()` above — runs only against a live env.
     await ensureTradeReady(page);
     const trade = new TradePanel(page);
     const userInfo = new UserInfoPanel(page);
