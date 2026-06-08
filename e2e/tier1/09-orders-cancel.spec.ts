@@ -66,6 +66,48 @@ test.describe("open orders", () => {
     expect(world.cancelledOrderIds).toContain("ord-limit-1");
   });
 
+  test("order rows show their status, abs size, and an em-dash for no price", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({
+        openOrders: [limitOrderFixture()],
+        conditionalOrders: [
+          conditionalOrderFixture(), // SELL, sizeDelta = -WAD, triggerPrice 80k
+          conditionalOrderFixture({ id: "ord-noprice", triggerPrice: null }),
+        ],
+      }),
+    );
+    await userInfo.selectTab("open-orders");
+
+    // P2b: Status cell.
+    await expect(userInfo.orderRow("ord-limit-1")).toContainText("PENDING");
+    await expect(userInfo.orderRow("ord-cond-1")).toContainText("TRIGGER_PENDING");
+
+    // P2c: conditional Size renders abs(-1) = 1.
+    await expect(userInfo.orderRow("ord-cond-1").locator("td").nth(3)).toHaveText("1");
+
+    // P2d: a null-price conditional renders an em-dash in the Price cell.
+    await expect(userInfo.orderRow("ord-noprice").locator("td").nth(4)).toHaveText("—");
+  });
+
+  test("cancelling a conditional order removes its row", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({ conditionalOrders: [conditionalOrderFixture()] }),
+    );
+    await userInfo.selectTab("open-orders");
+    await expect(userInfo.orderRow("ord-cond-1")).toBeVisible();
+
+    await userInfo.cancelOrder("ord-cond-1");
+
+    await expect(userInfo.ordersEmpty).toBeVisible();
+    expect(world.cancelledOrderIds).toContain("ord-cond-1");
+  });
+
   test("cancelling one order leaves the others in place", async ({
     page,
     world,

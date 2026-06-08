@@ -48,6 +48,20 @@ test.describe("live SSE updates", () => {
     await expect(userInfo.orderRow("ord-limit-1")).toBeVisible(); // still resting
   });
 
+  test("a CANCELLED order_update over SSE clears the order", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({ openOrders: [limitOrderFixture()] }),
+    );
+    await userInfo.selectTab("open-orders");
+    await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
+
+    world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "CANCELLED")];
+    await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 15_000 });
+  });
+
   test("an SSE fill clears only the matched order, not its siblings", async ({
     page,
     world,
