@@ -1,7 +1,8 @@
 import { AppPage } from "../pages/AppPage";
 import { enterTerminal } from "../pages/flows";
+import { UserInfoPanel } from "../pages/TerminalPanels";
 import { expect, seed, test } from "../support/fixtures";
-import { limitOrderFixture, readyWorld } from "../support/world";
+import { limitOrderFixture, readyWorld, tradeFixture } from "../support/world";
 
 test.describe("error states", () => {
   test("a gateway 500 on order submit surfaces a trade error", async ({
@@ -50,6 +51,72 @@ test.describe("error states", () => {
 
     await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
     expect(world.cancelledOrderIds).not.toContain("ord-limit-1");
+  });
+
+  test("a gateway 500 on a limit submit surfaces a trade error", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    world.faults.submitOrderStatus = 500;
+
+    await trade.selectTab("limit");
+    await trade.setSize("1");
+    await trade.setLimitPrice("65000");
+    await trade.submit();
+
+    await expect(trade.tradeError).toBeVisible();
+    await expect(trade.sizeInput).toHaveValue("1"); // not reset on failure
+    await expect(trade.limitPriceInput).toHaveValue("65000");
+  });
+
+  test("a gateway 500 on a conditional submit surfaces a trade error", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    world.faults.submitOrderStatus = 500;
+
+    await trade.selectTab("stop");
+    await trade.setSize("1");
+    await trade.setTriggerPrice("80000");
+    await trade.submit();
+
+    await expect(trade.tradeError).toBeVisible();
+    await expect(trade.sizeInput).toHaveValue("1");
+    await expect(trade.triggerPriceInput).toHaveValue("80000");
+  });
+
+  test("an orders fetch failure leaves the terminal alive and the table empty", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld({ openOrders: [limitOrderFixture()] }));
+    world.faults.ordersStatus = 500;
+    const app = new AppPage(page);
+    await app.goto();
+    await app.signInToTerminal();
+    const userInfo = new UserInfoPanel(page);
+    await userInfo.selectTab("open-orders");
+
+    await expect(app.terminal).toBeVisible();
+    await expect(userInfo.orderRow("ord-limit-1")).toBeHidden();
+    await expect(userInfo.ordersEmpty).toBeVisible();
+  });
+
+  test("a trades fetch failure leaves the terminal alive and the table empty", async ({
+    page,
+    world,
+  }) => {
+    const { app, userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({ trades: [tradeFixture()] }),
+    );
+    world.faults.tradesStatus = 500;
+    await userInfo.selectTab("history");
+
+    await expect(app.terminal).toBeVisible();
+    await expect(userInfo.tradeRow("fill-1")).toBeHidden();
+    await expect(userInfo.historyEmpty).toBeVisible();
   });
 
   test("the terminal still renders when markets fail to load", async ({

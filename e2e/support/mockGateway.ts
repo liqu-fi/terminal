@@ -215,6 +215,10 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
     const price = path.match(/\/markets\/([^/]+)\/price$/);
     if (price) {
+      if (world.faults.priceStatus) {
+        await error(route, world.faults.priceStatus);
+        return;
+      }
       await send(route, {
         price: world.price.toString(),
         timestamp: 1_717_200_000_000,
@@ -223,12 +227,20 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
     const funding = path.match(/\/markets\/([^/]+)\/funding$/);
     if (funding) {
+      if (world.faults.fundingStatus) {
+        await error(route, world.faults.fundingStatus);
+        return;
+      }
       await send(route, world.funding);
       return;
     }
     const candles = path.match(/\/markets\/([^/]+)\/candles$/);
     if (candles) {
-      await send(route, world.candles);
+      if (world.faults.candlesStatus) {
+        await error(route, world.faults.candlesStatus);
+        return;
+      }
+      await send(route, world.candlesByMarket?.[candles[1]] ?? world.candles);
       return;
     }
 
@@ -285,6 +297,10 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       }
       // GET list
       const status = url.searchParams.get("status");
+      if (world.faults.ordersStatus) {
+        await error(route, world.faults.ordersStatus);
+        return;
+      }
       await send(route, orderListFor(world, status));
       return;
     }
@@ -313,6 +329,10 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- trades ------------------------------------------------------------
     if (path.endsWith("/trades")) {
+      if (world.faults.tradesStatus) {
+        await error(route, world.faults.tradesStatus);
+        return;
+      }
       await send(route, world.trades);
       return;
     }

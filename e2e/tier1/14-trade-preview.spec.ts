@@ -33,6 +33,18 @@ test.describe("trade preview", () => {
     await expect(trade.preview).toContainText("$84.00"); // fee ×2
   });
 
+  test("the preview renders for a short (negative sizeDelta)", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    await trade.sideShort.click();
+    await trade.setSize("1");
+
+    await expect(trade.preview).toBeVisible();
+    await expect(trade.preview).toContainText("$70,000.00"); // notional, sign-independent
+  });
+
   test("clearing the size hides the preview", async ({ page, world }) => {
     const { trade } = await enterTerminal(page, world);
     await trade.setSize("1");

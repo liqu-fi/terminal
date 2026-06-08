@@ -4,6 +4,58 @@ import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
 test.describe("conditional orders", () => {
+  test("a conditional order omits acceptablePrice and carries triggerAbove", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    await trade.selectTab("stop");
+    await trade.setSize("1");
+    await trade.setTriggerPrice("80000");
+    await trade.submit();
+
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
+    const order = world.submittedOrders.at(-1)!;
+    expect(order.acceptablePrice).toBeUndefined();
+    expect(order.triggerAbove).toBeDefined();
+  });
+
+  test("a stop submit with a blank trigger is enabled but sends nothing", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    await trade.selectTab("stop");
+    await trade.setSize("1"); // trigger left blank
+
+    await expect(trade.submitButton).toBeEnabled();
+    await trade.submit();
+
+    await expect(trade.tradeError).toBeHidden();
+    expect(world.submittedOrders.length).toBe(0);
+  });
+
+  test("the trigger direction defaults to ≥, toggles, and is submitted", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    await trade.selectTab("stop");
+
+    await expect(trade.triggerAbove).toHaveAttribute("aria-pressed", "true");
+    await expect(trade.triggerBelow).toHaveAttribute("aria-pressed", "false");
+
+    await trade.triggerBelow.click();
+    await expect(trade.triggerAbove).toHaveAttribute("aria-pressed", "false");
+    await expect(trade.triggerBelow).toHaveAttribute("aria-pressed", "true");
+
+    await trade.setSize("1");
+    await trade.setTriggerPrice("60000");
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
+    expect(world.submittedOrders.at(-1)?.triggerAbove).toBe(false);
+  });
+
   test("submits a stop-market trigger order", async ({ page, world }) => {
     const { trade, userInfo } = await enterTerminal(page, world);
 

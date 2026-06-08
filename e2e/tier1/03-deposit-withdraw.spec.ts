@@ -2,7 +2,7 @@ import { Margin } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
-import { readyWorld } from "../support/world";
+import { armHold, readyWorld, releaseHold } from "../support/world";
 
 test.describe("deposit & withdraw", () => {
   test("depositing credits margin by the entered amount and enables trading", async ({
@@ -48,11 +48,6 @@ test.describe("deposit & withdraw", () => {
     expect(world.lastCollateralDelta).toBe(-Margin.parse("100"));
   });
 
-  // NOTE: the deposit revert path is intentionally not asserted here. Unlike
-  // withdraw (below), a reverted deposit surfaces as an *unhandled* promise
-  // rejection from the SDK's DepositService.modifyCollateral and never sets the
-  // mutation error, so no `deposit-error` is rendered. Tracked in liqcx/monorepo#434
-  // — a test that asserted `deposit-error` would pin broken behavior.
   test("a reverted withdraw surfaces an error and leaves margin unchanged", async ({
     page,
     world,
@@ -66,6 +61,31 @@ test.describe("deposit & withdraw", () => {
 
     await expect(withdraw.error).toBeVisible();
     await expect(market.margin).toHaveText(/\$5,000\.00/); // unchanged
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  // NOTE: liqcx/monorepo#434 — the SDK's deposit mutation does not surface a
+  // reverted modifyCollateral as `deposit.error` (unlike withdraw). The in-repo
+  // mitigation (an explicit onError) prevents the unhandled rejection; the full
+  // error-UI fix needs an SDK change. This test pins the stable outcome.
+  test("a reverted deposit leaves margin unchanged and sends no collateral delta", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      w.accounts[0].withdrawable = 0n;
+      return w;
+    });
+    world.faults.collateralReverts = true;
+
+    await market.openDeposit();
+    await expect(deposit.root).toBeVisible();
+    await deposit.deposit("200");
+
+    // Deterministic outcome: no margin moved, no collateral delta recorded.
+    await expect(market.margin).toHaveText(/\$0\.00/);
     expect(world.lastCollateralDelta).toBe(0n);
   });
 
@@ -125,5 +145,81 @@ test.describe("deposit & withdraw", () => {
     await withdraw.cancelButton.click();
     await expect(withdraw.root).toBeHidden(); // …cancel just dismisses
     expect(world.lastCollateralDelta).toBe(0n); // no collateral tx was sent
+  });
+
+  test("a malformed withdraw amount surfaces an error and sends no tx", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world); // $5,000
+    await market.openWithdraw();
+    await withdraw.amountInput.fill("abc"); // non-numeric → submit is enabled (non-empty)
+
+    await expect(withdraw.submitButton).toBeEnabled();
+    await withdraw.submitButton.click();
+
+    // The error renders (not an uncaught throw), nothing is sent, margin holds.
+    await expect(withdraw.error).toBeVisible();
+    await expect(market.margin).toHaveText(/\$5,000\.00/);
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  test("clicking the dialog backdrop closes it; clicking inside does not", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world);
+    await market.openDeposit();
+    await expect(deposit.root).toBeVisible();
+
+    // Click inside the panel — dialog stays open (stopPropagation).
+    await deposit.root.getByText("Deposit USDC").click();
+    await expect(deposit.root).toBeVisible();
+
+    // Click the backdrop (top-left corner, outside the panel) — dialog closes.
+    await deposit.overlay.click({ position: { x: 5, y: 5 } });
+    await expect(deposit.root).toBeHidden();
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  test("the deposit button shows a pending state while the tx is in flight", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      w.accounts[0].withdrawable = 0n;
+      return w;
+    });
+    armHold(world, "collateralReceipt"); // hold the receipt → mutation stays pending
+
+    await market.openDeposit();
+    await deposit.deposit("200");
+
+    await expect(deposit.submitButton).toHaveText(/Depositing…/);
+    await expect(deposit.submitButton).toBeDisabled();
+
+    releaseHold(world, "collateralReceipt");
+    await expect(deposit.root).toBeHidden(); // settles + closes on success
+    await expect(market.margin).toHaveText(/\$200\.00/);
+  });
+
+  test("the withdraw button shows a pending state while the tx is in flight", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world); // $5,000
+    armHold(world, "collateralReceipt");
+
+    await market.openWithdraw();
+    await withdraw.withdraw("100");
+
+    await expect(withdraw.submitButton).toHaveText(/Withdrawing…/);
+    await expect(withdraw.submitButton).toBeDisabled();
+
+    releaseHold(world, "collateralReceipt");
+    await expect(withdraw.root).toBeHidden();
+    await expect(market.margin).toHaveText(/\$4,900\.00/);
   });
 });

@@ -1,7 +1,7 @@
 import { AppPage } from "../pages/AppPage";
 import { SET_BOOK_MODE_SELECTOR } from "../support/chain";
 import { expect, seed, test } from "../support/fixtures";
-import { accountOnchainWorld, readyWorld } from "../support/world";
+import { accountOnchainWorld, armHold, readyWorld, releaseHold } from "../support/world";
 
 test.describe("boot + onboarding", () => {
   test("boots and shows the connect CTA when disconnected", async ({
@@ -216,5 +216,34 @@ test.describe("boot + onboarding", () => {
     // …and the CTA underneath the fixed overlay still works end-to-end.
     await app.signIn();
     await expect(app.terminal).toBeVisible();
+  });
+
+  test("the session shows a loading gate while the account lookup is in flight", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    armHold(world, "accountRead"); // hold the tokenOfOwnerByIndex read
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+
+    await expect(app.loadingGate).toBeVisible();
+    releaseHold(world, "accountRead");
+    await expect(app.needsSigninGate).toBeVisible();
+  });
+
+  test("a rejected connect leaves the app on the connect screen", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.faults.connectRejects = true;
+    const app = new AppPage(page);
+    await app.goto();
+
+    await app.connectButton.first().click(); // not app.connect() — it won't connect
+    await expect(app.disconnectedGate).toBeVisible();
+    await expect(app.terminal).toBeHidden();
   });
 });

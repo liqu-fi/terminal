@@ -1,6 +1,8 @@
+import { AppPage } from "../pages/AppPage";
 import { enterTerminal } from "../pages/flows";
+import { MarketHeaderPanel } from "../pages/TerminalPanels";
 import { MARKET, MARKET_ETH, WAD } from "../support/constants";
-import { expect, test } from "../support/fixtures";
+import { expect, seed, test } from "../support/fixtures";
 import { readyWorld } from "../support/world";
 
 test.describe("market data", () => {
@@ -93,5 +95,79 @@ test.describe("market data", () => {
       return w;
     });
     await expect(market.funding).toHaveText(/-0\.2000%/);
+  });
+
+  test("a price fetch failure shows an em-dash, markets still loaded", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.faults.priceStatus = 500;
+    const app = new AppPage(page);
+    await app.goto();
+    await app.signInToTerminal();
+
+    const market = new MarketHeaderPanel(page);
+    await expect(market.price).toContainText("—");
+    await expect(market.marketSelect).toContainText("BTC"); // markets loaded
+  });
+
+  test("a funding fetch failure shows an em-dash", async ({ page, world }) => {
+    seed(world, readyWorld());
+    world.faults.fundingStatus = 500;
+    const app = new AppPage(page);
+    await app.goto();
+    await app.signInToTerminal();
+
+    await expect(new MarketHeaderPanel(page).funding).toContainText("—");
+  });
+
+  test("a candles fetch failure leaves the chart mounted and terminal usable", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.faults.candlesStatus = 500;
+    const app = new AppPage(page);
+    await app.goto();
+    await app.signInToTerminal();
+
+    await expect(app.terminal).toBeVisible();
+    await expect(page.locator("canvas").first()).toBeVisible();
+    await expect(new MarketHeaderPanel(page).price).toContainText("$70,000");
+  });
+
+  test("a single-market list renders exactly one option", async ({
+    page,
+    world,
+  }) => {
+    const { market } = await enterTerminal(page, world); // default readyWorld → 1 market
+    await expect(market.marketSelect.locator("option")).toHaveCount(1);
+  });
+
+  test("switching market re-subscribes the chart to the new candle channel", async ({
+    page,
+    world,
+  }) => {
+    const { market } = await enterTerminal(page, world, () => {
+      const w = readyWorld({ markets: [MARKET, MARKET_ETH] });
+      w.candlesByMarket = {
+        [MARKET.id]: w.candles,
+        [MARKET_ETH.id]: w.candles.map((c, i) => ({
+          ...c,
+          close: (3_000n * WAD + BigInt(i) * WAD).toString(),
+        })),
+      };
+      return w;
+    });
+
+    await market.marketSelect.selectOption(MARKET_ETH.id);
+    await expect
+      .poll(() =>
+        world.sseConnections.some((chs) =>
+          chs.some((c) => c.includes(`candles:${MARKET_ETH.id}:1m`)),
+        ),
+      )
+      .toBe(true);
   });
 });

@@ -68,6 +68,18 @@ export const SET_BOOK_MODE_SELECTOR = toFunctionSelector(
   ) as AbiFunction,
 );
 
+/** Selectors the hold-barriers match on: the account-list and positions reads. */
+export const TOKEN_OF_OWNER_SELECTOR = toFunctionSelector(
+  combinedAbi.find(
+    (i) => i.type === "function" && i.name === "tokenOfOwnerByIndex",
+  ) as AbiFunction,
+);
+export const GET_OPEN_POSITION_SELECTOR = toFunctionSelector(
+  combinedAbi.find(
+    (i) => i.type === "function" && i.name === "getOpenPosition",
+  ) as AbiFunction,
+);
+
 function selectorOf(data: string): string {
   return data.slice(0, 10);
 }

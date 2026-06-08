@@ -28,14 +28,18 @@ export function WithdrawDialog({
 
   const withdraw = useTransactionMutation<
     `0x${string}`,
-    { accountId: bigint; amount: bigint }
+    { accountId: bigint; amount: string }
   >({
     transactionType: "WITHDRAW",
+    // Parse INSIDE the mutation so a malformed amount rejects the mutation (→
+    // `withdraw.error`, rendered below) instead of throwing uncaught in the
+    // click handler. Symmetric with DepositDialog, which hands the raw string to
+    // the SDK and lets it parse asynchronously.
+    // modifyCollateral(accountId, collateralId, amountDelta)
+    // collateralId = 0n (sUSDC synth market id 0)
+    // amountDelta negative = withdraw
     mutationFn: ({ accountId, amount }) =>
-      // modifyCollateral(accountId, collateralId, amountDelta)
-      // collateralId = 0n (sUSDC synth market id 0)
-      // amountDelta negative = withdraw
-      onchain.deposit.modifyCollateral(accountId, 0n, -amount),
+      onchain.deposit.modifyCollateral(accountId, 0n, -Margin.parse(amount)),
     invalidateKeys: wallet
       ? [{ queryKey: liqQueryKeys.account.margin(networkId, wallet) }]
       : [],
@@ -50,7 +54,7 @@ export function WithdrawDialog({
   // would log an unhandled promise rejection via the `void onWithdraw()` call.
   function onWithdraw() {
     if (accountId === undefined || !amount) return;
-    withdraw.mutate({ accountId, amount: Margin.parse(amount) });
+    withdraw.mutate({ accountId, amount });
   }
 
   return (

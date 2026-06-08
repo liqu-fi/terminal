@@ -6,7 +6,12 @@
 import type { Page } from "@playwright/test";
 import { numberToHex } from "viem";
 
-import { handleEthCall, MODIFY_COLLATERAL_SELECTOR } from "./chain";
+import {
+  handleEthCall,
+  MODIFY_COLLATERAL_SELECTOR,
+  TOKEN_OF_OWNER_SELECTOR,
+  GET_OPEN_POSITION_SELECTOR,
+} from "./chain";
 import type { MockWorld } from "./world";
 
 const ZERO_HASH = "0x" + "00".repeat(32);
@@ -22,8 +27,11 @@ class RpcRevert extends Error {}
 
 function buildReceipt(world: MockWorld, hash: string) {
   const tx = world.sentTxs.find((t) => t.hash === hash);
-  // A deposit/withdraw fault makes its modifyCollateral tx report a reverted
-  // receipt, which the SDK turns into a deposit-error / withdraw-error.
+  // collateralReverts flags a reverted receipt only for a *direct*
+  // modifyCollateral tx — i.e. the withdraw path, which the SDK surfaces as a
+  // withdraw-error. The deposit path wraps modifyCollateral in an aggregate3
+  // forwarder call, so its `kind` isn't this selector and the receipt stays
+  // successful; the SDK never raises a deposit-error (liqcx/monorepo#434).
   const reverted =
     !!world.faults.collateralReverts && tx?.kind === MODIFY_COLLATERAL_SELECTOR;
   const logs = (world.receipts[hash] ?? []).map((log, i) => ({
@@ -150,10 +158,37 @@ function dispatch(world: MockWorld, method: string, params: unknown[]): unknown 
   }
 }
 
+/**
+ * Await any armed hold-barrier matching this RPC message before replying.
+ * Selector matching is substring-based so it fires even when the read is nested
+ * in a Multicall3 aggregate3 batch (the inner selector appears in the calldata).
+ */
+async function awaitHolds(world: MockWorld, msg: RpcMessage): Promise<void> {
+  if (msg.method === "eth_getTransactionReceipt") {
+    await world.holds.collateralReceipt?.promise;
+    return;
+  }
+  if (msg.method === "eth_call") {
+    const data = String((msg.params?.[0] as { data?: string })?.data ?? "");
+    if (world.holds.accountRead && data.includes(TOKEN_OF_OWNER_SELECTOR.slice(2))) {
+      await world.holds.accountRead.promise;
+    }
+    if (
+      world.holds.positionsRead &&
+      data.includes(GET_OPEN_POSITION_SELECTOR.slice(2))
+    ) {
+      await world.holds.positionsRead.promise;
+    }
+  }
+}
+
 export async function mockChain(page: Page, world: MockWorld): Promise<void> {
   await page.route(/rpc\.e2e\.local/, async (route) => {
     const raw = route.request().postData() ?? "{}";
     const parsed = JSON.parse(raw) as RpcMessage | RpcMessage[];
+    for (const msg of Array.isArray(parsed) ? parsed : [parsed]) {
+      await awaitHolds(world, msg);
+    }
     const handleOne = (msg: RpcMessage) => {
       try {
         return { jsonrpc: "2.0", id: msg.id, result: dispatch(world, msg.method, msg.params ?? []) };
