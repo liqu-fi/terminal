@@ -146,6 +146,7 @@ export class UserInfoPanel {
 
 export class DepositDialog {
   readonly root: Locator;
+  readonly overlay: Locator;
   readonly amountInput: Locator;
   readonly submitButton: Locator;
   readonly cancelButton: Locator;
@@ -153,6 +154,7 @@ export class DepositDialog {
 
   constructor(page: Page) {
     this.root = page.getByTestId("deposit-dialog");
+    this.overlay = page.getByTestId("dialog-overlay");
     this.amountInput = page.getByTestId("deposit-amount-input");
     this.submitButton = page.getByTestId("deposit-submit-button");
     this.cancelButton = page.getByTestId("deposit-cancel-button");

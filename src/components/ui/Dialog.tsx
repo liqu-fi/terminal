@@ -13,6 +13,7 @@ export function Dialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      data-testid="dialog-overlay"
       onClick={onClose}
     >
       <div

@@ -2,7 +2,7 @@ import { Margin } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
-import { readyWorld } from "../support/world";
+import { armHold, readyWorld, releaseHold } from "../support/world";
 
 test.describe("deposit & withdraw", () => {
   test("depositing credits margin by the entered amount and enables trading", async ({
@@ -162,5 +162,64 @@ test.describe("deposit & withdraw", () => {
     await expect(withdraw.error).toBeVisible();
     await expect(market.margin).toHaveText(/\$5,000\.00/);
     expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  test("clicking the dialog backdrop closes it; clicking inside does not", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world);
+    await market.openDeposit();
+    await expect(deposit.root).toBeVisible();
+
+    // Click inside the panel — dialog stays open (stopPropagation).
+    await deposit.root.getByText("Deposit USDC").click();
+    await expect(deposit.root).toBeVisible();
+
+    // Click the backdrop (top-left corner, outside the panel) — dialog closes.
+    await deposit.overlay.click({ position: { x: 5, y: 5 } });
+    await expect(deposit.root).toBeHidden();
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  test("the deposit button shows a pending state while the tx is in flight", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      w.accounts[0].withdrawable = 0n;
+      return w;
+    });
+    armHold(world, "collateralReceipt"); // hold the receipt → mutation stays pending
+
+    await market.openDeposit();
+    await deposit.deposit("200");
+
+    await expect(deposit.submitButton).toHaveText(/Depositing…/);
+    await expect(deposit.submitButton).toBeDisabled();
+
+    releaseHold(world, "collateralReceipt");
+    await expect(deposit.root).toBeHidden(); // settles + closes on success
+    await expect(market.margin).toHaveText(/\$200\.00/);
+  });
+
+  test("the withdraw button shows a pending state while the tx is in flight", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world); // $5,000
+    armHold(world, "collateralReceipt");
+
+    await market.openWithdraw();
+    await withdraw.withdraw("100");
+
+    await expect(withdraw.submitButton).toHaveText(/Withdrawing…/);
+    await expect(withdraw.submitButton).toBeDisabled();
+
+    releaseHold(world, "collateralReceipt");
+    await expect(withdraw.root).toBeHidden();
+    await expect(market.margin).toHaveText(/\$4,900\.00/);
   });
 });
