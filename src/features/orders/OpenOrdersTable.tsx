@@ -1,12 +1,10 @@
 import { Side } from "@liq/sdk";
 import {
-  liqQueryKeys,
   useAccountId,
   useCancelOrderMutation,
   useConditionalOrders,
   useOpenOrdersQuery,
 } from "@liq/react";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { fmtPrice, fmtQty, parseWadLoose } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
@@ -14,23 +12,13 @@ import { useSelectedMarket } from "../market/useSelectedMarket";
 export function OpenOrdersTable() {
   const { markets } = useSelectedMarket();
   const accountId = useAccountId();
-  const queryClient = useQueryClient();
   const { data: open = [] } = useOpenOrdersQuery(accountId);
   const { data: conditional = [] } = useConditionalOrders();
   const orders = [...open, ...conditional];
+  // Cancel invalidates both the open AND conditional order lists in the SDK as
+  // of @liq/react 0.27.3 (liqcx/monorepo#453), so no consumer-side conditional
+  // invalidation is needed here.
   const cancel = useCancelOrderMutation(accountId);
-
-  // The SDK's cancel mutation invalidates only the OPEN orders query, not the
-  // conditional one (liqcx/monorepo#453), so a cancelled trigger order lingers
-  // until the next 60s poll. Invalidate the conditional query here too; the
-  // root fix belongs in @liq/react.
-  const cancelOrder = (id: string) =>
-    cancel.mutate(id, {
-      onSuccess: () =>
-        queryClient.invalidateQueries({
-          queryKey: liqQueryKeys.orders.conditional(accountId?.toString() ?? ""),
-        }),
-    });
 
   if (orders.length === 0)
     return (
@@ -84,7 +72,7 @@ export function OpenOrdersTable() {
                   type="button"
                   className="text-[11px] text-short disabled:opacity-50"
                   disabled={cancel.isPending}
-                  onClick={() => cancelOrder(o.id)}
+                  onClick={() => cancel.mutate(o.id)}
                   data-testid={`cancel-order-${o.id}`}
                 >
                   Cancel
