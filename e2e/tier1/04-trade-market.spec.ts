@@ -2,6 +2,7 @@ import { Qty } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
+import { WAD } from "../support/constants";
 
 test.describe("market orders", () => {
   test("submits a market BUY and resets the form", async ({ page, world }) => {
@@ -36,6 +37,28 @@ test.describe("market orders", () => {
     // SELL ⇒ negative signed sizeDelta
     expect(String(world.submittedOrders.at(-1)?.sizeDelta).startsWith("-")).toBe(
       true,
+    );
+  });
+
+  test("a market order carries the slippage-guarded acceptablePrice", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await trade.setSize("0.5"); // BUY (default side)
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
+    expect(world.submittedOrders.at(-1)?.acceptablePrice).toBe(
+      ((70_000n * WAD * 10_050n) / 10_000n).toString(), // mark + 0.5%
+    );
+
+    await trade.sideShort.click();
+    await trade.setSize("0.5");
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(1);
+    expect(world.submittedOrders.at(-1)?.acceptablePrice).toBe(
+      ((70_000n * WAD * 9_950n) / 10_000n).toString(), // mark − 0.5%
     );
   });
 

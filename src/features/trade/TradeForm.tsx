@@ -91,6 +91,9 @@ export function TradeForm() {
     } catch {
       return; // un-parseable price — nothing to submit
     }
+    // A blank field parses to 0n (Price.parse("") returns 0n, it does not throw)
+    // — treat it as "nothing to submit" rather than sending an order priced at 0.
+    if (price === 0n) return;
 
     if (tab === "Limit") {
       limit.mutate(
