@@ -6,7 +6,7 @@ import {
   useGatewayStore,
   useWallet,
 } from "@liq/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env } from "../../config/env";
@@ -84,6 +84,25 @@ function SessionGateInner({ children }: { children: ReactNode }) {
   const createAccount = useCreateAccountMutation();
   const auth = useGatewayAuthMutation();
 
+  // After a wrong-chain → correct-chain transition, wagmi's walletClient query
+  // may hold a cached ConnectorChainMismatchError from when the wallet was on
+  // the wrong chain. staleTime: Infinity prevents an automatic re-fetch, so we
+  // force one here whenever the query is in error state and we're on the right
+  // chain. This ensures the sign-in button is not silently broken post-switch.
+  // Destructure so the effect depends on these fields, not the whole query
+  // object (whose identity changes every render) — keeps exhaustive-deps happy
+  // and the effect from re-running needlessly.
+  const {
+    data: walletClientData,
+    isError: walletClientErrored,
+    refetch: refetchWalletClient,
+  } = useWalletClient();
+  useEffect(() => {
+    if (!wrongChain && walletClientErrored) {
+      void refetchWalletClient();
+    }
+  }, [wrongChain, walletClientErrored, refetchWalletClient]);
+
   const stage = sessionStage({
     wallet,
     wrongChain,
@@ -143,7 +162,9 @@ function SessionGateInner({ children }: { children: ReactNode }) {
       <Centered testid="session-needs-signin">
         <p className="text-muted">Sign in to the gateway (SIWE).</p>
         <Button
-          disabled={auth.isPending || accountId === undefined}
+          disabled={
+            auth.isPending || accountId === undefined || !walletClientData
+          }
           onClick={() =>
             accountId !== undefined && auth.mutate({ accountId })
           }

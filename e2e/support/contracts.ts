@@ -130,6 +130,44 @@ export const perpsMarketProxyAbi = [
     inputs: [{ name: "marketId", type: "uint128" }],
     outputs: [{ name: "", type: "uint256" }],
   },
+  {
+    name: "getOrderFees",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "marketId", type: "uint128" }],
+    outputs: [
+      { name: "makerFee", type: "uint256" },
+      { name: "takerFee", type: "uint256" },
+    ],
+  },
+  {
+    name: "skew",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "marketId", type: "uint128" }],
+    outputs: [{ name: "", type: "int256" }],
+  },
+  {
+    name: "fillPrice",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "marketId", type: "uint128" },
+      { name: "orderSize", type: "int128" },
+      { name: "price", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "getSettlementRewardCost",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "marketId", type: "uint128" },
+      { name: "settlementStrategyId", type: "uint128" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
   // --- writes ---
   {
     name: "createAccount",

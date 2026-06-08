@@ -6,7 +6,7 @@
  * state that subsequent reads (accounts.list) and gateway responses observe —
  * exactly like a real backend, but deterministic and in-process.
  */
-import { MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
+import { CHAIN_ID, MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
 
 export type OrderMode = "BOOK" | "ONCHAIN" | "RECENTLY_CHANGED";
 
@@ -73,11 +73,18 @@ export interface RecordedTx {
 
 export interface MockWorld {
   wallet: string;
+  /** Chain the injected wallet reports (eth_chainId / net_version); mutable —
+   * wallet_switchEthereumChain rewrites it and emits chainChanged. */
+  chainId: number;
   accounts: AccountFixture[];
   /** index price (onchain indexPrice + entry-price math), 18-dec */
   indexPrice: bigint;
   /** gateway mark price (GET /markets/:id/price), 18-dec */
   price: bigint;
+  /** getOrderFees read — WAD fee ratios (default 2bp maker / 6bp taker). */
+  orderFees: { maker: bigint; taker: bigint };
+  /** Market skew read — positive by default so a BUY previews as the taker side. */
+  skew: bigint;
   markets: Market[];
   funding: {
     rate: string;
@@ -110,6 +117,12 @@ export interface MockWorld {
     cancelStatus?: number;
     // chain: make modifyCollateral (deposit/withdraw) txs revert on-chain
     collateralReverts?: boolean;
+    // wallet: reject the next wallet_switchEthereumChain / every eth_sendTransaction
+    switchChainRejects?: boolean;
+    walletSendRejects?: boolean;
+    // gateway: one-shot 422 INVALID_NONCE on the next POST /orders, naming
+    // the expected nonce (drives the SDK's resync-and-retry path)
+    submitNonceConflictExpected?: string;
   };
 
   // --- recordings (assertable from specs) ---
@@ -123,9 +136,16 @@ export interface MockWorld {
   /** Count of `/auth/verify` calls rejected by `faults.authVerifyStatus`. */
   authVerifyRejections: number;
   registeredAccountIds: string[];
+  /** Signing methods the wallet performed (personal_sign, eth_signTypedData_v4, …). */
+  signRequests: string[];
+  /** GET /orders/nonce — the seed the gateway hands the client, and a counter. */
+  orderNonce: bigint;
+  orderNonceRequests: number;
 
   // --- SSE frames to emit on the next /sse connection ---
   sseFrames: string[];
+  /** channels query-param of every SSE connection the app opened. */
+  sseConnections: string[][];
 
   // --- receipts the mock chain returns for sent txs ---
   receipts: Record<string, ReceiptLog[]>;
@@ -171,9 +191,12 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
   const price = opts.price ?? 70_000n * WAD;
   return {
     wallet: TEST_ADDRESS,
+    chainId: CHAIN_ID,
     accounts: opts.accounts ?? [],
     indexPrice: price,
     price,
+    orderFees: { maker: 2n * 10n ** 14n, taker: 6n * 10n ** 14n },
+    skew: WAD,
     markets: opts.markets ?? [MARKET],
     funding: {
       rate: "1000000000000000", // 0.001 -> "0.1000%"
@@ -196,7 +219,14 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     authVerifyRequests: [],
     authVerifyRejections: 0,
     registeredAccountIds: [],
+    signRequests: [],
+    // Must exceed the SDK's timestamp-derived initial nonce (BigInt(Date.now())
+    // * 1000n ≈ 1.8e15): syncNonce is monotonic-MAX, so a lower seed would be
+    // invisible. 8.8e18 stays above it for centuries.
+    orderNonce: 8_888_888_888_888_888_888n,
+    orderNonceRequests: 0,
     sseFrames: [],
+    sseConnections: [],
     receipts: {},
     txCounter: 0,
     accountCounter: 1n,
@@ -309,6 +339,28 @@ export function sseOrderUpdateFrame(orderId: string, status: string): string {
     type: "order_update",
     channel: `order:${orderId}`,
     data: { orderId, status },
+  };
+  return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+/** A raw SSE frame carrying a CLOSED 1m candle bar on `candles:{id}:1m`. */
+export function sseCandleFrame(
+  marketId: string,
+  bar: {
+    bucketStartTs: number;
+    open: string;
+    high: string;
+    low: string;
+    close: string;
+    volume: string;
+    tradeCount: number;
+    lastTradePrice: string | null;
+  },
+): string {
+  const event = {
+    type: "candle",
+    channel: `candles:${marketId}:1m`,
+    data: bar,
   };
   return `data: ${JSON.stringify(event)}\n\n`;
 }

@@ -20,10 +20,16 @@ export class AppPage {
   readonly loadingGate: Locator;
   readonly noAccountGate: Locator;
   readonly createAccountButton: Locator;
+  readonly createAccountError: Locator;
   readonly needsSigninGate: Locator;
   readonly signinButton: Locator;
   readonly signinError: Locator;
+  readonly walletDebug: Locator;
+  readonly signinDebug: Locator;
   readonly terminal: Locator;
+  readonly wrongChainGate: Locator;
+  readonly switchChainButton: Locator;
+  readonly switchChainError: Locator;
 
   constructor(private readonly page: Page) {
     this.brand = page.getByTestId("app-brand");
@@ -33,10 +39,16 @@ export class AppPage {
     this.loadingGate = page.getByTestId("session-loading");
     this.noAccountGate = page.getByTestId("session-no-account");
     this.createAccountButton = page.getByTestId("create-account-button");
+    this.createAccountError = page.getByTestId("create-account-error");
     this.needsSigninGate = page.getByTestId("session-needs-signin");
     this.signinButton = page.getByTestId("signin-button");
     this.signinError = page.getByTestId("signin-error");
+    this.walletDebug = page.getByTestId("wallet-debug");
+    this.signinDebug = page.getByTestId("signin-debug");
     this.terminal = page.getByTestId("terminal-root");
+    this.wrongChainGate = page.getByTestId("session-wrong-chain");
+    this.switchChainButton = page.getByTestId("switch-chain-button");
+    this.switchChainError = page.getByTestId("switch-chain-error");
   }
 
   goto(): Promise<unknown> {

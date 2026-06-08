@@ -29,6 +29,30 @@ test.describe("open orders", () => {
     await expect(userInfo.orderRow("ord-cond-1")).toContainText("80,000");
   });
 
+  test("renders a resting order whose price the gateway sent in scientific notation", async ({
+    page,
+    world,
+  }) => {
+    // Regression for the live crash: the gateway serializes a WAD price ≥ 1e21
+    // ($1000+) through a JS number, so it arrives as "1e+21". BigInt("1e+21")
+    // throws, which used to blank the open-orders table (no error boundary).
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({
+        openOrders: [limitOrderFixture({ id: "ord-sci", limitPrice: "1e+21" })],
+        conditionalOrders: [
+          conditionalOrderFixture({ id: "ord-sci-trig", triggerPrice: "1e+24" }),
+        ],
+      }),
+    );
+
+    await userInfo.selectTab("open-orders");
+    // Both rows render (no crash) with their prices expanded for display.
+    await expect(userInfo.orderRow("ord-sci")).toBeVisible();
+    await expect(userInfo.orderRow("ord-sci")).toContainText("1,000");
+    await expect(userInfo.orderRow("ord-sci-trig")).toBeVisible();
+    await expect(userInfo.orderRow("ord-sci-trig")).toContainText("1,000,000");
+  });
+
   test("cancels a resting order", async ({ page, world }) => {
     const { userInfo } = await enterTerminal(page, world, () =>
       readyWorld({ openOrders: [limitOrderFixture()] }),

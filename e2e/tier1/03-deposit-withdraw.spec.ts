@@ -97,4 +97,33 @@ test.describe("deposit & withdraw", () => {
     await expect(deposit.root).toBeHidden(); // …cancel just dismisses
     expect(world.lastCollateralDelta).toBe(0n); // no collateral tx was sent
   });
+
+  test("withdraw submit is gated on a non-empty amount", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world);
+    await market.openWithdraw();
+
+    await expect(withdraw.submitButton).toBeDisabled(); // empty
+    await withdraw.amountInput.fill("50");
+    await expect(withdraw.submitButton).toBeEnabled();
+    await withdraw.amountInput.fill("");
+    await expect(withdraw.submitButton).toBeDisabled(); // cleared again
+    expect(world.lastCollateralDelta).toBe(0n); // nothing was ever sent
+  });
+
+  test("cancelling the withdraw dialog closes it without sending a tx", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world);
+    await market.openWithdraw();
+    await expect(withdraw.root).toBeVisible();
+    await withdraw.amountInput.fill("100"); // even with an amount entered…
+
+    await withdraw.cancelButton.click();
+    await expect(withdraw.root).toBeHidden(); // …cancel just dismisses
+    expect(world.lastCollateralDelta).toBe(0n); // no collateral tx was sent
+  });
 });

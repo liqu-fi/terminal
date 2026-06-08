@@ -15,7 +15,9 @@ export interface LiveEnv {
   chainId: number;
   mnemonic: string;
   accountCount: number;
-  /** worker-index → derivation index offset, to spread workers across accounts */
+  /** Opt-in: run the cold-onboarding spec (mints an account NFT per run). */
+  onboarding: boolean;
+  /** Upper bound (ms) for an on-chain settlement / fill to land on staging. */
   fillTimeoutMs: number;
 }
 
@@ -32,6 +34,9 @@ export const liveEnv: LiveEnv = {
   chainId: num(process.env.E2E_CHAIN_ID, 6343),
   mnemonic: process.env.E2E_MNEMONIC ?? "",
   accountCount: num(process.env.E2E_ACCOUNT_COUNT, 4),
+  onboarding:
+    process.env.E2E_LIVE_ONBOARDING === "1" ||
+    process.env.E2E_LIVE_ONBOARDING === "true",
   fillTimeoutMs: num(process.env.E2E_FILL_TIMEOUT_MS, 180_000),
 };
 

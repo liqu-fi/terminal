@@ -128,4 +128,93 @@ test.describe("boot + onboarding", () => {
     await expect(app.terminal).toBeVisible();
     expect(world.authVerifyRequests).toHaveLength(1);
   });
+
+  test("a wallet on a foreign chain is gated until it switches to MegaETH", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.chainId = 1; // wallet sits on Ethereum mainnet, not MegaETH
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+
+    // Gated: neither create-account nor sign-in is reachable on the wrong chain.
+    await expect(app.wrongChainGate).toBeVisible();
+    await expect(app.needsSigninGate).toBeHidden();
+
+    // Switching chains advances to the SIWE step (the account exists), then
+    // sign-in lands in the terminal — the full recovery path.
+    await app.switchChainButton.click();
+    await expect(app.needsSigninGate).toBeVisible();
+    expect(world.chainId).toBe(6343); // the wallet actually switched
+    await app.signIn();
+    await expect(app.terminal).toBeVisible();
+  });
+
+  test("a rejected chain switch surfaces the error and stays gated", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    world.chainId = 1;
+    world.faults.switchChainRejects = true;
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+    await expect(app.wrongChainGate).toBeVisible();
+
+    await app.switchChainButton.click();
+    // The rejection is surfaced inline (no silent dead button) and the gate holds.
+    await expect(app.switchChainError).toBeVisible();
+    await expect(app.wrongChainGate).toBeVisible();
+    expect(world.chainId).toBe(1); // the wallet never moved
+  });
+
+  test("a rejected create-account tx surfaces the error and recovers on retry", async ({
+    page,
+    world,
+  }) => {
+    // default freshWorld: connected wallet, no perps account
+    const app = new AppPage(page);
+    await app.goto();
+    await app.connect();
+    await expect(app.noAccountGate).toBeVisible();
+
+    world.faults.walletSendRejects = true;
+    await app.createAccountButton.click();
+    // The wallet rejection lands in the ErrorLine — not a silent dead button.
+    // (No expect.poll barrier à la the SIWE test: the reject is a synchronous
+    // throw in the wallet — the visible ErrorLine itself proves the mutation
+    // settled, so nothing is in flight when the fault clears below.)
+    await expect(app.createAccountError).toBeVisible();
+    await expect(app.noAccountGate).toBeVisible(); // still gated
+    expect(world.accounts).toHaveLength(0); // nothing was minted
+
+    delete world.faults.walletSendRejects;
+    await app.createAccountButton.click();
+    await expect(app.needsSigninGate).toBeVisible({ timeout: 25_000 });
+    expect(world.accounts).toHaveLength(1);
+  });
+
+  test("integrator debug overlays render and never intercept clicks", async ({
+    page,
+    world,
+  }) => {
+    seed(world, readyWorld());
+    const app = new AppPage(page);
+    await app.goto();
+    // The wallet overlay is up from boot and is click-transparent by CSS —
+    // that property is exactly what keeps it from blocking the app's CTAs.
+    await expect(app.walletDebug).toBeVisible();
+    await expect(app.walletDebug).toHaveCSS("pointer-events", "none");
+
+    await app.connect();
+    // The sign-in stage shows the auth-state JSON dump.
+    await expect(app.signinDebug).toBeVisible();
+    await expect(app.signinDebug).toContainText('"status"');
+    // …and the CTA underneath the fixed overlay still works end-to-end.
+    await app.signIn();
+    await expect(app.terminal).toBeVisible();
+  });
 });

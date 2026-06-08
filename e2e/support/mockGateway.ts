@@ -139,6 +139,9 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- SSE ---------------------------------------------------------------
     if (path.endsWith("/sse")) {
+      world.sseConnections.push(
+        (url.searchParams.get("channels") ?? "").split(","),
+      );
       const frames = await sseLongPoll(world);
       try {
         await route.fulfill({
@@ -229,6 +232,17 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       return;
     }
 
+    // --- order nonce (must precede the order matchers: "/orders/nonce" would
+    // otherwise be captured by the single-order regex as orderId="nonce") ----
+    // Static — the mock never advances orderNonce on submits, unlike the real
+    // gateway. A test fetching the nonce twice gets the same seed; fine for
+    // current specs (the SDK's syncNonce is monotonic-max, a stale seed no-ops).
+    if (path.endsWith("/orders/nonce")) {
+      world.orderNonceRequests += 1;
+      await send(route, { nextNonce: world.orderNonce.toString() });
+      return;
+    }
+
     // --- orders ------------------------------------------------------------
     if (path.endsWith("/orders")) {
       if (method === "POST") {
@@ -237,6 +251,25 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
           unknown
         >;
         world.submittedOrders.push(payload);
+        // One-shot INVALID_NONCE conflict: reject THIS submit naming the nonce
+        // the gateway expects (the real error envelope shape). Cleared on use,
+        // so the SDK's automatic retry then succeeds.
+        if (world.faults.submitNonceConflictExpected) {
+          const expected = world.faults.submitNonceConflictExpected;
+          delete world.faults.submitNonceConflictExpected;
+          await route.fulfill({
+            status: 422,
+            contentType: "application/json",
+            body: JSON.stringify({
+              error: {
+                code: "INVALID_NONCE",
+                message: "invalid nonce",
+                details: { expected },
+              },
+            }),
+          });
+          return;
+        }
         if (world.faults.submitOrderStatus) {
           await error(route, world.faults.submitOrderStatus, "order_rejected");
           return;

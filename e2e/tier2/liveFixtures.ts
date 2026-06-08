@@ -9,11 +9,16 @@ import { mnemonicToAccount } from "viem/accounts";
 import { liveConfigured, liveEnv } from "./env";
 import { installLiveWallet } from "./liveWallet";
 
-export const test = base.extend<{ liveWallet: void }>({
+export const test = base.extend<{ liveWalletIndex: number; liveWallet: void }>({
+  /** Derivation index for the page's wallet — overridable per spec file
+   * (the onboarding spec uses a fresh per-run index). */
+  liveWalletIndex: [0, { option: true }],
   liveWallet: [
-    async ({ page }, use) => {
+    async ({ page, liveWalletIndex }, use) => {
       if (liveConfigured().ok) {
-        const account = mnemonicToAccount(liveEnv.mnemonic, { addressIndex: 0 });
+        const account = mnemonicToAccount(liveEnv.mnemonic, {
+          addressIndex: liveWalletIndex,
+        });
         await installLiveWallet(page, account, liveEnv.rpcUrl, liveEnv.chainId);
       }
       await use();
