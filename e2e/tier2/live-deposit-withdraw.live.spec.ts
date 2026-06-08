@@ -6,6 +6,7 @@ import {
 import { ensureTradeReady } from "./ensureTradeReady";
 import { liveConfigured, liveEnv } from "./env";
 import { expect, test } from "./liveFixtures";
+import { readAccountDebt } from "./onchainReads";
 
 test.describe("live: deposit & withdraw", () => {
   // Two real on-chain txs (deposit + withdraw) — budget like the fill test.
@@ -23,6 +24,17 @@ test.describe("live: deposit & withdraw", () => {
   test("deposits then withdraws the same amount round-trip", async ({
     page,
   }) => {
+    // Precondition: Synthetix blocks ALL withdrawals while the account carries
+    // debt (closed-at-loss), even of a fresh deposit — and the reference
+    // terminal has no repay/unlock step. Gate here so a debt-locked account
+    // skips fast instead of stranding the deposit and hanging 180s on the
+    // reverting withdraw. A debt-free (or brand-new) account proceeds normally.
+    const debt = await readAccountDebt();
+    test.skip(
+      debt !== null && debt > 0n,
+      `account carries Synthetix debt (${debt}) — withdrawals are blocked until repaid`,
+    );
+
     await ensureTradeReady(page);
     const market = new MarketHeaderPanel(page);
     const margin = async () =>
