@@ -126,4 +126,21 @@ test.describe("deposit & withdraw", () => {
     await expect(withdraw.root).toBeHidden(); // …cancel just dismisses
     expect(world.lastCollateralDelta).toBe(0n); // no collateral tx was sent
   });
+
+  test("a malformed withdraw amount surfaces an error and sends no tx", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world); // $5,000
+    await market.openWithdraw();
+    await withdraw.amountInput.fill("abc"); // non-numeric → submit is enabled (non-empty)
+
+    await expect(withdraw.submitButton).toBeEnabled();
+    await withdraw.submitButton.click();
+
+    // The error renders (not an uncaught throw), nothing is sent, margin holds.
+    await expect(withdraw.error).toBeVisible();
+    await expect(market.margin).toHaveText(/\$5,000\.00/);
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
 });
