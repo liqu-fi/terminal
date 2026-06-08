@@ -6,7 +6,7 @@ import {
   useOpenOrdersQuery,
 } from "@liq/react";
 
-import { fmtPrice, fmtQty } from "../../lib/format";
+import { fmtPrice, fmtQty, parseWadLoose } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 
 export function OpenOrdersTable() {
@@ -45,7 +45,11 @@ export function OpenOrdersTable() {
       </thead>
       <tbody>
         {orders.map((o) => {
+          // The gateway emits large prices in scientific notation ("1e+21");
+          // parseWadLoose tolerates it where a bare BigInt() would throw and
+          // crash this render (no error boundary). See lib/format.ts.
           const px = o.triggerPrice ?? o.limitPrice;
+          const size = parseWadLoose(o.sizeDelta);
           return (
             <tr
               key={o.id}
@@ -57,14 +61,8 @@ export function OpenOrdersTable() {
               <td className={o.side === Side.BUY ? "text-long" : "text-short"}>
                 {o.side}
               </td>
-              <td>
-                {fmtQty(
-                  BigInt(o.sizeDelta) < 0n
-                    ? -BigInt(o.sizeDelta)
-                    : BigInt(o.sizeDelta),
-                )}
-              </td>
-              <td>{px && px !== "0" ? fmtPrice(BigInt(px)) : "—"}</td>
+              <td>{fmtQty(size < 0n ? -size : size)}</td>
+              <td>{px && px !== "0" ? fmtPrice(parseWadLoose(px)) : "—"}</td>
               <td className="text-muted">{o.status}</td>
               <td>
                 <button
