@@ -48,11 +48,6 @@ test.describe("deposit & withdraw", () => {
     expect(world.lastCollateralDelta).toBe(-Margin.parse("100"));
   });
 
-  // NOTE: the deposit revert path is intentionally not asserted here. Unlike
-  // withdraw (below), a reverted deposit surfaces as an *unhandled* promise
-  // rejection from the SDK's DepositService.modifyCollateral and never sets the
-  // mutation error, so no `deposit-error` is rendered. Tracked in liqcx/monorepo#434
-  // — a test that asserted `deposit-error` would pin broken behavior.
   test("a reverted withdraw surfaces an error and leaves margin unchanged", async ({
     page,
     world,
@@ -66,6 +61,31 @@ test.describe("deposit & withdraw", () => {
 
     await expect(withdraw.error).toBeVisible();
     await expect(market.margin).toHaveText(/\$5,000\.00/); // unchanged
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  // NOTE: liqcx/monorepo#434 — the SDK's deposit mutation does not surface a
+  // reverted modifyCollateral as `deposit.error` (unlike withdraw). The in-repo
+  // mitigation (an explicit onError) prevents the unhandled rejection; the full
+  // error-UI fix needs an SDK change. This test pins the stable outcome.
+  test("a reverted deposit leaves margin unchanged and sends no collateral delta", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      w.accounts[0].withdrawable = 0n;
+      return w;
+    });
+    world.faults.collateralReverts = true;
+
+    await market.openDeposit();
+    await expect(deposit.root).toBeVisible();
+    await deposit.deposit("200");
+
+    // Deterministic outcome: no margin moved, no collateral delta recorded.
+    await expect(market.margin).toHaveText(/\$0\.00/);
     expect(world.lastCollateralDelta).toBe(0n);
   });
 
