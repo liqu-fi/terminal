@@ -24,11 +24,7 @@ import {
   multicall3Abi,
   perpsMarketProxyAbi,
 } from "./contracts";
-import {
-  findAccount,
-  type MockWorld,
-  type ReceiptLog,
-} from "./world";
+import { findAccount, type MockWorld, type ReceiptLog } from "./world";
 
 const MAX_UINT256 = (1n << 256n) - 1n;
 
@@ -50,9 +46,7 @@ for (const item of combinedAbi) {
     REGISTRY.set(toFunctionSelector(item), item as AbiFunction);
   }
 }
-const AGGREGATE3_SELECTOR = toFunctionSelector(
-  multicall3Abi[0] as AbiFunction,
-);
+const AGGREGATE3_SELECTOR = toFunctionSelector(multicall3Abi[0] as AbiFunction);
 
 /** Selector of the collateral write — used to mark a reverting deposit/withdraw. */
 export const MODIFY_COLLATERAL_SELECTOR = toFunctionSelector(
@@ -140,6 +134,10 @@ function computeRead(
       const account = findAccount(world, args[0] as bigint);
       return [account?.withdrawable ?? 0n];
     }
+    case "debt": {
+      const account = findAccount(world, args[0] as bigint);
+      return [account?.debt ?? 0n];
+    }
     case "getOrderMode": {
       const account = findAccount(world, args[0] as bigint);
       const mode = account?.orderMode ?? "ONCHAIN";
@@ -224,10 +222,10 @@ export function applyWrite(
     const [calls] = decodeAbiParameters(
       multicall3Abi[0].inputs,
       bodyOf(data),
-    ) as unknown as [
-      ReadonlyArray<{ target: string; callData: Hex }>,
-    ];
-    return calls.flatMap((call) => applyWrite(world, call.target, call.callData));
+    ) as unknown as [ReadonlyArray<{ target: string; callData: Hex }>];
+    return calls.flatMap((call) =>
+      applyWrite(world, call.target, call.callData),
+    );
   }
 
   const item = REGISTRY.get(selector);
@@ -257,7 +255,8 @@ export function applyWrite(
     }
     case "setBookMode": {
       const account = findAccount(world, args[0] as bigint);
-      if (account) account.orderMode = (args[1] as boolean) ? "BOOK" : "ONCHAIN";
+      if (account)
+        account.orderMode = (args[1] as boolean) ? "BOOK" : "ONCHAIN";
       return [];
     }
     case "modifyCollateral": {

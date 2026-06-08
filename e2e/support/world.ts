@@ -27,6 +27,8 @@ export interface AccountFixture {
   available: bigint;
   /** getWithdrawableMargin (int256, 18-dec) */
   withdrawable: bigint;
+  /** Outstanding Synthetix debt (uint256, 18-dec). Defaults to 0 (debt-free). */
+  debt?: bigint;
   positions: PositionFixture[];
 }
 

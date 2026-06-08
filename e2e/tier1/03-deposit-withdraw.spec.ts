@@ -1,6 +1,7 @@
 import { Margin } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
+import { WAD } from "../support/constants";
 import { expect, test } from "../support/fixtures";
 import { armHold, readyWorld, releaseHold } from "../support/world";
 
@@ -221,5 +222,25 @@ test.describe("deposit & withdraw", () => {
     releaseHold(world, "collateralReceipt");
     await expect(withdraw.root).toBeHidden();
     await expect(market.margin).toHaveText(/\$4,900\.00/);
+  });
+
+  test("an account with debt offers an atomic Repay & Withdraw", async ({
+    page,
+    world,
+  }) => {
+    // Synthetix blocks withdrawals while the account carries debt; the dialog
+    // surfaces it and switches the action to an atomic repay+withdraw (#453 arc).
+    const { market, withdraw } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].debt = 12n * WAD; // $12 closed-at-loss debt
+      return w;
+    });
+
+    await market.openWithdraw();
+    await expect(withdraw.root).toBeVisible();
+    await expect(withdraw.debtNotice).toBeVisible();
+    await expect(withdraw.debtNotice).toContainText("12");
+    await withdraw.amountInput.fill("100");
+    await expect(withdraw.submitButton).toHaveText("Repay & Withdraw");
   });
 });
