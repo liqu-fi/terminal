@@ -176,6 +176,7 @@ export class WithdrawDialog {
   readonly submitButton: Locator;
   readonly cancelButton: Locator;
   readonly error: Locator;
+  readonly debtNotice: Locator;
 
   constructor(page: Page) {
     this.root = page.getByTestId("withdraw-dialog");
@@ -183,6 +184,7 @@ export class WithdrawDialog {
     this.submitButton = page.getByTestId("withdraw-submit-button");
     this.cancelButton = page.getByTestId("withdraw-cancel-button");
     this.error = page.getByTestId("withdraw-error");
+    this.debtNotice = page.getByTestId("withdraw-debt-notice");
   }
 
   async withdraw(amount: string): Promise<void> {

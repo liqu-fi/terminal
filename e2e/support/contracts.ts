@@ -96,6 +96,13 @@ export const perpsMarketProxyAbi = [
     outputs: [{ name: "", type: "int256" }],
   },
   {
+    name: "debt",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "accountId", type: "uint128" }],
+    outputs: [{ name: "accountDebt", type: "uint256" }],
+  },
+  {
     name: "getOrderMode",
     type: "function",
     stateMutability: "view",

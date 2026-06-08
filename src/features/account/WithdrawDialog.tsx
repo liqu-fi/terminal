@@ -4,14 +4,17 @@ import {
   useAccountId,
   useLiqOnchain,
   useNetworkId,
+  useRepay,
   useTransactionMutation,
   useWallet,
 } from "@liq/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";
 import { Dialog } from "../../components/ui/Dialog";
 import { Input } from "../../components/ui/Input";
+import { fmtUsd } from "../../lib/format";
 
 export function WithdrawDialog({
   open,
@@ -24,7 +27,23 @@ export function WithdrawDialog({
   const onchain = useLiqOnchain();
   const networkId = useNetworkId();
   const wallet = useWallet();
+  const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
+
+  // Synthetix blocks ALL collateral withdrawals while the account carries debt
+  // (closed-at-loss); a plain withdraw would revert. Read it so we can offer an
+  // atomic repay+withdraw instead. Best-effort: on error/loading the value is
+  // `undefined`, which falls through to the normal withdraw path (so debt-free
+  // or mocked accounts are unaffected).
+  const debtKey = ["liq", "account", "debt", accountId?.toString() ?? ""];
+  const { data: debt } = useQuery<bigint>({
+    queryKey: debtKey,
+    queryFn: () => onchain.collateral.debt(accountId!),
+    enabled: open && accountId !== undefined,
+    retry: false,
+    staleTime: 10_000,
+  });
+  const hasDebt = debt !== undefined && debt > 0n;
 
   const withdraw = useTransactionMutation<
     `0x${string}`,
@@ -49,18 +68,48 @@ export function WithdrawDialog({
     },
   });
 
-  // `mutate` (not `mutateAsync`): a failed withdraw surfaces via the mutation's
-  // `error` (rendered below) and `onTransactionError`; rejecting this handler
-  // would log an unhandled promise rejection via the `void onWithdraw()` call.
-  function onWithdraw() {
+  // Repay the debt and withdraw in a SINGLE transaction (RepayBuilder.thenWithdraw):
+  // payDebt clears the gate in-batch, then the withdraw of `withdrawWei` succeeds.
+  const repay = useRepay();
+
+  const pending = withdraw.isPending || repay.isPending;
+  const error = hasDebt ? repay.error : withdraw.error;
+
+  // `mutate` (not `mutateAsync`): a failed op surfaces via the mutation's
+  // `error` (rendered below); rejecting this handler would log an unhandled
+  // promise rejection via the `void` click binding.
+  function onSubmit() {
     if (accountId === undefined || !amount) return;
-    withdraw.mutate({ accountId, amount });
+    if (hasDebt) {
+      repay.mutate(
+        { accountId, withdrawWei: Margin.parse(amount) },
+        {
+          onSuccess: () => {
+            setAmount("");
+            void queryClient.invalidateQueries({ queryKey: debtKey });
+            onClose();
+          },
+        },
+      );
+    } else {
+      withdraw.mutate({ accountId, amount });
+    }
   }
 
   return (
     <Dialog open={open} onClose={onClose}>
       <div data-testid="withdraw-dialog">
         <h3 className="mb-3 text-sm font-semibold">Withdraw sUSDC</h3>
+        {hasDebt && (
+          <div
+            className="mb-3 rounded border border-short/40 bg-short/10 p-2 text-[11px] text-short"
+            data-testid="withdraw-debt-notice"
+          >
+            ⚠ Account debt: {fmtUsd(debt ?? 0n)}. Withdrawals are blocked until
+            repaid — this repays your debt (from wallet funds) and withdraws in
+            one transaction.
+          </div>
+        )}
         <Input
           inputMode="decimal"
           value={amount}
@@ -68,9 +117,12 @@ export function WithdrawDialog({
           placeholder="100"
           data-testid="withdraw-amount-input"
         />
-        {withdraw.error && (
-          <p className="mt-2 text-[11px] text-short" data-testid="withdraw-error">
-            {withdraw.error.message}
+        {error && (
+          <p
+            className="mt-2 text-[11px] text-short"
+            data-testid="withdraw-error"
+          >
+            {error.message}
           </p>
         )}
         <div className="mt-3 flex gap-2">
@@ -84,11 +136,17 @@ export function WithdrawDialog({
           </Button>
           <Button
             className="flex-1"
-            disabled={withdraw.isPending || !amount || accountId === undefined}
-            onClick={onWithdraw}
+            disabled={pending || !amount || accountId === undefined}
+            onClick={onSubmit}
             data-testid="withdraw-submit-button"
           >
-            {withdraw.isPending ? "Withdrawing…" : "Withdraw"}
+            {pending
+              ? hasDebt
+                ? "Repaying…"
+                : "Withdrawing…"
+              : hasDebt
+                ? "Repay & Withdraw"
+                : "Withdraw"}
           </Button>
         </div>
       </div>
