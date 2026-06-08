@@ -35,6 +35,9 @@ export async function installWallet(
         case "net_version":
           return String(world.chainId);
         case "eth_requestAccounts":
+          if (world.faults.connectRejects) {
+            throw new Error("User rejected the request");
+          }
           state.connected = true;
           return [TEST_ADDRESS.toLowerCase()];
         case "eth_accounts":

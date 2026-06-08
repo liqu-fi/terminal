@@ -110,6 +110,9 @@ export class UserInfoPanel {
     return this.tab(tab).click();
   }
 
+  get positionsLoading(): Locator {
+    return this.page.getByTestId("positions-loading");
+  }
   get positionsTable(): Locator {
     return this.page.getByTestId("positions-table");
   }
