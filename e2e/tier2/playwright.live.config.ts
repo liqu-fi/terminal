@@ -38,7 +38,9 @@ export default defineConfig({
         ].join(" "),
         url: `http://localhost:${PORT}`,
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        // Cold vite start pre-bundles the wagmi/viem dep graph with an empty
+        // `.vite` cache, which can exceed 2 min on first run; 120s was too tight.
+        timeout: 240_000,
       }
     : undefined,
 });
