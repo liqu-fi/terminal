@@ -104,6 +104,8 @@ export interface MockWorld {
     tradeCount: number;
     lastTradePrice: string | null;
   }>;
+  /** Per-market candle override; the /candles route falls back to `candles`. */
+  candlesByMarket?: Record<string, MockWorld["candles"]>;
   openOrders: GatewayOrder[];
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
@@ -123,6 +125,14 @@ export interface MockWorld {
     // gateway: one-shot 422 INVALID_NONCE on the next POST /orders, naming
     // the expected nonce (drives the SDK's resync-and-retry path)
     submitNonceConflictExpected?: string;
+    // gateway: per-endpoint next-response status override (mirror marketsStatus)
+    priceStatus?: number;
+    fundingStatus?: number;
+    candlesStatus?: number;
+    ordersStatus?: number;
+    tradesStatus?: number;
+    // wallet: reject the next eth_requestAccounts (user dismisses the connect prompt)
+    connectRejects?: boolean;
   };
 
   // --- recordings (assertable from specs) ---
@@ -150,6 +160,9 @@ export interface MockWorld {
   // --- receipts the mock chain returns for sent txs ---
   receipts: Record<string, ReceiptLog[]>;
 
+  /** Named response barriers an interceptor awaits before replying (loading-state tests). */
+  holds: Record<string, Hold>;
+
   // --- internal ---
   txCounter: number;
   accountCounter: bigint;
@@ -160,6 +173,11 @@ export interface ReceiptLog {
   address: string;
   topics: string[];
   data: string;
+}
+
+export interface Hold {
+  promise: Promise<void>;
+  release: () => void;
 }
 
 function defaultCandles(price: bigint): MockWorld["candles"] {
@@ -228,6 +246,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     sseFrames: [],
     sseConnections: [],
     receipts: {},
+    holds: {},
     txCounter: 0,
     accountCounter: 1n,
     blockNumber: 1_000_000n,
@@ -276,6 +295,25 @@ export function findAccount(
 export function nextTxHash(world: MockWorld): string {
   world.txCounter += 1;
   return ("0x" + world.txCounter.toString(16).padStart(64, "0")) as string;
+}
+
+/**
+ * Install an unresolved barrier under `name`. An interceptor awaits it before
+ * replying, so a test can assert the in-flight UI, then release it to settle.
+ * Deterministic — no fixed delay, so no timing race.
+ */
+export function armHold(world: MockWorld, name: string): void {
+  let release!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  world.holds[name] = { promise, release };
+}
+
+/** Release + remove a previously armed hold so the held response proceeds. */
+export function releaseHold(world: MockWorld, name: string): void {
+  world.holds[name]?.release();
+  delete world.holds[name];
 }
 
 /** A 1.0-BTC long limit order resting at $60k. */
