@@ -264,6 +264,7 @@ export function applyWrite(
       // (see mockChain.buildReceipt) and the SDK surfaces it as a tx error.
       if (world.faults.collateralReverts) return [];
       const account = findAccount(world, args[0] as bigint);
+      world.lastCollateralId = args[1] as bigint;
       const amountDelta = args[2] as bigint;
       world.lastCollateralDelta = amountDelta;
       if (account) {
