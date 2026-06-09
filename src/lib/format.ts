@@ -35,6 +35,21 @@ export function toNum(wad: bigint): number {
   return Number(formatUnits(wad, 18));
 }
 
+/**
+ * Format an 18-dec WAD bigint to a plain decimal string truncated (toward
+ * zero) to `decimals` fractional digits, with trailing zeros stripped. Used to
+ * seed money inputs from a computed amount (slider / Max button) so the typed
+ * value stays exact-parseable yet human-sized. Truncates rather than rounds so
+ * a "Max" never seeds an amount that exceeds the source balance.
+ */
+export function wadToFixed(wad: bigint, decimals: number): string {
+  const neg = wad < 0n;
+  const s = formatUnits(neg ? -wad : wad, 18);
+  const [int, frac = ""] = s.split(".");
+  const kept = frac.slice(0, Math.max(0, decimals)).replace(/0+$/, "");
+  return (neg ? "-" : "") + (kept ? `${int}.${kept}` : int);
+}
+
 export function fmtUsd(v: bigint): string {
   return `$${toNum(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

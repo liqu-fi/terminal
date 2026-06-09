@@ -20,7 +20,7 @@ test.describe("limit orders", () => {
     expect(order.acceptablePrice).toBe(Price.parse("65000").toString());
   });
 
-  test("a limit submit with a blank price is enabled but sends nothing", async ({
+  test("a limit submit is disabled until a price is entered", async ({
     page,
     world,
   }) => {
@@ -28,11 +28,13 @@ test.describe("limit orders", () => {
     await trade.selectTab("limit");
     await trade.setSize("1"); // valid size, price left blank
 
-    await expect(trade.submitButton).toBeEnabled();
-    await trade.submit();
-
-    await expect(trade.tradeError).toBeHidden();
+    // A limit order with no price can't be sent — the submit is gated, not a
+    // no-op click (clearer than the old "enabled but does nothing").
+    await expect(trade.submitButton).toBeDisabled();
     expect(world.submittedOrders.length).toBe(0);
+
+    await trade.setLimitPrice("65000");
+    await expect(trade.submitButton).toBeEnabled();
   });
 
   test("submits a limit order that appears in open orders", async ({

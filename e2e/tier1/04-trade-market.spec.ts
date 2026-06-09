@@ -94,4 +94,39 @@ test.describe("market orders", () => {
     await expect(trade.tradeError).toBeHidden(); // recovery, not failure
     await expect(trade.sizeInput).toHaveValue("");
   });
+
+  test("attaches reduce-only TP/SL conditional orders after a long entry", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    // Long market entry with TP above / SL below.
+    await trade.setSize("0.5"); // BUY (default side)
+    await trade.tpslToggle.click();
+    await trade.entryTpInput.fill("80000");
+    await trade.entrySlInput.fill("60000");
+    await trade.submit();
+
+    // entry MARKET + TAKE_PROFIT_MARKET + STOP_MARKET = 3 submits
+    await expect.poll(() => world.submittedOrders.length).toBe(3);
+    const tp = world.submittedOrders.find(
+      (o) => o.orderType === "TAKE_PROFIT_MARKET",
+    )!;
+    const sl = world.submittedOrders.find(
+      (o) => o.orderType === "STOP_MARKET",
+    )!;
+    // long → TP triggers above, SL below; both CLOSE the position (opposite
+    // side, negative/short sizeDelta), carrying the typed trigger prices.
+    expect(tp.triggerAbove).toBe(true);
+    expect(sl.triggerAbove).toBe(false);
+    expect(tp.side).toBe("SELL");
+    expect(sl.side).toBe("SELL");
+    expect(String(tp.sizeDelta).startsWith("-")).toBe(true);
+    expect(String(sl.sizeDelta).startsWith("-")).toBe(true);
+
+    // TP/SL prices are cleared after a confirmed submit (no stale re-attach).
+    await expect(trade.entryTpInput).toHaveValue("");
+    await expect(trade.entrySlInput).toHaveValue("");
+  });
 });
