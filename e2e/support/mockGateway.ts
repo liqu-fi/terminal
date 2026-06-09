@@ -37,6 +37,22 @@ function marketSummary(world: MockWorld) {
   }));
 }
 
+// `MarketsService.listFull` maps `BigInt(initialMarginBps)` /
+// `BigInt(maintenanceMarginBps)`, so those fields must be present integer
+// strings (a bare summary made `BigInt(undefined)` throw). 50 bps maintenance
+// drives the terminal's liq-price estimate.
+function marketFull(world: MockWorld) {
+  return world.markets.map((m) => ({
+    id: m.id,
+    symbol: m.symbol,
+    pythFeedId: m.pythFeedId,
+    isActive: true,
+    initialMarginBps: "200",
+    maintenanceMarginBps: "50",
+    dynamic: null,
+  }));
+}
+
 function orderListFor(world: MockWorld, status: string | null): GatewayOrder[] {
   if (status && status.includes("TRIGGER_PENDING")) return world.conditionalOrders;
   return world.openOrders;
@@ -202,7 +218,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- markets -----------------------------------------------------------
     if (path.endsWith("/markets/full")) {
-      await send(route, marketSummary(world));
+      await send(route, marketFull(world));
       return;
     }
     if (path.endsWith("/markets")) {

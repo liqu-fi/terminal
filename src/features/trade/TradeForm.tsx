@@ -1,4 +1,4 @@
-import { Price, Qty, Side } from "@liq/sdk";
+import { Price, Side } from "@liq/sdk";
 import {
   useAccountId,
   useAvailableMarginQuery,
@@ -6,15 +6,20 @@ import {
   useSubmitLimitOrder,
   useSubmitMarketOrder,
 } from "@liq/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
+import { DecimalInput } from "../../components/ui/DecimalInput";
+import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
-import { acceptablePrice, computeSizeDelta, leverageToSize } from "./orderMath";
+import { EntryTpSlFields } from "./EntryTpSlFields";
+import { acceptablePrice } from "./orderMath";
+import { SizeField } from "./SizeField";
+import { SizePercent } from "./SizePercent";
 import { TradePreviewRow } from "./TradePreviewRow";
 import { useMarkPrice } from "./useMarkPrice";
+import { useOrderSizing } from "./useOrderSizing";
 
 const TABS = ["Market", "Limit", "Stop", "Take Profit"] as const;
 type Tab = (typeof TABS)[number];
@@ -33,42 +38,93 @@ export function TradeForm() {
 
   const [tab, setTab] = useState<Tab>("Market");
   const [side, setSide] = useState<Side>(Side.BUY);
-  const [size, setSize] = useState("");
-  const [leverage, setLeverage] = useState(2);
   const [limitPrice, setLimitPrice] = useState("");
   const [triggerPrice, setTriggerPrice] = useState("");
   const [triggerAbove, setTriggerAbove] = useState(true);
+  const [tpslOn, setTpslOn] = useState(false);
+  const [tp, setTp] = useState("");
+  const [sl, setSl] = useState("");
 
+  const sizing = useOrderSizing({
+    market,
+    available: margins?.available ?? 0n,
+    markPrice,
+    side,
+  });
   const maxLev = market?.maxLeverage ?? 25;
-
-  const sizeQty = useMemo(() => {
-    try {
-      return size ? Qty.parse(size) : 0n;
-    } catch {
-      return 0n;
-    }
-  }, [size]);
-  const sizeDelta = computeSizeDelta(sizeQty, side);
+  const attachable = tab === "Market" || tab === "Limit";
 
   const pending =
     submitMarket.isPending || limit.isPending || conditional.isPending;
   const error = submitMarket.error ?? limit.error ?? conditional.error;
   const insufficientMargin = !margins || margins.available === 0n;
+
+  // The active tab's price field, parsed (0n = blank/unparseable).
+  function parsedTabPrice(): bigint {
+    const raw = tab === "Limit" ? limitPrice : triggerPrice;
+    if (tab === "Market") return markPrice;
+    try {
+      return Price.parse(raw);
+    } catch {
+      return 0n;
+    }
+  }
+  const tabPriceReady = parsedTabPrice() > 0n;
+
   const disabled =
     pending ||
     accountId === undefined ||
     marketId === undefined ||
-    sizeQty === 0n ||
     insufficientMargin ||
-    markPrice === 0n;
+    !sizing.validation.ok ||
+    !tabPriceReady;
+
+  // Reduce-only TP/SL submitted after a confirmed entry (best-effort, not
+  // atomic). Long: TP triggers above, SL below; short: mirrored. Closing side
+  // and delta are the inverse of the entry.
+  function submitAttachedTpSl(entryDelta: bigint, entrySide: Side) {
+    if (!tpslOn || accountId === undefined || marketId === undefined) return;
+    const long = entrySide === Side.BUY;
+    const closeDelta = -entryDelta;
+    const closeSide = long ? Side.SELL : Side.BUY;
+    const fire = (raw: string, orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET", above: boolean) => {
+      if (!raw) return;
+      let triggerPrice: bigint;
+      try {
+        triggerPrice = Price.parse(raw);
+      } catch {
+        return;
+      }
+      if (triggerPrice <= 0n) return;
+      conditional.mutate({
+        accountId,
+        marketId,
+        sizeDelta: closeDelta,
+        side: closeSide,
+        orderType,
+        triggerPrice,
+        triggerAbove: above,
+      });
+    };
+    fire(tp, "TAKE_PROFIT_MARKET", long);
+    fire(sl, "STOP_MARKET", !long);
+  }
 
   // `mutate` (not `mutateAsync`): a rejected submit surfaces via the mutation's
   // `error` (the trade-error row below), never as an unhandled rejection from
-  // the click handler. `Price.parse` can throw on un-parseable input, so it's
-  // guarded; the form is cleared only after a confirmed submit (onSuccess).
+  // the click handler. The form is cleared only after a confirmed submit.
   function submit() {
     if (accountId === undefined || marketId === undefined) return;
-    const onSuccess = () => setSize("");
+    const sizeDelta = sizing.sizeDelta;
+    const onSuccess = () => {
+      sizing.reset();
+      // Fire the attached orders from the just-submitted prices, THEN clear the
+      // TP/SL fields — otherwise the next entry on this tab would re-attach the
+      // stale prices (the form clears only on a confirmed submit).
+      submitAttachedTpSl(sizeDelta, side);
+      setTp("");
+      setSl("");
+    };
 
     if (tab === "Market") {
       submitMarket.mutate(
@@ -84,16 +140,8 @@ export function TradeForm() {
       return;
     }
 
-    // Limit / Stop / Take Profit all need a parsed price.
-    let price: bigint;
-    try {
-      price = Price.parse(tab === "Limit" ? limitPrice : triggerPrice);
-    } catch {
-      return; // un-parseable price — nothing to submit
-    }
-    // A blank field parses to 0n (Price.parse("") returns 0n, it does not throw)
-    // — treat it as "nothing to submit" rather than sending an order priced at 0.
-    if (price === 0n) return;
+    const price = parsedTabPrice();
+    if (price <= 0n) return;
 
     if (tab === "Limit") {
       limit.mutate(
@@ -124,6 +172,14 @@ export function TradeForm() {
   }
 
   const long = side === Side.BUY;
+  const submitLabel = !sizing.validation.ok
+    ? (sizing.validation.reason ?? (long ? "Buy / Long" : "Sell / Short"))
+    : pending
+      ? "Submitting…"
+      : long
+        ? "Buy / Long"
+        : "Sell / Short";
+
   return (
     <div
       className="flex w-[240px] shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
@@ -165,24 +221,43 @@ export function TradeForm() {
         </Button>
       </div>
 
-      <div>
-        <label className="mb-1 block text-[10px] uppercase text-muted">
-          Size
-        </label>
-        <Input
-          inputMode="decimal"
-          value={size}
-          onChange={(e) => setSize(e.target.value)}
-          placeholder="0.00"
-          data-testid="size-input"
-        />
-      </div>
+      {tab === "Limit" && (
+        <div>
+          <label className="mb-1 block text-[10px] uppercase text-muted">
+            Limit price
+          </label>
+          <DecimalInput
+            value={limitPrice}
+            onValueChange={setLimitPrice}
+            maxDecimals={2}
+            placeholder="0.00"
+            data-testid="limit-price-input"
+          />
+        </div>
+      )}
+
+      <SizeField
+        value={sizing.sizeStr}
+        onChange={sizing.setSizeStr}
+        unit={sizing.unit}
+        onToggleUnit={sizing.toggleUnit}
+        onMax={sizing.setMax}
+        baseSymbol={sizing.baseSymbol}
+        invalid={!!sizing.validation.reason}
+        toggleDisabled={markPrice === 0n}
+      />
+
+      <SizePercent
+        pct={sizing.pct}
+        onPct={sizing.setPct}
+        disabled={insufficientMargin || markPrice === 0n}
+      />
 
       <div>
         <div className="mb-1 flex justify-between text-[10px] uppercase text-muted">
           <span>Leverage</span>
           <span className="text-text" data-testid="leverage-value">
-            {leverage}×
+            {sizing.leverage}×
           </span>
         </div>
         <input
@@ -190,36 +265,12 @@ export function TradeForm() {
           min={1}
           max={maxLev}
           step={1}
-          value={leverage}
+          value={sizing.leverage}
           data-testid="leverage-slider"
-          onChange={(e) => {
-            const lev = Number(e.target.value);
-            setLeverage(lev);
-            const s = leverageToSize({
-              availableUsd: margins?.available ?? 0n,
-              leverage: lev,
-              markPrice,
-            });
-            setSize(Qty.fmt(Qty(s)));
-          }}
+          onChange={(e) => sizing.setLeverage(Number(e.target.value))}
           className="w-full accent-accent"
         />
       </div>
-
-      {tab === "Limit" && (
-        <div>
-          <label className="mb-1 block text-[10px] uppercase text-muted">
-            Limit price
-          </label>
-          <Input
-            inputMode="decimal"
-            value={limitPrice}
-            onChange={(e) => setLimitPrice(e.target.value)}
-            placeholder="0.00"
-            data-testid="limit-price-input"
-          />
-        </div>
-      )}
 
       {(tab === "Stop" || tab === "Take Profit") && (
         <ConditionalFields
@@ -230,9 +281,39 @@ export function TradeForm() {
         />
       )}
 
+      {attachable && (
+        <EntryTpSlFields
+          enabled={tpslOn}
+          onToggle={setTpslOn}
+          tp={tp}
+          setTp={setTp}
+          sl={sl}
+          setSl={setSl}
+        />
+      )}
+
+      {sizing.sizeQty > 0n && (
+        <div
+          className="rounded-[var(--radius-sm)] border border-border bg-surface-2 p-2 text-[11px] text-muted"
+          data-testid="order-summary"
+        >
+          <SummaryRow label="Notional" value={fmtUsd(sizing.notional)} />
+          <SummaryRow
+            label="Margin"
+            value={fmtUsd(sizing.margin)}
+            testid="order-margin"
+          />
+          <SummaryRow
+            label="Est. liq. price"
+            value={sizing.liqPrice !== null ? fmtPrice(sizing.liqPrice) : "—"}
+            testid="order-liq-price"
+          />
+        </div>
+      )}
+
       <TradePreviewRow
         marketId={marketId}
-        sizeDelta={sizeDelta}
+        sizeDelta={sizing.sizeDelta}
         markPrice={markPrice}
       />
 
@@ -242,9 +323,14 @@ export function TradeForm() {
         onClick={submit}
         data-testid="submit-order-button"
       >
-        {pending ? "Submitting…" : `${long ? "Buy / Long" : "Sell / Short"}`}
+        {submitLabel}
       </Button>
 
+      {sizing.validation.warn && !insufficientMargin && (
+        <p className="text-[10px] text-short/80" data-testid="order-warning">
+          {sizing.validation.warn}
+        </p>
+      )}
       {insufficientMargin && (
         <p className="text-[10px] text-muted" data-testid="insufficient-margin">
           No available margin — deposit to trade.
@@ -255,6 +341,25 @@ export function TradeForm() {
           {error.message}
         </p>
       )}
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  testid,
+}: {
+  label: string;
+  value: string;
+  testid?: string;
+}) {
+  return (
+    <div className="flex justify-between">
+      <span>{label}</span>
+      <span className="text-text" data-testid={testid}>
+        {value}
+      </span>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { getChainConfig, Margin } from "@liq/sdk";
 import {
   liqQueryKeys,
   useAccountId,
+  useAvailableMarginQuery,
   useLiqOnchain,
   useNetworkId,
   useRepay,
@@ -12,9 +13,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";
+import { DecimalInput } from "../../components/ui/DecimalInput";
 import { Dialog } from "../../components/ui/Dialog";
-import { Input } from "../../components/ui/Input";
-import { fmtUsd } from "../../lib/format";
+import { fmtUsd, wadToFixed } from "../../lib/format";
+
+function parseAmount(amount: string): bigint {
+  if (!amount) return 0n;
+  try {
+    return Margin.parse(amount);
+  } catch {
+    return 0n;
+  }
+}
 
 export function WithdrawDialog({
   open,
@@ -28,6 +38,7 @@ export function WithdrawDialog({
   const networkId = useNetworkId();
   const wallet = useWallet();
   const queryClient = useQueryClient();
+  const { data: margins } = useAvailableMarginQuery();
   const [amount, setAmount] = useState("");
 
   // sUSDC collateral lives under the chain's sUSDC synth-market id (staging = 1,
@@ -50,6 +61,15 @@ export function WithdrawDialog({
     staleTime: 10_000,
   });
   const hasDebt = debt !== undefined && debt > 0n;
+
+  // Withdrawable margin (≤ available; lower with open positions). Caps a
+  // debt-free withdraw; ignored when repaying, since repay clears the gate
+  // in-batch and the post-repay withdrawable rises.
+  const withdrawable = margins?.withdrawable;
+  const amountWad = parseAmount(amount);
+  const exceedsWithdrawable =
+    !hasDebt && withdrawable !== undefined && amountWad > withdrawable;
+  const invalid = exceedsWithdrawable;
 
   const withdraw = useTransactionMutation<
     `0x${string}`,
@@ -87,7 +107,7 @@ export function WithdrawDialog({
   // `error` (rendered below); rejecting this handler would log an unhandled
   // promise rejection via the `void` click binding.
   function onSubmit() {
-    if (accountId === undefined || !amount) return;
+    if (accountId === undefined || amountWad <= 0n || invalid) return;
     if (hasDebt) {
       repay.mutate(
         { accountId, withdrawWei: Margin.parse(amount) },
@@ -118,13 +138,42 @@ export function WithdrawDialog({
             one transaction.
           </div>
         )}
-        <Input
-          inputMode="decimal"
+        {!hasDebt && withdrawable !== undefined && (
+          <div className="mb-1 flex justify-between text-[11px] text-muted">
+            <span>Available to withdraw</span>
+            <span className="text-text" data-testid="withdraw-balance">
+              {fmtUsd(withdrawable)}
+            </span>
+          </div>
+        )}
+        <DecimalInput
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onValueChange={setAmount}
+          maxDecimals={6}
+          invalid={invalid}
           placeholder="100"
           data-testid="withdraw-amount-input"
+          rightSlot={
+            !hasDebt && withdrawable !== undefined && withdrawable > 0n ? (
+              <button
+                type="button"
+                onClick={() => setAmount(wadToFixed(withdrawable, 2))}
+                className="rounded-[var(--radius-sm)] bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:brightness-110"
+                data-testid="withdraw-max-button"
+              >
+                MAX
+              </button>
+            ) : undefined
+          }
         />
+        {exceedsWithdrawable && (
+          <p
+            className="mt-1 text-[10px] text-short"
+            data-testid="withdraw-validation"
+          >
+            Exceeds available to withdraw.
+          </p>
+        )}
         {error && (
           <p
             className="mt-2 text-[11px] text-short"
@@ -144,7 +193,9 @@ export function WithdrawDialog({
           </Button>
           <Button
             className="flex-1"
-            disabled={pending || !amount || accountId === undefined}
+            disabled={
+              pending || amountWad <= 0n || accountId === undefined || invalid
+            }
             onClick={onSubmit}
             data-testid="withdraw-submit-button"
           >

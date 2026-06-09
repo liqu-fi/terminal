@@ -20,7 +20,7 @@ test.describe("conditional orders", () => {
     expect(order.triggerAbove).toBeDefined();
   });
 
-  test("a stop submit with a blank trigger is enabled but sends nothing", async ({
+  test("a stop submit is disabled until a trigger is entered", async ({
     page,
     world,
   }) => {
@@ -28,11 +28,13 @@ test.describe("conditional orders", () => {
     await trade.selectTab("stop");
     await trade.setSize("1"); // trigger left blank
 
-    await expect(trade.submitButton).toBeEnabled();
-    await trade.submit();
-
-    await expect(trade.tradeError).toBeHidden();
+    // No trigger price → nothing to submit; the button is gated rather than an
+    // enabled no-op.
+    await expect(trade.submitButton).toBeDisabled();
     expect(world.submittedOrders.length).toBe(0);
+
+    await trade.setTriggerPrice("80000");
+    await expect(trade.submitButton).toBeEnabled();
   });
 
   test("the trigger direction defaults to ≥, toggles, and is submitted", async ({

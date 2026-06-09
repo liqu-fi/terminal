@@ -35,7 +35,7 @@ export const MARKET = {
   pythFeedId:
     "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
   /** 18-dec min size = 0.001 */
-  minSize: "1000000000000000000",
+  minSize: "1000000000000000",
   maxLeverage: 25,
 } as const satisfies Market;
 
@@ -45,7 +45,8 @@ export const MARKET_ETH = {
   symbol: "ETH",
   pythFeedId:
     "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  minSize: "1000000000000000000",
+  /** 18-dec min size = 0.001 */
+  minSize: "1000000000000000",
   maxLeverage: 50,
 } as const satisfies Market;
 

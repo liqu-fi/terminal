@@ -151,20 +151,65 @@ test.describe("deposit & withdraw", () => {
     expect(world.lastCollateralDelta).toBe(0n); // no collateral tx was sent
   });
 
-  test("a malformed withdraw amount surfaces an error and sends no tx", async ({
+  test("a non-numeric withdraw amount is rejected by the input and sends no tx", async ({
     page,
     world,
   }) => {
     const { market, withdraw } = await enterTerminal(page, world); // $5,000
     await market.openWithdraw();
-    await withdraw.amountInput.fill("abc"); // non-numeric → submit is enabled (non-empty)
-
-    await expect(withdraw.submitButton).toBeEnabled();
-    await withdraw.submitButton.click();
-
-    // The error renders (not an uncaught throw), nothing is sent, margin holds.
-    await expect(withdraw.error).toBeVisible();
+    // The numeric input sanitizes non-digits away, so a malformed amount can
+    // never be entered — submit stays disabled and nothing is ever sent.
+    await withdraw.amountInput.fill("abc");
+    await expect(withdraw.amountInput).toHaveValue("");
+    await expect(withdraw.submitButton).toBeDisabled();
     await expect(market.margin).toHaveText(/\$5,000\.00/);
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  test("deposit shows wallet balance and Max fills the field", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world);
+    await market.openDeposit();
+
+    await expect(deposit.balance).toBeVisible();
+    await deposit.maxButton.click();
+    await expect(deposit.amountInput).not.toHaveValue("");
+    await expect(deposit.submitButton).toBeEnabled();
+  });
+
+  test("a deposit above wallet balance is blocked with a validation note", async ({
+    page,
+    world,
+  }) => {
+    const { market, deposit } = await enterTerminal(page, world);
+    await market.openDeposit();
+
+    // Mocked wallet sUSDC balance is 1,000,000 — exceed it.
+    await deposit.amountInput.fill("1000001");
+    await expect(deposit.validation).toBeVisible();
+    await expect(deposit.submitButton).toBeDisabled();
+    expect(world.lastCollateralDelta).toBe(0n);
+  });
+
+  test("withdraw shows available, Max fills it, and over-balance is blocked", async ({
+    page,
+    world,
+  }) => {
+    const { market, withdraw } = await enterTerminal(page, world); // withdrawable $5,000
+    await market.openWithdraw();
+
+    await expect(withdraw.balance).toHaveText(/\$5,000\.00/);
+    await withdraw.maxButton.click();
+    await expect(withdraw.amountInput).toHaveValue("5000");
+    await expect(withdraw.submitButton).toBeEnabled();
+
+    // Beyond withdrawable: a hard block with a validation note — `withdrawable`
+    // is the SDK's own authoritative figure, so the chain would revert.
+    await withdraw.amountInput.fill("6000");
+    await expect(withdraw.validation).toBeVisible();
+    await expect(withdraw.submitButton).toBeDisabled();
     expect(world.lastCollateralDelta).toBe(0n);
   });
 
