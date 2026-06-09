@@ -47,6 +47,9 @@ test.describe("deposit & withdraw", () => {
     await expect(market.margin).toHaveText(/\$4,900\.00/);
     // the app sent exactly the typed amount as a negative collateral delta
     expect(world.lastCollateralDelta).toBe(-Margin.parse("100"));
+    // …against the sUSDC collateral id (susdcMarketId = 1 on staging), NOT the
+    // hardcoded 0 that withdrew from an empty collateral slot and reverted (#459).
+    expect(world.lastCollateralId).toBe(1n);
   });
 
   test("a reverted withdraw surfaces an error and leaves margin unchanged", async ({

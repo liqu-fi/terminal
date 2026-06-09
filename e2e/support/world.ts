@@ -142,6 +142,8 @@ export interface MockWorld {
   cancelledOrderIds: string[];
   /** signed amountDelta of the last modifyCollateral (deposit > 0, withdraw < 0) */
   lastCollateralDelta: bigint;
+  /** collateralId (synth market id) of the last modifyCollateral — must be the sUSDC id, not 0 (#459) */
+  lastCollateralId: bigint;
   sentTxs: RecordedTx[];
   authNonceRequests: number;
   authVerifyRequests: Array<{ message: string; signature: string }>;
@@ -234,6 +236,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     submittedOrders: [],
     cancelledOrderIds: [],
     lastCollateralDelta: 0n,
+    lastCollateralId: 0n,
     sentTxs: [],
     authNonceRequests: 0,
     authVerifyRequests: [],

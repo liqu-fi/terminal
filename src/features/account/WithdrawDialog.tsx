@@ -1,4 +1,4 @@
-import { Margin } from "@liq/sdk";
+import { getChainConfig, Margin } from "@liq/sdk";
 import {
   liqQueryKeys,
   useAccountId,
@@ -30,6 +30,12 @@ export function WithdrawDialog({
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
 
+  // sUSDC collateral lives under the chain's sUSDC synth-market id (staging = 1,
+  // prod = 3) — the same id DepositBuilder credits. Hardcoding 0 withdrew from an
+  // empty collateral slot and reverted on-chain (#459). Resolved via the SDK
+  // chain config (deploy env is wired through process.env.DEPLOY_ENV at build).
+  const susdcCollateralId = BigInt(getChainConfig(networkId).susdcMarketId);
+
   // Synthetix blocks ALL collateral withdrawals while the account carries debt
   // (closed-at-loss); a plain withdraw would revert. Read it so we can offer an
   // atomic repay+withdraw instead. Best-effort: on error/loading the value is
@@ -54,11 +60,13 @@ export function WithdrawDialog({
     // `withdraw.error`, rendered below) instead of throwing uncaught in the
     // click handler. Symmetric with DepositDialog, which hands the raw string to
     // the SDK and lets it parse asynchronously.
-    // modifyCollateral(accountId, collateralId, amountDelta)
-    // collateralId = 0n (sUSDC synth market id 0)
-    // amountDelta negative = withdraw
+    // modifyCollateral(accountId, collateralId, amountDelta); negative = withdraw.
     mutationFn: ({ accountId, amount }) =>
-      onchain.deposit.modifyCollateral(accountId, 0n, -Margin.parse(amount)),
+      onchain.deposit.modifyCollateral(
+        accountId,
+        susdcCollateralId,
+        -Margin.parse(amount),
+      ),
     invalidateKeys: wallet
       ? [{ queryKey: liqQueryKeys.account.margin(networkId, wallet) }]
       : [],
