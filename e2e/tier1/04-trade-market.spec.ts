@@ -31,13 +31,11 @@ test.describe("market orders", () => {
     await trade.setSize("0.5");
     await trade.submit();
 
-    await expect
-      .poll(() => world.submittedOrders.at(-1)?.side)
-      .toBe("SELL");
+    await expect.poll(() => world.submittedOrders.at(-1)?.side).toBe("SELL");
     // SELL ⇒ negative signed sizeDelta
-    expect(String(world.submittedOrders.at(-1)?.sizeDelta).startsWith("-")).toBe(
-      true,
-    );
+    expect(
+      String(world.submittedOrders.at(-1)?.sizeDelta).startsWith("-"),
+    ).toBe(true);
   });
 
   test("a market order carries the slippage-guarded acceptablePrice", async ({
@@ -124,6 +122,10 @@ test.describe("market orders", () => {
     expect(sl.side).toBe("SELL");
     expect(String(tp.sizeDelta).startsWith("-")).toBe(true);
     expect(String(sl.sizeDelta).startsWith("-")).toBe(true);
+    // Attached TP/SL must be reduce-only so an orphaned trigger cannot flip the
+    // account into an opposite position (enforced backend-side at trigger time).
+    expect(tp.reduceOnly).toBe(true);
+    expect(sl.reduceOnly).toBe(true);
 
     // TP/SL prices are cleared after a confirmed submit (no stale re-attach).
     await expect(trade.entryTpInput).toHaveValue("");

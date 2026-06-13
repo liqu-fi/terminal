@@ -87,7 +87,11 @@ export function TradeForm() {
     const long = entrySide === Side.BUY;
     const closeDelta = -entryDelta;
     const closeSide = long ? Side.SELL : Side.BUY;
-    const fire = (raw: string, orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET", above: boolean) => {
+    const fire = (
+      raw: string,
+      orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET",
+      above: boolean,
+    ) => {
       if (!raw) return;
       let triggerPrice: bigint;
       try {
@@ -104,6 +108,10 @@ export function TradeForm() {
         orderType,
         triggerPrice,
         triggerAbove: above,
+        // Reduce-only: an attached TP/SL must only close the entry position. If
+        // it fires after the position is already gone, the matching engine
+        // rejects it instead of opening an unintended opposite position.
+        reduceOnly: true,
       });
     };
     fire(tp, "TAKE_PROFIT_MARKET", long);
