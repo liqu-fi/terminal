@@ -1,0 +1,39 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with: { version: 11.1.2 }
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+        env:
+          VITE_DEPLOY_ENV: staging
+          VITE_GATEWAY_URL: https://your-gateway.example.com
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with: { version: 11.1.2 }
+      - uses: actions/setup-node@v6
+        with: { node-version: 24.14.0, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # Tier 1 is hermetic: the Playwright config launches the dev server with
+      # fixed mock gateway/RPC origins, so no secrets or live backend are needed.
+      # Tier 2 (live, e2e/tier2) is opt-in via E2E_LIVE and not run in CI.
+      - run: pnpm test:e2e

@@ -1,0 +1,170 @@
+import { enterTerminal } from "../pages/flows";
+import { expect, test } from "../support/fixtures";
+import { readyWorld } from "../support/world";
+
+test.describe("trade form gating & controls", () => {
+  test("submit is disabled until a size is entered", async ({ page, world }) => {
+    const { trade } = await enterTerminal(page, world);
+    await expect(trade.submitButton).toBeDisabled();
+    await trade.setSize("0.5");
+    await expect(trade.submitButton).toBeEnabled();
+  });
+
+  test("zero or non-numeric size keeps submit disabled", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    await trade.setSize("0");
+    await expect(trade.submitButton).toBeDisabled();
+    await trade.setSize("abc");
+    await expect(trade.submitButton).toBeDisabled();
+    await trade.setSize("0.5");
+    await expect(trade.submitButton).toBeEnabled();
+  });
+
+  test("no available margin disables submit and shows the hint", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].available = 0n;
+      return w;
+    });
+    await trade.setSize("0.5");
+    await expect(trade.insufficientMargin).toBeVisible();
+    await expect(trade.submitButton).toBeDisabled();
+  });
+
+  test("submit stays disabled while there is no mark price", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world, () => {
+      const w = readyWorld(); // funded BOOK account → margin is fine
+      w.price = 0n; // gateway has no mark price yet → markPrice resolves to 0n
+      return w;
+    });
+
+    await trade.setSize("0.5");
+    // it's the missing price gating submit, not the margin…
+    await expect(trade.insufficientMargin).toBeHidden();
+    await expect(trade.submitButton).toBeDisabled();
+  });
+
+  test("tabs reveal the right fields", async ({ page, world }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await expect(trade.limitPriceInput).toBeHidden();
+    await expect(trade.triggerPriceInput).toBeHidden();
+
+    await trade.selectTab("limit");
+    await expect(trade.limitPriceInput).toBeVisible();
+
+    await trade.selectTab("stop");
+    await expect(trade.limitPriceInput).toBeHidden();
+    await expect(trade.triggerPriceInput).toBeVisible();
+
+    await trade.selectTab("take-profit");
+    await expect(trade.triggerPriceInput).toBeVisible();
+
+    await trade.selectTab("market");
+    await expect(trade.limitPriceInput).toBeHidden();
+    await expect(trade.triggerPriceInput).toBeHidden();
+  });
+
+  test("side toggle updates state; leverage is decoupled from size", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await expect(trade.sideLong).toHaveAttribute("aria-pressed", "true");
+    await trade.sideShort.click();
+    await expect(trade.sideShort).toHaveAttribute("aria-pressed", "true");
+    await expect(trade.sideLong).toHaveAttribute("aria-pressed", "false");
+
+    // Leverage now drives margin/liq math + the buying-power ceiling only — it
+    // must NOT rewrite the typed size (Binance/OKX model).
+    await trade.setLeverage(5);
+    await expect(trade.leverageValue).toHaveText("5×");
+    await expect(trade.sizeInput).toHaveValue("");
+  });
+
+  test("Max fills size to full buying power at the current leverage", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await trade.setLeverage(5);
+    await trade.clickMax();
+    // buying power = available 5,000 * 5x / mark 70,000 ≈ 0.3571, truncated to
+    // the 0.001 min-size step → "0.357".
+    await expect(trade.sizeInput).toHaveValue(/^0\.357/);
+    await expect(trade.sizePctValue).toHaveText("100%");
+    await expect(trade.submitButton).toBeEnabled();
+  });
+
+  test("percentage chips set size to a slice of buying power", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    // default leverage 2 → buying power = 5,000 * 2 / 70,000 ≈ 0.142857
+    await trade.clickSizePct(50);
+    // 50% → ≈ 0.0714 (truncated to 0.001 step → "0.071")
+    await expect(trade.sizeInput).toHaveValue(/^0\.071/);
+    await expect(trade.sizePctValue).toHaveText("50%");
+    await expect(trade.submitButton).toBeEnabled();
+  });
+
+  test("the unit toggle converts the size between base and USD", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world); // mark 70,000
+
+    await trade.setSize("0.5");
+    await expect(trade.sizeUnitToggle).toHaveText(/BTC/);
+    await trade.toggleSizeUnit();
+    // 0.5 BTC * 70,000 = 35,000 USD
+    await expect(trade.sizeInput).toHaveValue("35000");
+    await expect(trade.sizeUnitToggle).toHaveText(/USD/);
+    // submit still sends the base-size delta (0.5), not the USD figure
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
+    expect(world.submittedOrders.at(-1)?.sizeDelta).toBe(
+      (5n * 10n ** 17n).toString(), // 0.5 * 1e18
+    );
+  });
+
+  test("a below-minimum size blocks submit with a reason", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world); // min size 0.001
+
+    await trade.setSize("0.0005"); // below the 0.001 minimum
+    await expect(trade.submitButton).toBeDisabled();
+    await expect(trade.submitButton).toContainText("Min");
+    await trade.setSize("0.5");
+    await expect(trade.submitButton).toBeEnabled();
+  });
+
+  test("a size beyond buying power warns but does not block submit", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    // default leverage 2, buying power ≈ 0.1428 BTC; 1 BTC needs ~7x the margin.
+    // The client can't authoritatively reproduce Synthetix initial margin, so
+    // affordability is a soft warning — the gateway/chain remain the authority.
+    await trade.setSize("1");
+    await expect(trade.orderWarning).toBeVisible();
+    await expect(trade.orderWarning).toContainText("Exceeds available margin");
+    await expect(trade.submitButton).toBeEnabled();
+  });
+});

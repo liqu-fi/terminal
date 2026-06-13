@@ -1,0 +1,66 @@
+import {
+  DepositDialog,
+  MarketHeaderPanel,
+  WithdrawDialog,
+} from "../pages/TerminalPanels";
+import { ensureTradeReady } from "./ensureTradeReady";
+import { liveConfigured, liveEnv } from "./env";
+import { expect, test } from "./liveFixtures";
+import { readAccountDebt } from "./onchainReads";
+
+test.describe("live: deposit & withdraw", () => {
+  // Two real on-chain txs (deposit + withdraw) — budget like the fill test.
+  test.describe.configure({ timeout: liveEnv.fillTimeoutMs * 2 + 120_000 });
+
+  test.beforeEach(() => {
+    const gate = liveConfigured();
+    test.skip(!gate.ok, gate.reason);
+  });
+
+  // Small round-trip: the withdraw returns the deposit, so reruns don't bleed
+  // the pool wallet. Needs ≥$5 of fUSDC in the wallet (faucet `claim` refills).
+  const AMOUNT = "5";
+
+  test("deposits then withdraws the same amount round-trip", async ({
+    page,
+  }) => {
+    // Precondition: Synthetix blocks ALL withdrawals while the account carries
+    // debt (closed-at-loss), even of a fresh deposit — and the reference
+    // terminal has no repay/unlock step. Gate here so a debt-locked account
+    // skips fast instead of stranding the deposit and hanging 180s on the
+    // reverting withdraw. A debt-free (or brand-new) account proceeds normally.
+    const debt = await readAccountDebt();
+    test.skip(
+      debt !== null && debt > 0n,
+      `account carries Synthetix debt (${debt}) — withdrawals are blocked until repaid`,
+    );
+
+    await ensureTradeReady(page);
+    const market = new MarketHeaderPanel(page);
+    const margin = async () =>
+      Number((await market.margin.textContent())!.replace(/[$,]/g, ""));
+
+    const start = await margin();
+
+    await market.openDeposit();
+    const deposit = new DepositDialog(page);
+    await deposit.deposit(AMOUNT);
+    await expect(deposit.root).toBeHidden({ timeout: liveEnv.fillTimeoutMs });
+    // Tolerant threshold (refresh timing / dust): the deposit must land.
+    await expect
+      .poll(margin, { timeout: liveEnv.fillTimeoutMs })
+      .toBeGreaterThanOrEqual(start + 4.5);
+
+    await market.openWithdraw();
+    const withdraw = new WithdrawDialog(page);
+    await withdraw.withdraw(AMOUNT);
+    await expect(withdraw.root).toBeHidden({ timeout: liveEnv.fillTimeoutMs });
+    // The round-trip returns the funds: margin falls back to ~start (same
+    // tolerance), proving the withdraw debited what the deposit credited.
+    // Asserting against `start` — not a re-read `funded` — sidesteps a NaN
+    // hang if the display briefly flips to "—" during query invalidation.
+    await expect
+      .poll(margin, { timeout: liveEnv.fillTimeoutMs })
+      .toBeLessThanOrEqual(start + 0.5);
+  });
+});
