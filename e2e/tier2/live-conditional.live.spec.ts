@@ -17,7 +17,7 @@ test.describe("live: conditional orders", () => {
     // SDK's `useSubmitConditionalOrder` POST body omitted the signed
     // `triggerAbove`, so the gateway re-hashed the order with its default
     // (`dto.triggerAbove ?? false`) while the terminal signed `true`. Fixed in
-    // @liqcx/liq-react@0.27.2 (liqcx/monorepo#449): the submit body now carries
+    // @liqpro/liq-react@0.27.2 (monorepo#449): the submit body now carries
     // `triggerAbove`, so the gateway reconstructs the exact signed order.
     // Gated by `liveConfigured()` above — runs only against a live env.
     await ensureTradeReady(page);

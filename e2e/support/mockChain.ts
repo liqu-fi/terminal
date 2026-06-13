@@ -31,7 +31,7 @@ function buildReceipt(world: MockWorld, hash: string) {
   // modifyCollateral tx — i.e. the withdraw path, which the SDK surfaces as a
   // withdraw-error. The deposit path wraps modifyCollateral in an aggregate3
   // forwarder call, so its `kind` isn't this selector and the receipt stays
-  // successful; the SDK never raises a deposit-error (liqcx/monorepo#434).
+  // successful; the SDK never raises a deposit-error (monorepo#434).
   const reverted =
     !!world.faults.collateralReverts && tx?.kind === MODIFY_COLLATERAL_SELECTOR;
   const logs = (world.receipts[hash] ?? []).map((log, i) => ({

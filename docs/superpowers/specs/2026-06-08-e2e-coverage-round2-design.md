@@ -18,7 +18,7 @@ target (Tier 1 63 / Tier 2 6). A fresh component-by-component audit of `src/` ag
 3. **Edge states** — short-side preview, conditional `Size = abs(negative)`, `—` no-price row, cancel of
    a conditional, SSE `→ CANCELLED` removal, market-switch chart re-subscribe, tab `aria-pressed`.
 4. **Two real bugs + dead code** — D2 (withdraw never validates input → uncaught throw, no error UI),
-   D3 (deposit revert surfaces nothing, tracked as liqcx/monorepo#434), and `useOrderMode` (defined,
+   D3 (deposit revert surfaces nothing, tracked as monorepo#434), and `useOrderMode` (defined,
    imported nowhere).
 
 This round closes the **P0 + P1** subset (~27 tests), **fixes** the two bugs, removes the dead hook, and
@@ -62,7 +62,7 @@ IDs are the audit's; `infra` = needs a new mock hook. Confidence from the audit.
 | D4 | deposit/withdraw submit shows `Depositing…`/`Withdrawing…` + disabled while the tx is pending | P1 | hold-gate |
 | A5 | `requireGatewayUrl()` throws on a blank `VITE_GATEWAY_URL`; trailing-slash strip | P1 | unit |
 | D2 | **BUG** — malformed withdraw amount throws synchronously in the click handler, renders no error | fix | — |
-| D3 | **BUG** — reverted deposit surfaces nothing (liqcx/monorepo#434) | fix | — |
+| D3 | **BUG** — reverted deposit surfaces nothing (monorepo#434) | fix | — |
 | — | `useOrderMode.ts` is dead code (zero importers) | remove | — |
 
 ## Section 1 — mock-infrastructure extensions (`e2e/support/`)
@@ -167,17 +167,17 @@ submit, assert `withdraw-error` visible **and** `world.lastCollateralDelta === 0
 confirm `Margin.parse`'s throw-on-bad-input behavior during TDD; if it coerces instead of throwing, fall
 back to an explicit `try/parse → setError` guard achieving the same observable outcome.)
 
-### 2b. D3 — deposit revert surfaces nothing (liqcx/monorepo#434)
+### 2b. D3 — deposit revert surfaces nothing (monorepo#434)
 
 A reverted deposit (`faults.collateralReverts`) produces no `deposit-error` and an unhandled rejection.
-The deposit mutation is the SDK's `useDepositMutation()` (`@liqcx/liq-*`, consumed from GitHub Packages —
+The deposit mutation is the SDK's `useDepositMutation()` (`@liqpro/liq-*`, consumed from GitHub Packages —
 **not editable in this repo**). Plan: during TDD, attempt the in-repo mitigation — add an explicit
 `onError` to the `mutate` options (alongside the existing `onSuccess`) and verify whether the revert ever
 reaches the mutation's error channel. **If** it does, render `deposit-error` and assert it. **If** the SDK
 swallows the revert (the #434 root cause), document that the full fix requires an SDK change and pin the
 **stable** observable outcome instead: after a reverted deposit, margin is unchanged
 (`market.margin` stays `$0.00`), the dialog stays open, and `world.lastCollateralDelta === 0n` — with a
-`// NOTE: pins liqcx/monorepo#434` comment. This honors "fix in-pass where the fix lives in this repo;
+`// NOTE: pins monorepo#434` comment. This honors "fix in-pass where the fix lives in this repo;
 be explicit at the repo boundary."
 
 ### 2c. Remove `useOrderMode.ts`

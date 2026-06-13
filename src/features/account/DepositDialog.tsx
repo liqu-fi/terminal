@@ -52,7 +52,7 @@ export function DepositDialog({
         },
         // An explicit error handler keeps a reverted deposit from becoming an
         // unhandled rejection. The SDK does not surface the revert as
-        // `deposit.error` (liqcx/monorepo#434) — the error-UI fix needs the SDK.
+        // `deposit.error` (monorepo#434) — the error-UI fix needs the SDK.
         onError: () => {},
       },
     );

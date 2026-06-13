@@ -14,12 +14,6 @@ jobs:
         with:
           node-version: 24.14.0
           cache: pnpm
-      - name: Configure GitHub Packages auth
-        run: |
-          echo "@liqcx:registry=https://npm.pkg.github.com" > .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GT_READ }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
@@ -37,12 +31,6 @@ jobs:
         with: { version: 11.1.2 }
       - uses: actions/setup-node@v6
         with: { node-version: 24.14.0, cache: pnpm }
-      - name: Configure GitHub Packages auth
-        run: |
-          echo "@liqcx:registry=https://npm.pkg.github.com" > .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GT_READ }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       # Tier 1 is hermetic: the Playwright config launches the dev server with

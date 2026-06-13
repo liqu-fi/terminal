@@ -16,7 +16,7 @@ export function OpenOrdersTable() {
   const { data: conditional = [] } = useConditionalOrders();
   const orders = [...open, ...conditional];
   // Cancel invalidates both the open AND conditional order lists in the SDK as
-  // of @liq/react 0.27.3 (liqcx/monorepo#453), so no consumer-side conditional
+  // of @liq/react 0.27.3 (monorepo#453), so no consumer-side conditional
   // invalidation is needed here.
   const cancel = useCancelOrderMutation(accountId);
 

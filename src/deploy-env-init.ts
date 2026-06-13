@@ -8,7 +8,7 @@ import { setDeployEnv } from "@liq/sdk";
 //
 // Tell the SDK the deploy explicitly, once, before any @liq/* getChainConfig
 // call. MUST stay the first import in main.tsx. Replaces the earlier
-// process.env shim with the SDK's first-class API (@liqcx/liq-core ≥ 0.27.6).
+// process.env shim with the SDK's first-class API (@liqpro/liq-core ≥ 0.27.6).
 const deployEnv =
   import.meta.env.VITE_DEPLOY_ENV === "production" ? "production" : "staging";
 setDeployEnv(deployEnv);

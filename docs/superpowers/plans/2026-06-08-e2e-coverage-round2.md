@@ -268,9 +268,9 @@ git commit -m "fix(account): validate withdraw amount so a bad input shows an er
 
 ---
 
-### Task 3: D3 — surface a reverted deposit (liqcx/monorepo#434)
+### Task 3: D3 — surface a reverted deposit (monorepo#434)
 
-A reverted deposit currently renders nothing (the SDK's `useDepositMutation` lets the revert escape as an unhandled rejection). The deposit mutation is SDK-owned (`@liqcx/liq-*`, not editable here), so this task **investigates** whether an in-repo change can surface it, fixes if it can, and otherwise pins the stable outcome and updates the existing NOTE.
+A reverted deposit currently renders nothing (the SDK's `useDepositMutation` lets the revert escape as an unhandled rejection). The deposit mutation is SDK-owned (`@liqpro/liq-*`, not editable here), so this task **investigates** whether an in-repo change can surface it, fixes if it can, and otherwise pins the stable outcome and updates the existing NOTE.
 
 **Files:**
 - Test: `e2e/tier1/03-deposit-withdraw.spec.ts`
@@ -334,7 +334,7 @@ Run: `pnpm exec playwright test e2e/tier1/03-deposit-withdraw.spec.ts -g "revert
 - **If it FAILS only on `await expect(deposit.error).toBeVisible()`** (margin/delta assertions passed → the SDK genuinely swallows the revert and never sets `deposit.error`): the full fix requires an SDK change. Remove the `deposit.error` line from the test, and replace the old NOTE at `03-deposit-withdraw.spec.ts:51-55` with:
 
 ```ts
-  // NOTE: liqcx/monorepo#434 — the SDK's deposit mutation does not surface a
+  // NOTE: monorepo#434 — the SDK's deposit mutation does not surface a
   // reverted modifyCollateral as `deposit.error` (unlike withdraw). The in-repo
   // mitigation (an explicit onError) prevents the unhandled rejection; the full
   // error-UI fix needs an SDK change. This test pins the stable outcome.

@@ -68,7 +68,7 @@ test.describe("deposit & withdraw", () => {
     expect(world.lastCollateralDelta).toBe(0n);
   });
 
-  // NOTE: liqcx/monorepo#434 — the SDK's deposit mutation does not surface a
+  // NOTE: monorepo#434 — the SDK's deposit mutation does not surface a
   // reverted modifyCollateral as `deposit.error` (unlike withdraw). The in-repo
   // mitigation (an explicit onError) prevents the unhandled rejection; the full
   // error-UI fix needs an SDK change. This test pins the stable outcome.
