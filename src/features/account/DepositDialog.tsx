@@ -1,26 +1,12 @@
-import { getChainConfig, Margin } from "@liq/sdk";
-import {
-  useAccountId,
-  useBalancesQuery,
-  useDepositMutation,
-  useNetworkId,
-} from "@liq/react";
-import type { Address } from "viem";
+import { Margin } from "@liq/sdk";
+import { useAccountId, useDepositMutation } from "@liq/react";
 import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";
 import { DecimalInput } from "../../components/ui/DecimalInput";
 import { Dialog } from "../../components/ui/Dialog";
 import { fmtUsd, wadToFixed } from "../../lib/format";
-
-/** PerpsMarketProxy (the deposit spender), or undefined on an unknown chain. */
-function depositSpender(networkId: number): Address | undefined {
-  try {
-    return getChainConfig(networkId).contracts.PerpsMarketProxy;
-  } catch {
-    return undefined;
-  }
-}
+import { useUsdcBalanceWad } from "./useUsdcBalance";
 
 function parseAmount(amount: string): bigint {
   if (!amount) return 0n;
@@ -39,16 +25,14 @@ export function DepositDialog({
   onClose: () => void;
 }) {
   const accountId = useAccountId();
-  const networkId = useNetworkId();
   const deposit = useDepositMutation();
   const [amount, setAmount] = useState("");
 
-  // Wallet sUSDC balance, read against the PerpsMarketProxy spender (the
-  // contract `modifyCollateral` pulls from). Best-effort: an unavailable read
-  // (e.g. unmocked chain) leaves `balance` undefined → no Max, no cap.
-  const spender = depositSpender(networkId);
-  const { data: balances } = useBalancesQuery(spender ? [spender] : []);
-  const balance = balances?.balance;
+  // Wallet USDC balance (lifted to 18-dec WAD), the token this deposit actually
+  // spends — gating on sUSDC here would show $0.00 and block every deposit for a
+  // fresh faucet user who holds USDC and no sUSDC. Best-effort: an unavailable
+  // read resolves to 0n → no Max, no cap.
+  const { data: balance } = useUsdcBalanceWad();
 
   const amountWad = parseAmount(amount);
   const exceedsBalance = balance !== undefined && amountWad > balance;
@@ -115,7 +99,10 @@ export function DepositDialog({
           </p>
         )}
         {deposit.error && (
-          <p className="mt-2 text-[11px] text-short" data-testid="deposit-error">
+          <p
+            className="mt-2 text-[11px] text-short"
+            data-testid="deposit-error"
+          >
             {deposit.error.message}
           </p>
         )}
