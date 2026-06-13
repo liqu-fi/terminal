@@ -173,7 +173,10 @@ test.describe("deposit & withdraw", () => {
     const { market, deposit } = await enterTerminal(page, world);
     await market.openDeposit();
 
-    await expect(deposit.balance).toBeVisible();
+    // The displayed balance is the wallet's 6-dec USDC (1,000,000) lifted to the
+    // 18-dec money domain — a regression to reading it as raw 18-dec would show
+    // $1e12 here.
+    await expect(deposit.balance).toHaveText(/\$1,000,000\.00/);
     await deposit.maxButton.click();
     await expect(deposit.amountInput).not.toHaveValue("");
     await expect(deposit.submitButton).toBeEnabled();
@@ -186,7 +189,8 @@ test.describe("deposit & withdraw", () => {
     const { market, deposit } = await enterTerminal(page, world);
     await market.openDeposit();
 
-    // Mocked wallet sUSDC balance is 1,000,000 — exceed it.
+    // Mocked wallet USDC balance is 1,000,000 — exceed it. (The deposit gates
+    // on the USDC balance, the token it spends, not sUSDC.)
     await deposit.amountInput.fill("1000001");
     await expect(deposit.validation).toBeVisible();
     await expect(deposit.submitButton).toBeDisabled();

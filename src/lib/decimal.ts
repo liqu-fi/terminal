@@ -15,3 +15,19 @@ export function sanitizeDecimal(raw: string, maxDecimals: number): string {
   }
   return s;
 }
+
+/** USDC (the token a perps deposit spends) is a 6-decimal ERC-20. */
+export const USDC_DECIMALS = 6;
+
+/**
+ * Scale a native 6-decimal USDC balance into the 18-decimal WAD domain the
+ * money UI formats and compares in (`fmtUsd`, `wadToFixed`, `Margin.parse`).
+ *
+ * The deposit dialog must gate and cap on the wallet's **USDC** balance because
+ * the deposit spends USDC — but everything else in the UI is 18-dec WAD, so we
+ * lift USDC into that domain (×10^12) rather than special-casing 6-dec
+ * formatting everywhere. The lift is exact (USDC has fewer decimals than WAD).
+ */
+export function usdcToWad(usdc6: bigint): bigint {
+  return usdc6 * 10n ** BigInt(18 - USDC_DECIMALS);
+}
