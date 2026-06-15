@@ -11,6 +11,7 @@ import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env } from "../../config/env";
 import { Button } from "../../components/ui/Button";
+import { SessionKeyButton } from "../session-keys/SessionKeyButton";
 import { ConnectButton } from "../wallet/ConnectButton";
 import { sessionStage } from "./sessionStage";
 
@@ -51,7 +52,9 @@ function WalletDebug() {
       className="pointer-events-none fixed bottom-2 left-2 z-50 max-w-[92vw] rounded border border-border bg-surface-2 p-2 font-mono text-[11px] leading-tight text-muted"
       data-testid="wallet-debug"
     >
-      <div className="mb-1 font-semibold text-text">wallet debug (temporary)</div>
+      <div className="mb-1 font-semibold text-text">
+        wallet debug (temporary)
+      </div>
       {rows.map(([k, v]) => (
         <div key={k}>
           {k}: <span className="text-text">{v}</span>
@@ -165,9 +168,7 @@ function SessionGateInner({ children }: { children: ReactNode }) {
           disabled={
             auth.isPending || accountId === undefined || !walletClientData
           }
-          onClick={() =>
-            accountId !== undefined && auth.mutate({ accountId })
-          }
+          onClick={() => accountId !== undefined && auth.mutate({ accountId })}
           data-testid="signin-button"
         >
           {auth.isPending ? "Signing…" : "Sign In"}
@@ -194,7 +195,17 @@ function SessionGateInner({ children }: { children: ReactNode }) {
       </Centered>
     );
   }
-  return <>{children}</>;
+  // Authenticated/ready: render the app, with the session-key (1-click) pill
+  // as a non-blocking enhancement above it. SessionKeyButton self-hides
+  // (renders null) when the Turnkey flag is off, so this is safe.
+  return (
+    <>
+      <div className="flex justify-end px-3 pt-2" data-testid="session-toolbar">
+        <SessionKeyButton />
+      </div>
+      {children}
+    </>
+  );
 }
 
 function Centered({
@@ -215,13 +226,7 @@ function Centered({
 }
 
 /** Surfaces a mutation error inline so a failed CTA isn't a silent dead-end. */
-function ErrorLine({
-  error,
-  testid,
-}: {
-  error: Error | null;
-  testid: string;
-}) {
+function ErrorLine({ error, testid }: { error: Error | null; testid: string }) {
   if (!error) return null;
   return (
     <p className="text-sm text-short" role="alert" data-testid={testid}>

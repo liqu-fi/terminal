@@ -1,11 +1,5 @@
 import { Price, Side } from "@liq/sdk";
-import {
-  useAccountId,
-  useAvailableMarginQuery,
-  useSubmitConditionalOrder,
-  useSubmitLimitOrder,
-  useSubmitMarketOrder,
-} from "@liq/react";
+import { useAccountId, useAvailableMarginQuery } from "@liq/react";
 import { useState } from "react";
 
 import { Button } from "../../components/ui/Button";
@@ -14,6 +8,9 @@ import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
+import { useSubmitConditionalOrder } from "./mutations/useSubmitConditionalOrder";
+import { useSubmitLimitOrder } from "./mutations/useSubmitLimitOrder";
+import { useSubmitMarketOrder } from "./mutations/useSubmitMarketOrder";
 import { acceptablePrice } from "./orderMath";
 import { SizeField } from "./SizeField";
 import { SizePercent } from "./SizePercent";

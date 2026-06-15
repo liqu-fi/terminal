@@ -1,4 +1,8 @@
-import { LiqProvider, useGatewayStore } from "@liq/react";
+import {
+  LiqProvider,
+  TurnkeyProviderWrapper,
+  useGatewayStore,
+} from "@liq/react";
 import { LiqClient, LiqOnchain } from "@liq/sdk";
 import { type ReactNode, useEffect, useMemo } from "react";
 import { createPublicClient, http } from "viem";
@@ -49,9 +53,30 @@ export function LiqSetup({ children }: { children: ReactNode }) {
     liqClient.setToken(token);
   }, [liqClient, token]);
 
+  // Session keys (1-click trading) are flag-gated: when off (or unconfigured)
+  // no <TurnkeyProviderWrapper> is rendered, so the tree is byte-identical to
+  // today and order signing falls back to the wagmi wallet popup.
+  const { enabled, orgId, authProxyUrl, authProxyConfigId } = env.turnkey;
+  let inner: ReactNode = children;
+  if (enabled && orgId) {
+    inner = (
+      <TurnkeyProviderWrapper
+        orgId={orgId}
+        authProxyUrl={authProxyUrl}
+        authProxyConfigId={authProxyConfigId}
+        walletConnectProjectId={env.walletConnectId || undefined}
+        chainIds={[String(env.chainId)]}
+        appName="Liq"
+        appUrl="https://liq.cx"
+      >
+        {children}
+      </TurnkeyProviderWrapper>
+    );
+  }
+
   return (
     <LiqProvider client={liqClient} onchain={liqOnchain}>
-      {children}
+      {inner}
     </LiqProvider>
   );
 }

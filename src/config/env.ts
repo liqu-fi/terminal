@@ -19,6 +19,25 @@ function requireGatewayUrl(): string {
   return url;
 }
 
+/**
+ * Turnkey session-key (1-click trading) config, injected into the SDK's
+ * `useSessionKeyManager({ config })`.
+ *
+ * Vite exposes env via `import.meta.env.VITE_*`, which the SDK's default
+ * `process.env`/`NEXT_PUBLIC_*` resolver cannot see — so the terminal MUST pass
+ * this object explicitly. Default OFF: when `enabled` is false (or the config is
+ * incomplete) the SDK returns a null manager and order signing falls back to the
+ * wagmi wallet popup, byte-identical to today.
+ */
+const turnkey = {
+  enabled: import.meta.env.VITE_TURNKEY_SESSION === "true",
+  orgId: import.meta.env.VITE_TURNKEY_ORG_ID ?? "",
+  authProxyUrl:
+    import.meta.env.VITE_TURNKEY_AUTH_PROXY_URL ??
+    "https://authproxy.turnkey.com",
+  authProxyConfigId: import.meta.env.VITE_TURNKEY_AUTH_PROXY_CONFIG_ID ?? "",
+};
+
 export const env = {
   deployEnv: (import.meta.env.VITE_DEPLOY_ENV ?? "staging") as
     | "staging"
@@ -27,4 +46,5 @@ export const env = {
   gatewayUrl: requireGatewayUrl(),
   rpcUrl: import.meta.env.VITE_RPC_URL ?? "https://carrot.megaeth.com/rpc",
   walletConnectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "",
+  turnkey,
 };
