@@ -61,8 +61,21 @@ test.describe("live: turnkey session keys", () => {
     await trade.setLimitPrice("1000");
     await trade.submit();
 
-    await expect(trade.tradeError).toBeHidden();
-    await expect(trade.sizeInput).toHaveValue("", { timeout: 30_000 });
+    // Poll both outcomes at once. Asserting `tradeError` hidden right after the
+    // click passes vacuously — the mutation has not settled yet — and the run
+    // then dies 30s later on "expected '' received '0.001'", which says nothing
+    // about the cause. Folding the rejection text into the polled value puts it
+    // in the failure message instead: this is how the enclave's
+    // `sign_raw_payload → 404` should announce itself.
+    await expect
+      .poll(
+        async () =>
+          (await trade.tradeError.isVisible())
+            ? `order rejected: ${await trade.tradeError.innerText()}`
+            : await trade.sizeInput.inputValue(),
+        { timeout: 30_000 },
+      )
+      .toBe("");
   });
 
   test("revokes the session", async ({ page }) => {
