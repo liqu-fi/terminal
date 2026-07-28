@@ -24,8 +24,9 @@ export function ConnectButton() {
     );
   }
 
-  // Lightweight flavor: pick the first connector (injected). If WalletConnect
-  // is configured it is also available in `connectors`.
+  // Lightweight flavor: pick the first connector. `getConfig()` registers
+  // exactly one — `injected()` — since WalletConnect is owned by Turnkey, not
+  // by wagmi (see `config/chain.ts`), so this is the injected wallet.
   const connector = connectors[0];
   return (
     <Button

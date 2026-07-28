@@ -67,7 +67,12 @@ export function LiqSetup({ children }: { children: ReactNode }) {
         walletConnectProjectId={env.walletConnectId || undefined}
         chainIds={[String(env.chainId)]}
         appName="Liq"
-        appUrl="https://liq.cx"
+        // Must be the ORIGIN THIS BUILD IS SERVED FROM, not a fixed liq.cx:
+        // it becomes WalletConnect's `appMetadata.url`, which the wallet shows
+        // in its approval sheet. Hardcoding liq.cx made every preview/staging
+        // deploy claim to be liq.cx — WalletConnect warns about the mismatch,
+        // and to a user it reads like a phishing page.
+        appUrl={window.location.origin}
       >
         {children}
       </TurnkeyProviderWrapper>
