@@ -73,6 +73,24 @@ export interface RecordedTx {
   kind: string;
 }
 
+/** Wire shape of a SessionKeyGrant as the client serialises it (all strings). */
+export interface SessionKeyGrantPayload {
+  user: string;
+  sessionKey: string;
+  scope: string;
+  /** unix seconds, decimal string */
+  validUntil: string;
+  nonce: string;
+}
+
+export interface SessionKeyRecord {
+  id: string;
+  grant: SessionKeyGrantPayload;
+  signature: string;
+  /** unix SECONDS — the SDK multiplies by 1000 to get the JS timestamp. */
+  expiresAt: number;
+}
+
 export interface MockWorld {
   wallet: string;
   /** Chain the injected wallet reports (eth_chainId / net_version); mutable —
@@ -135,6 +153,8 @@ export interface MockWorld {
     tradesStatus?: number;
     // wallet: reject the next eth_requestAccounts (user dismisses the connect prompt)
     connectRejects?: boolean;
+    // gateway: status override for POST /session-keys (grant registration)
+    sessionKeyRegisterStatus?: number;
   };
 
   // --- recordings (assertable from specs) ---
@@ -155,6 +175,15 @@ export interface MockWorld {
   /** GET /orders/nonce — the seed the gateway hands the client, and a counter. */
   orderNonce: bigint;
   orderNonceRequests: number;
+
+  // --- session keys (1-click trading) ---
+  /** Grants registered via POST /session-keys, newest last. */
+  sessionKeys: SessionKeyRecord[];
+  /** GET /session-keys/nonce seed — bumped on every registration. */
+  sessionKeyNonce: bigint;
+  sessionKeyNonceRequests: number;
+  /** Grant ids revoked via DELETE /session-keys/:id. */
+  revokedSessionKeyIds: string[];
 
   // --- SSE frames to emit on the next /sse connection ---
   sseFrames: string[];
@@ -248,6 +277,12 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     // invisible. 8.8e18 stays above it for centuries.
     orderNonce: 8_888_888_888_888_888_888n,
     orderNonceRequests: 0,
+    sessionKeys: [],
+    // Independent of orderNonce: the grant nonce is a separate server-side
+    // sequence, and the EIP-712 SessionKeyGrant carries it verbatim.
+    sessionKeyNonce: 1n,
+    sessionKeyNonceRequests: 0,
+    revokedSessionKeyIds: [],
     sseFrames: [],
     sseConnections: [],
     receipts: {},

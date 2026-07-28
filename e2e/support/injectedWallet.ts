@@ -14,7 +14,13 @@ import { TEST_ADDRESS } from "./constants";
 import { applyWrite, handleEthCall } from "./chain";
 import { type MockWorld, nextTxHash } from "./world";
 
-const DUMMY_SIG = ("0x" + "11".repeat(65)) as string;
+/**
+ * The canned signature every wallet-side signing method returns. Exported so a
+ * spec can tell WHO signed an order: the wallet always yields exactly this,
+ * while a session key produces a real secp256k1 signature via viem.
+ */
+export const WALLET_DUMMY_SIG = ("0x" + "11".repeat(65)) as string;
+const DUMMY_SIG = WALLET_DUMMY_SIG;
 
 interface WalletState {
   connected: boolean;

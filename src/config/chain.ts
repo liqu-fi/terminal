@@ -1,6 +1,6 @@
 import { defineChain } from "viem";
 import { createConfig, http, type Config } from "wagmi";
-import { injected, walletConnect } from "wagmi/connectors";
+import { injected } from "wagmi/connectors";
 
 import { env } from "./env";
 
@@ -21,13 +21,21 @@ export const megaethTestnet = defineChain({
   testnet: true,
 });
 
+/**
+ * @remarks
+ * Deliberately `injected()` only — no `walletConnect()` connector here.
+ * `TurnkeyProviderWrapper` (see `providers/LiqSetup.tsx`) already owns a
+ * WalletConnect stack on the same `VITE_WALLETCONNECT_PROJECT_ID`, and two Cores
+ * in one page share a clientId via localStorage, so they fight over the single
+ * relay connection each is allowed. wagmi's WalletConnect connector also defines
+ * `setup()`, which eagerly runs `EthereumProvider.init()` at `createConfig()`
+ * time — that opened a relay socket on every page load even for visitors who
+ * never touched a wallet. Turnkey is the one WalletConnect owner.
+ */
 export function getConfig(): Config {
-  const connectors = env.walletConnectId
-    ? [injected(), walletConnect({ projectId: env.walletConnectId })]
-    : [injected()];
   return createConfig({
     chains: [megaethTestnet],
-    connectors,
+    connectors: [injected()],
     transports: { [megaethTestnet.id]: http(env.rpcUrl) },
   });
 }

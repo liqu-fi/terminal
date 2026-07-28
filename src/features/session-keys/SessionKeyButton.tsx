@@ -8,8 +8,11 @@ import { SessionKeyModal } from "./SessionKeyModal";
  * Header pill showing session-key (1-click trading) status.
  *
  * @remarks
- * Renders null when the manager is null — i.e. the Turnkey flag is off or the
- * wallet is not connected — so it is invisible unless the feature is live. The
+ * Renders null only when the manager is null: no connected wallet, or the
+ * Turnkey flag is ON but its org/auth-proxy config is incomplete. With the flag
+ * OFF the SDK still returns a wallet-signed `SessionKeyManager`, so the pill is
+ * shown and 1-click works without the enclave — do not read the flag as a
+ * feature switch for this button. The
  * config MUST be passed explicitly: Vite's `import.meta.env` is invisible to
  * the SDK's default `process.env` resolver.
  */
