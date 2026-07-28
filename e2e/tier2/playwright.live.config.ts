@@ -34,6 +34,13 @@ export default defineConfig({
           `VITE_DEPLOY_ENV=${liveEnv.deployEnv}`,
           `VITE_CHAIN_ID=${liveEnv.chainId}`,
           "VITE_WALLETCONNECT_PROJECT_ID=",
+          // Turnkey stays OFF unless explicitly configured: with the flag on but
+          // the org/proxy ids missing the SDK yields a null manager, and the
+          // 1-click pill silently disappears for the whole live run.
+          `VITE_TURNKEY_SESSION=${liveEnv.turnkey.enabled}`,
+          `VITE_TURNKEY_ORG_ID=${liveEnv.turnkey.orgId}`,
+          `VITE_TURNKEY_AUTH_PROXY_URL=${liveEnv.turnkey.authProxyUrl}`,
+          `VITE_TURNKEY_AUTH_PROXY_CONFIG_ID=${liveEnv.turnkey.authProxyConfigId}`,
           `pnpm exec vite --port ${PORT} --strictPort`,
         ].join(" "),
         url: `http://localhost:${PORT}`,

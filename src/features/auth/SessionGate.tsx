@@ -196,8 +196,9 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     );
   }
   // Authenticated/ready: render the app, with the session-key (1-click) pill
-  // as a non-blocking enhancement above it. SessionKeyButton self-hides
-  // (renders null) when the Turnkey flag is off, so this is safe.
+  // as a non-blocking enhancement above it. SessionKeyButton self-hides when no
+  // session manager can be built (no wallet, or Turnkey enabled but misconfigured),
+  // so mounting it unconditionally here is safe.
   return (
     <>
       <div className="flex justify-end px-3 pt-2" data-testid="session-toolbar">
