@@ -86,11 +86,17 @@ test.describe("live: turnkey session keys", () => {
     await app.signInToTerminal();
     await expect(sessionKey.button).toBeVisible();
 
-    // Depends on the grant left behind by the spec above (workers:1, serial),
-    // so an unexpected inactive state means that one failed — skip rather than
-    // report a second, derivative failure.
-    const dotClass = (await sessionKey.statusDot.getAttribute("class")) ?? "";
-    test.skip(!dotClass.includes("bg-long"), "no active session to revoke");
+    // Grant here rather than leaning on the spec above: every test gets a fresh
+    // browser context, so that grant is not in this page's localStorage. The
+    // earlier version skipped on a missing session and therefore never once
+    // ran — a permanent skip reads as a pass.
+    await sessionKey.open();
+    await sessionKey.createButton(1).click();
+    await sessionKey.overlay.waitFor({
+      state: "detached",
+      timeout: liveEnv.fillTimeoutMs,
+    });
+    await expect(sessionKey.statusDot).toHaveClass(/bg-long/);
 
     await sessionKey.revoke();
     await expect(sessionKey.statusDot).toHaveClass(/bg-muted/);
