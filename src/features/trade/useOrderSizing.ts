@@ -1,6 +1,6 @@
 import {
-  calcLiquidationPrice,
   calcRequiredMaintenanceMargin,
+  draftLiquidationPrice,
   Margin,
   Price,
   Qty,
@@ -74,23 +74,31 @@ function parseSizeInput(
   }
 }
 
-/** Estimated isolated liquidation price for a fresh position, or null. */
+/**
+ * Where this draft alone would be liquidated, or null.
+ *
+ * The ticket's question — "how far can this go against me" — not the account's
+ * "when do I get liquidated". In cross margin the two are different correct
+ * numbers: this one carries neither the account's other exposure nor the
+ * liquidator's reward, so it will not agree with the account-level figure and
+ * is not meant to.
+ */
 function estimateLiqPrice(
   markPrice: bigint,
   sizeDelta: bigint,
   margin: bigint,
   mmfWad: bigint | undefined,
 ): bigint | null {
-  if (markPrice <= 0n || sizeDelta === 0n || mmfWad === undefined || margin <= 0n)
-    return null;
+  if (mmfWad === undefined || margin <= 0n) return null;
   const mm = calcRequiredMaintenanceMargin(Qty(sizeDelta), Price(markPrice), mmfWad);
-  const liq = calcLiquidationPrice(
-    Price(markPrice),
-    Qty(sizeDelta),
-    Margin(margin),
-    mm,
+  return (
+    draftLiquidationPrice({
+      size: Qty(sizeDelta),
+      mark: Price(markPrice),
+      margin: Margin(margin),
+      requirement: mm,
+    }) ?? null
   );
-  return liq > 0n ? liq : null;
 }
 
 /**

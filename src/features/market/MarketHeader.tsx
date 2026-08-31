@@ -34,9 +34,13 @@ export function MarketHeader() {
       </span>
       <span className="text-xs text-muted">
         funding{" "}
-        {/* NOTE: confirm funding rate scale (WAD per period) before relying on this number */}
+        {/* Daily rate, WAD, signed. An absent snapshot (sync down, new market,
+            old gateway) has to render as "—": its nulls formatted as a number
+            would show a measured-looking 0.0000%. */}
         <span className="text-text" data-testid="funding-rate">
-          {funding ? `${(toNum(funding.rate) * 100).toFixed(4)}%` : "—"}
+          {funding?.available && funding.rate !== null
+            ? `${(toNum(funding.rate) * 100).toFixed(4)}%`
+            : "—"}
         </span>
       </span>
       <div className="flex-1" />
