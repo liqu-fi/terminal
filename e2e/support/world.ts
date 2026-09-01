@@ -107,6 +107,13 @@ export interface MockWorld {
   skew: bigint;
   markets: Market[];
   funding: {
+    // The SDK's getFunding() treats a missing/false `available` as "no
+    // snapshot" and returns nulled UNAVAILABLE_FUNDING regardless of the
+    // other fields (a gateway <0.34.0 sent none, and its numbers weren't a
+    // real measurement) — so the mock has to send `true` for a scenario's
+    // funding fields to actually reach the UI. See @liqpro/liq-api-client's
+    // MarketsService.getFunding.
+    available: true;
     rate: string;
     velocity: string;
     index: string;
@@ -250,6 +257,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     skew: WAD,
     markets: opts.markets ?? [MARKET],
     funding: {
+      available: true,
       rate: "1000000000000000", // 0.001 -> "0.1000%"
       velocity: "0",
       index: "0",
