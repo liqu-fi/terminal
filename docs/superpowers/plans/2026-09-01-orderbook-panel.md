@@ -392,6 +392,8 @@ export function baseSymbolOf(symbol: string | undefined): string {
 
 Если `Price`/`Qty` из `@liq/sdk` не принимаются `tickDecimals` без приведения — привести один раз в `fmtBookPrice`, как показано, и не тащить `as never` дальше.
 
+**Поправка, внесённая после начала задачи (дефект плана).** Три функции форматирования выше написаны на `Intl` вручную, а в `@liq/core` уже есть `formatPrice` / `formatQty` / `formatWad` / `compactUsd` / `suggestDecimalsFor` с опциями `minDecimals`, `maxDecimals`, `round`, `sign`, `suffix`, `grouping`, `compact` (последний включается выше 10 000 — ровно тот порог, что задан константой). Правило арки — готовое вместо своего, поэтому `fmtBookPrice` = `formatPrice` с `min/maxDecimals = tickDecimals(tick)`, `fmtBookSize` = `formatQty`, `fmtBookTotal` = `formatQty` с `compact: true`. Помнить: SDK по умолчанию **усекает**, а не округляет.
+
 - [ ] **Шаг 4: Прогнать до зелёного**
 
 ```bash
@@ -497,12 +499,12 @@ export function sseOrderbookFrame(
   return `data: ${JSON.stringify({
     type: "orderbook_snapshot",
     channel: `orderbook:${marketId}`,
-    data: { marketId, bids: book.bids, asks: book.asks, asOf: book.asOf },
+    data: { marketId, bids: book.bids, asks: book.asks, timestamp: book.asOf },
   })}\n\n`;
 }
 ```
 
-Точную форму кадра сверить с уже существующим `sseCandleFrame` — обёртка (`data: `, двойной перевод строки) должна совпадать байт в байт, иначе кадр не разберётся.
+Обёртка (`data: `, двойной перевод строки) совпадает с `sseCandleFrame` байт в байт, иначе кадр не разберётся. **Поле времени у REST и у события называется по-разному:** REST-ответ несёт `asOf`, а `OrderbookData` в событии — `timestamp` (проверено по `node_modules/@liq/core/dist/index.d.ts`). Перепутанное имя не сломает разбор — оно молча оставит событие без времени, и свежесть перестанет сравниваться.
 
 В `e2e/support/mockGateway.ts` — маршрут перед общим `/markets`:
 
