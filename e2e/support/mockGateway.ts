@@ -332,6 +332,10 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       return;
     }
     if (path.endsWith("/markets")) {
+      // Барьер для сцены «список рынков ещё в полёте»: без него отличить
+      // «рынок пока не выбран» от «рынка не будет» на экране нечем — обе
+      // ветки показывались бы мгновенно и одинаково.
+      await world.holds.marketsRead?.promise;
       if (world.faults.marketsStatus) {
         await error(route, world.faults.marketsStatus);
         return;

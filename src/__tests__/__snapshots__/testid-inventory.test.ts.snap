@@ -95,6 +95,7 @@ exports[`инвентарь data-testid > не теряет идентифика
   "switch-chain-error",
   "tape-empty",
   "tape-loading",
+  "tape-no-market",
   "tape-row-*",
   "tape-slot-empty",
   "terminal-root",

@@ -99,6 +99,63 @@ test.describe("trades tape", () => {
     await expect(book.tapeLoading).toHaveCount(0);
   });
 
+  test("живой тик во время загрузки страницы уже видно", async ({
+    page,
+    world,
+  }) => {
+    // `isLoading` приходит прямо из `useTradesRestQuery` и живым тиком не
+    // гасится, поэтому ранний выход по одному только `isLoading` прятал бы
+    // сделку, уже приехавшую по подписке. У книги рядом такой беды нет — её
+    // `isLoading` в SDK гаснет от первого живого кадра.
+    const { book, userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({ openOrders: [limitOrderFixture()] }),
+    );
+    await userInfo.selectTab("open-orders");
+    await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
+
+    armHold(world, "tradesRead");
+    await book.selectTab("trades");
+    await expect(book.tapeLoading).toBeVisible();
+    await expect
+      .poll(() =>
+        world.sseConnections.some((c) => c.includes("trades:200")),
+      )
+      .toBe(true);
+
+    world.sseFrames = [
+      sseTradeFrame("200", { price: "70500", size: "1", side: "BUY" }),
+      sseOrderUpdateFrame("ord-limit-1", "MATCHED"),
+    ];
+    await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 15_000 });
+
+    // Страница REST всё ещё в полёте — но показывать уже есть что.
+    await expect(book.tapeRows).toHaveCount(1);
+    await expect(book.tapeRows.first()).toContainText("70,500");
+    await expect(book.tapeLoading).toHaveCount(0);
+
+    releaseHold(world, "tradesRead");
+    await expect(book.tapeRows).toHaveCount(1);
+  });
+
+  test("без рынка лента не показывает межрыночный поток", async ({
+    page,
+    world,
+  }) => {
+    // `/markets` лежит ⇒ рынка нет, и фильтр запроса теряет `marketId`:
+    // гейтвей отвечает сделками по ВСЕМ рынкам (мок фильтры игнорирует, так
+    // что здесь он ведёт себя как гейтвей без фильтра — ровно нужный
+    // сценарий). Показывать эти строки нельзя, и «No trades yet.» тоже:
+    // и то и другое — утверждение о рынке, которого на экране нет.
+    const { book } = await enterTerminal(page, world, () =>
+      readyWorld({ trades: [tradeFixture()], faults: { marketsStatus: 500 } }),
+    );
+    await book.selectTab("trades");
+    await expect(book.tapeNoMarket).toBeVisible();
+    await expect(book.tapeRows).toHaveCount(0);
+    await expect(book.tapeEmpty).toHaveCount(0);
+    await expect(book.tapeLoading).toHaveCount(0);
+  });
+
   test("событие с нераспознанной стороной в ленту не попадает", async ({
     page,
     world,

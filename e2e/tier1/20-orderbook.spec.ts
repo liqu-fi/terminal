@@ -1,7 +1,14 @@
+import { AppPage } from "../pages/AppPage";
 import { enterTerminal } from "../pages/flows";
-import { expect, test } from "../support/fixtures";
+import { OrderBookPanel } from "../pages/TerminalPanels";
+import { expect, seed, test } from "../support/fixtures";
 import { WAD } from "../support/constants";
-import { readyWorld, sseOrderbookFrame } from "../support/world";
+import {
+  armHold,
+  readyWorld,
+  releaseHold,
+  sseOrderbookFrame,
+} from "../support/world";
 
 test.describe("order book panel", () => {
   test("панель видна и по умолчанию открыта на книге", async ({
@@ -80,6 +87,34 @@ test.describe("order book panel", () => {
     await expect(book.noMarket).toBeVisible();
     await expect(book.empty).toHaveCount(0);
     await expect(book.error).toHaveCount(0);
+    await expect(book.unavailable).toHaveCount(0);
+  });
+
+  test("пока список рынков в полёте, книга ждёт, а не отрицает рынок", async ({
+    page,
+    world,
+  }) => {
+    // Соседняя спека держит `/markets` упавшим и ловит только вечный случай.
+    // Транзиент бьёт на КАЖДОМ холодном входе: `marketId` равен `undefined`
+    // всё время запроса списка, `useOrderbook` при этом выключен и его
+    // `isLoading` ложен — панель успевала сказать «рынок не выбран» ровно в
+    // тот момент, когда рынок выбирается. `enterTerminal` здесь не годится:
+    // `seed` перезаписывает `world` целиком, а барьер нужен ещё до `goto`.
+    seed(world, readyWorld());
+    armHold(world, "marketsRead");
+
+    const app = new AppPage(page);
+    await app.goto();
+    await app.signInToTerminal();
+
+    const book = new OrderBookPanel(page);
+    await expect(book.loading).toBeVisible();
+    await expect(book.noMarket).toHaveCount(0);
+    await expect(book.empty).toHaveCount(0);
+
+    releaseHold(world, "marketsRead");
+    await expect(book.bidRow(0)).toContainText("69,990");
+    await expect(book.loading).toHaveCount(0);
   });
 
   test("пустая живая книга — не отказ: торгует пул", async ({

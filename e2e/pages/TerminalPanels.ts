@@ -145,6 +145,7 @@ async function setRange(slider: Locator, value: number): Promise<void> {
 
 export class OrderBookPanel {
   readonly root: Locator;
+  readonly loading: Locator;
   readonly unavailable: Locator;
   readonly empty: Locator;
   readonly error: Locator;
@@ -156,9 +157,11 @@ export class OrderBookPanel {
   readonly tapeRows: Locator;
   readonly tapeEmpty: Locator;
   readonly tapeLoading: Locator;
+  readonly tapeNoMarket: Locator;
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("orderbook-panel");
+    this.loading = page.getByTestId("book-loading");
     this.unavailable = page.getByTestId("book-unavailable");
     this.empty = page.getByTestId("book-empty");
     this.error = page.getByTestId("book-error");
@@ -170,6 +173,7 @@ export class OrderBookPanel {
     this.tapeRows = page.locator('[data-testid^="tape-row-"]');
     this.tapeEmpty = page.getByTestId("tape-empty");
     this.tapeLoading = page.getByTestId("tape-loading");
+    this.tapeNoMarket = page.getByTestId("tape-no-market");
   }
 
   tab(name: "book" | "trades"): Locator {

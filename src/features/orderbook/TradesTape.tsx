@@ -9,6 +9,8 @@ const TAPE_SLOTS = 15;
 
 interface TradesTapeProps {
   marketId: bigint | undefined;
+  /** Список рынков ещё в полёте — см. `MarketCtx.marketsLoading`. */
+  marketsLoading: boolean;
 }
 
 /**
@@ -20,22 +22,39 @@ interface TradesTapeProps {
  * history, which is `HistoryTable`, not the public tape). See
  * `useTradesTape` for why.
  */
-export function TradesTape({ marketId }: TradesTapeProps) {
+export function TradesTape({ marketId, marketsLoading }: TradesTapeProps) {
   const { rows, isLoading } = useTradesTape(marketId ?? null);
   const networkId = useNetworkId();
   const explorerUrl = getChainConfig(networkId).blockExplorer?.url;
 
-  // Первый переход на вкладку монтирует запрос заново, поэтому без этой ветки
-  // «No trades yet.» печаталось до того, как что-либо приехало — подставленное
-  // утверждение, которое читается как измеренное. Соседняя книга избегает того
-  // же своим `book-loading`.
-  if (isLoading) {
+  // Тот же порядок веток, что у книги рядом, и по тем же причинам.
+  //
+  // Ждём — пока в полёте список рынков ИЛИ страница сделок, но показать пока
+  // нечего. Условие `rows.length === 0` несущее: `isLoading` приходит прямо из
+  // `useTradesRestQuery` и живой тик его не гасит, поэтому без этой половины
+  // сделка, пришедшая по подписке во время REST-запроса, пряталась бы за
+  // «Loading trades…». У книги этой беды нет — её `isLoading` в SDK гаснет от
+  // первого живого кадра.
+  if (marketsLoading || (isLoading && rows.length === 0)) {
     return (
       <p
         className="py-6 text-center text-sm text-muted"
         data-testid="tape-loading"
       >
         Loading trades…
+      </p>
+    );
+  }
+
+  // Рынка не будет: «No trades yet.» здесь — утверждение о рынке, которого
+  // нет, ровно как «Book is empty» на соседней вкладке.
+  if (marketId == null) {
+    return (
+      <p
+        className="py-6 text-center text-sm text-muted"
+        data-testid="tape-no-market"
+      >
+        No market selected — no trades to show.
       </p>
     );
   }

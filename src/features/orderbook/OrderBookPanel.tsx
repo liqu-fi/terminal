@@ -29,7 +29,7 @@ const SLOTS_BOTH = 10;
 const SLOTS_ONE_SIDE = 20;
 
 export function OrderBookPanel() {
-  const { marketId, market } = useSelectedMarket();
+  const { marketId, market, marketsLoading } = useSelectedMarket();
   const markPrice = useMarkPrice();
   const [view, setView] = useState<BookViewMode>("both");
   const { tick, setTick, options } = useBookTick(markPrice);
@@ -57,6 +57,15 @@ export function OrderBookPanel() {
    * гаснет сам (у него в условии есть источник), а `error` — нет.
    */
   const nothingToShow = asOf === null;
+  /**
+   * Ждём данных: либо саму книгу, либо ещё список рынков.
+   *
+   * @remarks `useOrderbook` выключен, пока рынка нет, и его `isLoading` в этот
+   * момент ложен — а `marketId` равен `undefined` всё время запроса
+   * `/markets`. Без второго слагаемого панель на КАЖДОМ холодном входе
+   * печатала «рынок не выбран» ровно в тот момент, когда рынок выбирается.
+   */
+  const isWaiting = isLoading || marketsLoading;
 
   return (
     <Card
@@ -98,7 +107,7 @@ export function OrderBookPanel() {
             <TickSelect tick={tick} options={options} onSelect={setTick} />
           </div>
 
-          {isLoading ? (
+          {isWaiting ? (
             <p
               className="py-6 text-center text-sm text-muted"
               data-testid="book-loading"
@@ -152,6 +161,7 @@ export function OrderBookPanel() {
           <TradesTape
             key={marketId?.toString() ?? "none"}
             marketId={marketId}
+            marketsLoading={marketsLoading}
           />
         </TabsContent>
       </Tabs>
