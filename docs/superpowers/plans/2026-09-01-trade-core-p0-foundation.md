@@ -17,7 +17,7 @@
 - **Никакой доменной логики в терминале.** Фаза не добавляет вычислений над ценами, размерами и маржой. Всё, что считается, уже посчитано в `@liq/*`.
 - **Никаких самописных UI-примитивов.** Компонент ставится `shadcn` CLI и правится под токены; новый примитив с нуля — признак ошибки.
 - **Палитра снята с макета** (`monorepo/Trading_Flows/Frame.png`), а не взята из Liqu: Liqu брендирован (`#8eed2e` / `#ed2472`), эталон нейтрален.
-- **Гейт каждой задачи:** `pnpm typecheck && pnpm lint && pnpm test`. Гейт задач, трогающих разметку, дополнительно: `pnpm test:e2e`.
+- **Гейт каждой задачи:** `pnpm typecheck && node_modules/.bin/eslint . && pnpm test`. Линтер зовётся бинарём, а не `pnpm lint`: скрипт разрешается через PATH в чужой глобальный ESLint 9.25.1 и падает на плоском конфиге, локальный — 10.4.1. Гейт задач, трогающих разметку, дополнительно: `pnpm test:e2e`.
 - **Коммит после каждой задачи**, сообщение на русском, в conventional-формате.
 
 ---
@@ -139,7 +139,9 @@ import { cn } from "../utils";
 
 describe("cn", () => {
   it("отбрасывает ложные значения", () => {
-    expect(cn("a", false && "b", undefined, "c")).toBe("a c");
+    // Литералами, а не через `false && "b"`: ESLint справедливо зовёт такое
+    // выражение мёртвым кодом, а под тестом здесь — что clsx отбрасывает ложное.
+    expect(cn("a", false, undefined, null, "c")).toBe("a c");
   });
 
   it("разрешает конфликт tailwind-классов в пользу последнего", () => {
@@ -214,9 +216,11 @@ export default defineConfig({
 В `tsconfig.app.json`, внутрь `compilerOptions`:
 
 ```json
-    "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] },
 ```
+
+Без `baseUrl`: под TS 6 он снят и даёт `TS5101`. Пути и так разрешаются относительно
+директории самого tsconfig — ровно то, что дал бы `baseUrl: "."`.
 
 - [ ] **Step 9: Создать `components.json`**
 
@@ -448,7 +452,7 @@ git rm src/components/ui/Button.tsx src/components/ui/Card.tsx src/components/ui
 
 - [ ] **Step 6: Прогнать полный гейт**
 
-Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e`
+Run: `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm test:e2e`
 Expected: всё зелёное, включая страж инвентаря из Task 1 и 17 спек tier-1. Падение стража означает, что при переносе импорта потерялся `data-testid` — искать в диффе.
 
 - [ ] **Step 7: Коммит**
@@ -635,7 +639,7 @@ grep -rn "components/ui/Dialog\"" src   # Expected: пусто
 
 - [ ] **Step 9: Прогнать полный гейт**
 
-Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e`
+Run: `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm test:e2e`
 Expected: зелёное, включая новую спеку, прежнюю `03-deposit-withdraw` и **страж инвентаря без обновления снапшота** — задача переносит идентификаторы, а не заводит новые. Особое внимание — сценариям отмены и ожидания в `03`: закрытие теперь идёт через `onOpenChange`, и потерянный проброс проявится именно там.
 
 - [ ] **Step 10: Коммит**
@@ -963,7 +967,7 @@ Expected: PASS (3 теста).
 
 - [ ] **Step 7: Прогнать полный гейт**
 
-Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm test:e2e`
+Run: `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm build && pnpm test:e2e`
 Expected: всё зелёное. Спека `02-market-data` ищет `canvas` — если она падает, чарт остался свёрнутым из персистентного состояния прошлого прогона; это дефект, а не флейк: убедиться, что дефолт `chartCollapsed: false` применяется при пустом хранилище.
 
 - [ ] **Step 8: Обновить снапшот инвентаря**
@@ -988,7 +992,7 @@ git commit -m "feat(ui): оболочка экрана на resizable — свё
 
 ## Завершение фазы
 
-- [ ] **Полный гейт:** `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm test:e2e`
+- [ ] **Полный гейт:** `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm build && pnpm test:e2e`
 - [ ] **Проверить, что контракт цел:** `git diff origin/main -- src/__tests__/__snapshots__` — только добавленные строки.
 - [ ] **Draft-PR** в `liqu-fi/terminal`, база `main`:
 
