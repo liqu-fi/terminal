@@ -636,7 +636,7 @@ grep -rn "ui/\(Button\|Card\|Input\)\"" src   # Expected: пусто
         )}
 ```
 
-- [ ] **Step 9: Прогнать полный гейт**
+- [ ] **Step 10: Прогнать полный гейт**
 
 Run: `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm test:e2e`
 Expected: всё зелёное, включая страж инвентаря из Task 1 и 113 тестов tier-1. Падение стража
@@ -704,7 +704,29 @@ Expected: FAIL — роли `dialog` нет, Esc ничего не закрыв�
 pnpm dlx shadcn@latest add dialog
 ```
 
-- [ ] **Step 4: Перевести `DepositDialog`**
+- [ ] **Step 4: Перевести словарь и геометрию `dialog.tsx`**
+
+Страж из Task 4 сканирует всю папку `src/components/ui`, поэтому свежесгенерированный
+`dialog.tsx` уронит `pnpm test -- vocabulary` списком чужих токенов. Список и есть работа
+этого шага: `bg-background` → `bg-surface`, `text-foreground` → `text-text`,
+`text-muted-foreground` → `text-muted`, `ring-offset-background` → `ring-offset-bg`,
+`data-[state=open]:bg-accent` оставить (`accent` — свой токен).
+
+Заодно вернуть панели геометрию прежнего диалога, как в Task 4 вернули её `Card`:
+`rounded-lg` → `rounded-[var(--radius-card)]`, `p-6` → `p-4`. Прежняя панель была
+`w-[320px] rounded-[var(--radius-card)] border border-border bg-surface p-4`, и ширину
+задают вызовы; остальное — база.
+
+Подключить анимации, которые сгенерированный компонент предполагает: пакет `tw-animate-css`
+уже в зависимостях с Task 2, но `index.css` его не импортирует, поэтому классы
+`animate-in` / `fade-in-0` / `zoom-in-95` сейчас мертвы. Второй строкой `index.css`, после
+шрифта:
+
+```css
+@import "tw-animate-css";
+```
+
+- [ ] **Step 5: Перевести `DepositDialog`**
 
 Заменить обёртку. Было:
 
@@ -730,7 +752,7 @@ pnpm dlx shadcn@latest add dialog
 
 Закрывающие теги — `</DialogContent></Dialog>`. Остальное содержимое диалога не трогать.
 
-- [ ] **Step 5: Перевести `WithdrawDialog`**
+- [ ] **Step 6: Перевести `WithdrawDialog`**
 
 Было (`src/features/account/WithdrawDialog.tsx:128`):
 
@@ -756,7 +778,7 @@ pnpm dlx shadcn@latest add dialog
 
 Закрывающие теги — `</DialogContent></Dialog>`. Ветку долга (`hasDebt`) и все её testid не трогать.
 
-- [ ] **Step 6: Перевести `SessionKeyModal`**
+- [ ] **Step 7: Перевести `SessionKeyModal`**
 
 Модалка рисует свой fixed-оверлей, и её TSDoc утверждает «no Radix Dialog in the terminal» — утверждение перестаёт быть верным, поэтому меняются и код, и комментарий.
 
@@ -789,7 +811,7 @@ pnpm dlx shadcn@latest add dialog
 
 TSDoc переписать на: «Панель гранта сессионного ключа поверх shadcn `Dialog`. Открытым состоянием владеет `SessionKeyButton`.»
 
-- [ ] **Step 7: Пробросить идентификатор оверлея**
+- [ ] **Step 8: Пробросить идентификатор оверлея**
 
 Оверлеев в контракте два — `dialog-overlay` у денежных диалогов и `session-key-modal-overlay` у модалки ключа, — а `DialogContent` в shadcn рендерит `DialogOverlay` внутри себя. Значит идентификатор становится пропом с прежним значением по умолчанию.
 
@@ -817,7 +839,7 @@ function DialogContent({
 
 Оба денежных диалога передают `overlayTestId="dialog-overlay"` **явно**, не полагаясь на умолчание: инвентарь из Task 1 читает исходники, и идентификатор, живущий только в значении по умолчанию, читался бы как исчезнувший контракт.
 
-- [ ] **Step 8: Удалить прежний Dialog**
+- [ ] **Step 9: Удалить прежний Dialog**
 
 ```bash
 git rm src/components/ui/Dialog.tsx
@@ -827,12 +849,19 @@ grep -rn "components/ui/Dialog\"" src   # Expected: пусто
 - [ ] **Step 9: Прогнать полный гейт**
 
 Run: `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm test:e2e`
-Expected: зелёное, включая новую спеку, прежнюю `03-deposit-withdraw` и **страж инвентаря без обновления снапшота** — задача переносит идентификаторы, а не заводит новые. Особое внимание — сценариям отмены и ожидания в `03`: закрытие теперь идёт через `onOpenChange`, и потерянный проброс проявится именно там.
+Expected: зелёное, включая новую спеку, прежнюю `03-deposit-withdraw` и **страж инвентаря без обновления снапшота** — задача переносит идентификаторы, а не заводит новые. Особое внимание двум спекам, которые ломаются первыми:
 
-- [ ] **Step 10: Коммит**
+- `03-deposit-withdraw.spec.ts:220` кликает по бэкдропу в точке 5,5 и ждёт закрытия. Прежний
+  оверлей закрывался своим `onClick`; radix — через `onPointerDownOutside`. Поведение то же,
+  механизм другой.
+- `16-session-keys.spec.ts:150` ждёт оверлей в состоянии `detached`. Radix держит узел до
+  конца анимации выхода, а анимации включаются импортом из шага 4. Если ожидание станет
+  плавающим — сказать об этом, а не поднимать таймаут.
+
+- [ ] **Step 11: Коммит**
 
 ```bash
-git add -A src/components src/features e2e
+git add -A src/components src/features src/styles e2e
 git commit -m "refactor(ui): диалоги переезжают на radix — фокус, Esc и роль modal"
 ```
 
