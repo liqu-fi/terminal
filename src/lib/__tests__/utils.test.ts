@@ -4,7 +4,9 @@ import { cn } from "@/lib/utils";
 
 describe("cn", () => {
   it("отбрасывает ложные значения", () => {
-    expect(cn("a", false && "b", undefined, "c")).toBe("a c");
+    // Литералами, а не через `false && "b"`: ESLint справедливо зовёт такое
+    // выражение мёртвым кодом, а под тестом здесь — что clsx отбрасывает ложное.
+    expect(cn("a", false, undefined, null, "c")).toBe("a c");
   });
 
   it("разрешает конфликт tailwind-классов в пользу последнего", () => {
