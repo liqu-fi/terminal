@@ -143,4 +143,53 @@ test.describe("order book panel", () => {
       book.imbalance.getByTestId("book-imbalance-ask"),
     ).toContainText("3");
   });
+
+  test("клик по биду переносит цену в тикет", async ({ page, world }) => {
+    // `enterTerminal` уже возвращает `trade` (пейдж-обжект `TradePanel`) и `book`.
+    // Слаг вкладки в пейдж-обжекте строчный (`TradeTab` в `TerminalPanels.ts`),
+    // локальное состояние формы — с заглавной (`Tab` = "Market" | "Limit" | …).
+    const { book, trade } = await enterTerminal(page, world);
+    // Лучший бид фикстуры — 69 990; книга печатает его с разделителем групп,
+    // поле — без. Читать текст строки нельзя: три ячейки — grid-элементы, и
+    // `innerText` режет их построчно по-разному в разных раскладках.
+    await expect(book.bidRow(0)).toContainText("69,990");
+    await book.bidRow(0).click();
+    await expect(trade.tab("limit")).toHaveAttribute("aria-pressed", "true");
+    await expect(trade.limitPriceInput).toHaveValue("69990");
+  });
+
+  test("повторный клик после ручной правки возвращает цену уровня", async ({
+    page,
+    world,
+  }) => {
+    const { book, trade } = await enterTerminal(page, world);
+    await book.bidRow(0).click();
+    await trade.limitPriceInput.fill("1");
+    await book.bidRow(0).click();
+    await expect(trade.limitPriceInput).not.toHaveValue("1");
+  });
+
+  test("пустой слот книги не становится кнопкой", async ({ page, world }) => {
+    const level = (price: bigint) => ({
+      price: price.toString(),
+      size: WAD.toString(),
+    });
+    // Режим «только биды» просит 20 строк (`SLOTS_ONE_SIDE`); книга даёт
+    // только 2 уровня — 18 слотов остаются пустыми. Ни один текущий сценарий
+    // фикстуры не бьёт по этой ветке (затравка полна на всю глубину), так что
+    // без этой проверки кликабельный пустой слот прошёл бы гейт незамеченным.
+    const { book } = await enterTerminal(page, world, () =>
+      readyWorld({
+        orderbook: {
+          bids: [level(69_990n * WAD), level(69_980n * WAD)],
+          asks: [level(70_010n * WAD), level(70_020n * WAD)],
+          asOf: Date.now(),
+        },
+      }),
+    );
+    await book.setView("bids");
+    const emptySlot = book.root.getByTestId("book-slot-empty").first();
+    await expect(emptySlot).toBeVisible();
+    expect(await emptySlot.evaluate((el) => el.tagName)).toBe("DIV");
+  });
 });

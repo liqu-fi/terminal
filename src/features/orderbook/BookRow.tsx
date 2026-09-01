@@ -12,6 +12,7 @@ interface BookRowProps {
   tick: bigint;
   maxTotal: bigint;
   testid: string;
+  onPick?: (price: bigint) => void;
 }
 
 /**
@@ -20,9 +21,17 @@ interface BookRowProps {
  * @remarks Высота одинакова для пустого и заполненного слота — иначе высота
  * панели гуляет вместе с толщиной книги. Пустой слот получает testid вне
  * пространства `book-{ask,bid}-*`, чтобы `toHaveCount` на коллекции строк
- * считал заявки, а не размер сетки.
+ * считал заявки, а не размер сетки. Пустой слот никогда не становится
+ * кнопкой — кликнуть там всё равно не на что.
  */
-export function BookRow({ slot, side, tick, maxTotal, testid }: BookRowProps) {
+export function BookRow({
+  slot,
+  side,
+  tick,
+  maxTotal,
+  testid,
+  onPick,
+}: BookRowProps) {
   if (slot === null) {
     return (
       <div className="h-[18px]" data-testid="book-slot-empty" aria-hidden />
@@ -34,8 +43,10 @@ export function BookRow({ slot, side, tick, maxTotal, testid }: BookRowProps) {
     side === "bid" ? "bg-[var(--long-soft)]" : "bg-[var(--short-soft)]";
 
   return (
-    <div
-      className="relative grid h-[18px] grid-cols-3 items-center px-1 text-xs"
+    <button
+      type="button"
+      onClick={() => onPick?.(slot.price)}
+      className="relative grid h-[18px] w-full cursor-pointer grid-cols-3 items-center px-1 text-left text-xs hover:bg-surface-2/60"
       data-testid={testid}
     >
       <span
@@ -52,6 +63,6 @@ export function BookRow({ slot, side, tick, maxTotal, testid }: BookRowProps) {
       <span className="relative text-right text-muted">
         {fmtBookTotal(slot.total)}
       </span>
-    </div>
+    </button>
   );
 }

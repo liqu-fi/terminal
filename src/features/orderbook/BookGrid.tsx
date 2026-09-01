@@ -1,4 +1,5 @@
-import { formatRatio, type BookSnapshot } from "@liq/sdk";
+import { OrderType, Price, formatRatio, type BookSnapshot } from "@liq/sdk";
+import { useTradeStore } from "@liq/react";
 
 import { fmtPrice } from "@/lib/format";
 
@@ -30,6 +31,17 @@ export function BookGrid({
   markPrice,
   baseSymbol,
 }: BookGridProps) {
+  const setOrderType = useTradeStore((s) => s.setOrderType);
+  const setLimitPrice = useTradeStore((s) => s.setLimitPrice);
+
+  // Порядок обязателен и проверен по `dist` SDK: `setOrderType` пишет
+  // `limitPrice: type === MARKET ? null : undefined`, то есть при LIMIT
+  // затирает цену в `undefined`. Сначала тип, потом цена.
+  const pick = (price: bigint) => {
+    setOrderType(OrderType.LIMIT);
+    setLimitPrice(Price(price));
+  };
+
   const showAsks = view !== "bids";
   const showBids = view !== "asks";
   const asks = showAsks ? askSlots(book.asks, slots) : [];
@@ -56,6 +68,7 @@ export function BookGrid({
               tick={tick}
               maxTotal={book.maxTotal}
               testid={`book-ask-${i}`}
+              onPick={pick}
             />
           ))}
         </div>
@@ -85,6 +98,7 @@ export function BookGrid({
               tick={tick}
               maxTotal={book.maxTotal}
               testid={`book-bid-${i}`}
+              onPick={pick}
             />
           ))}
         </div>

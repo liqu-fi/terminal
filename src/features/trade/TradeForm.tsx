@@ -1,9 +1,14 @@
 import { Price, Side } from "@liq/sdk";
-import { useAccountId, useAvailableMarginQuery } from "@liq/react";
-import { useState } from "react";
+import {
+  useAccountId,
+  useAvailableMarginQuery,
+  useTradeStore,
+} from "@liq/react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DecimalInput } from "../../components/ui/DecimalInput";
+import { sanitizeDecimal } from "../../lib/decimal";
 import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
@@ -41,6 +46,22 @@ export function TradeForm() {
   const [tpslOn, setTpslOn] = useState(false);
   const [tp, setTp] = useState("");
   const [sl, setSl] = useState("");
+
+  // Стор — канал, по которому книга передаёт выбранный уровень. Подписка
+  // ванильная, а не через селектор: клик по той же цене второй раз не меняет
+  // значение, и селектор бы промолчал — а поле к тому времени могло быть
+  // отредактировано руками.
+  useEffect(
+    () =>
+      useTradeStore.subscribe((s) => {
+        if (s.limitPrice === null || s.limitPrice === undefined) return;
+        setTab("Limit");
+        // `Price.fmt` не режет дробную часть до `maxDecimals={2}` поля —
+        // обрезаем на входе в поле, а не в сторе (стор хранит цену бренда).
+        setLimitPrice(sanitizeDecimal(Price.fmt(s.limitPrice), 2));
+      }),
+    [],
+  );
 
   const sizing = useOrderSizing({
     market,
