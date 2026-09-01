@@ -1,4 +1,4 @@
-import { bookTickOptions } from "@liq/sdk";
+import { bookTickOptions, Price } from "@liq/sdk";
 import { useOrderbook } from "@liq/react";
 
 import { Card } from "@/components/ui/card";
@@ -13,17 +13,12 @@ const SLOTS_BOTH = 10;
 export function OrderBookPanel() {
   const { marketId } = useSelectedMarket();
   const markPrice = useMarkPrice();
-  const tick = bookTickOptions(
-    markPrice === 0n ? null : (markPrice as never),
-  )[0];
-  const { book, isLoading, unavailable, error } = useOrderbook(
-    marketId ?? null,
-    {
-      tick,
-      depth: SLOTS_BOTH,
-      markPrice: markPrice === 0n ? undefined : (markPrice as never),
-    },
-  );
+  const tick = bookTickOptions(markPrice === 0n ? null : Price(markPrice))[0];
+  const { book, isLoading, unavailable, error } = useOrderbook(marketId ?? null, {
+    tick,
+    depth: SLOTS_BOTH,
+    markPrice: markPrice === 0n ? undefined : Price(markPrice),
+  });
 
   const isEmpty = book.bids.length === 0 && book.asks.length === 0;
 
@@ -32,7 +27,7 @@ export function OrderBookPanel() {
       className="flex h-full flex-col gap-2 p-2"
       data-testid="orderbook-panel"
     >
-      <Tabs defaultValue="book" className="flex flex-1 flex-col">
+      <Tabs defaultValue="book" className="flex flex-1 flex-col gap-2">
         <TabsList>
           <TabsTrigger value="book" data-testid="orderbook-tab-book">
             Order Book

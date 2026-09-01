@@ -1,4 +1,4 @@
-import { type BookRow, formatPrice, formatQty, tickDecimals } from "@liq/sdk";
+import { type BookRow, formatPrice, formatQty, Price, tickDecimals } from "@liq/sdk";
 
 import { toNum } from "@/lib/format";
 
@@ -45,10 +45,11 @@ export function bidSlots(bids: readonly BookRow[], slots: number): Slot[] {
  * форматирования не заводим. `$`-префикс гасится: он уже стоит в заголовке
  * колонки книги, дублировать его на каждой строке незачем. `tickDecimals`
  * принимает брендированный `Price`, а не голый `bigint`; здесь единственное
- * место, где это приводится — дальше по модулю приведение не тащим.
+ * место, где это приводится — конструктором бренда, а не кастом — дальше по
+ * модулю приведение не тащим.
  */
 export function fmtBookPrice(price: bigint, tick: bigint): string {
-  const decimals = tickDecimals(tick as never);
+  const decimals = tickDecimals(Price(tick));
   return formatPrice(price, {
     sign: "",
     minDecimals: decimals,
