@@ -117,6 +117,7 @@ git commit -m "test(ui): инвентарь data-testid стоит страже�
 
 **Files:**
 - Modify: `vite.config.ts` (добавить `resolve.alias`)
+- Modify: `vitest.config.ts` (добавить тот же `resolve.alias`)
 - Modify: `tsconfig.app.json` (добавить `baseUrl` + `paths`)
 - Create: `components.json`
 - Create: `src/lib/utils.ts`
@@ -190,7 +191,25 @@ Expected: PASS (2 теста).
     },
 ```
 
-- [ ] **Step 7: Прописать alias в TypeScript**
+- [ ] **Step 7: Прописать alias в vitest**
+
+`vitest.config.ts` — самостоятельный файл: он не читает `vite.config.ts`, поэтому alias из
+шага 6 в тестах не действует. Дописать импорт `import path from "node:path";` и `resolve`
+рядом с `test`:
+
+```ts
+import path from "node:path";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  resolve: {
+    alias: { "@": path.resolve(import.meta.dirname, "./src") },
+  },
+  test: { environment: "node", include: ["src/**/*.test.ts"] },
+});
+```
+
+- [ ] **Step 8: Прописать alias в TypeScript**
 
 В `tsconfig.app.json`, внутрь `compilerOptions`:
 
@@ -199,7 +218,7 @@ Expected: PASS (2 теста).
     "paths": { "@/*": ["./src/*"] },
 ```
 
-- [ ] **Step 8: Создать `components.json`**
+- [ ] **Step 9: Создать `components.json`**
 
 ```json
 {
@@ -227,18 +246,20 @@ Expected: PASS (2 теста).
 
 `tailwind.config` пуст намеренно: в v4 конфигурация живёт в CSS (`@theme inline` в `src/styles/index.css`).
 
-- [ ] **Step 9: Проверить, что alias работает в обеих системах**
+- [ ] **Step 10: Проверить, что alias работает во всех трёх системах**
 
 Перевести один существующий импорт на alias — в `src/features/terminal/Terminal.tsx` заменить
 `import { Card } from "../../components/ui/Card";` на `import { Card } from "@/components/ui/Card";`
 
-Run: `pnpm typecheck && pnpm build`
-Expected: обе команды успешны. Если `build` падает на неразрешённом `@/`, значит alias прописан только в tsconfig — вернуться к шагу 6.
+Заодно перевести на alias импорт в `src/lib/__tests__/utils.test.ts`: `import { cn } from "@/lib/utils";` — это и есть проверка третьей системы.
 
-- [ ] **Step 10: Коммит**
+Run: `pnpm typecheck && pnpm build && pnpm test`
+Expected: все три успешны. Падение `build` на неразрешённом `@/` значит, что alias прописан только в tsconfig — вернуться к шагу 6; падение `test` — что забыт шаг 7.
+
+- [ ] **Step 11: Коммит**
 
 ```bash
-git add vite.config.ts tsconfig.app.json components.json src/lib package.json pnpm-lock.yaml src/features/terminal/Terminal.tsx
+git add vite.config.ts vitest.config.ts tsconfig.app.json components.json src/lib package.json pnpm-lock.yaml src/features/terminal/Terminal.tsx
 git commit -m "build(ui): alias @/ и components.json — площадка под shadcn"
 ```
 
