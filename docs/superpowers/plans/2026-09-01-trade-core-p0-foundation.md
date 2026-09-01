@@ -421,6 +421,8 @@ git commit -m "style(tokens): палитра снята с макета, а не
 ### Task 4: `Button`, `Card`, `Input` на shadcn
 
 **Files:**
+- Modify: `tsconfig.json` (`paths` — чтобы CLI shadcn разрешил `@/`)
+- Modify: `src/styles/index.css` (базовый цвет границы)
 - Delete: `src/components/ui/Button.tsx`, `src/components/ui/Card.tsx`, `src/components/ui/Input.tsx`
 - Create: `src/components/ui/button.tsx`, `src/components/ui/card.tsx`, `src/components/ui/input.tsx` (ставит CLI)
 - Modify: `src/components/ui/button.tsx` (словарь вариантов — терминала, не shadcn)
@@ -445,11 +447,21 @@ git rm src/components/ui/Button.tsx src/components/ui/Card.tsx src/components/ui
 Дерево временно не собирается — девять файлов ссылаются на удалённое. Это ожидаемо: гейт
 стоит в конце задачи.
 
-- [ ] **Step 2: Поставить компоненты**
+- [ ] **Step 2: Дать CLI разрешить `@/`, потом поставить компоненты**
+
+Корневой `tsconfig.json` в этом репозитории — solution-файл: `"files": []` плюс `references`.
+CLI shadcn читает пути отсюда, ничего не находит и пишет компоненты в буквальную папку
+`./@/components/ui/`. Дописать в него `compilerOptions` (на `tsc -b` не влияет — проверено):
+
+```json
+  "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
+```
 
 ```bash
 pnpm dlx shadcn@latest add button card input
 ```
+
+Проверить, что папки `./@` не появилось: `ls -d '@' 2>/dev/null` — пусто.
 
 - [ ] **Step 3: Написать падающий тест на словарь токенов**
 
@@ -488,7 +500,11 @@ describe("примитивы shadcn", () => {
 
     const offenders: string[] = [];
     for (const file of files) {
-      const src = readFileSync(`${dir}/${file}`, "utf8");
+      // Комментарии выбрасываем: правило должно быть можно объяснить прозой
+      // рядом с кодом, назвав запрещённые имена, и не сломать этим само себя.
+      const src = readFileSync(`${dir}/${file}`, "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*$/gm, "");
       for (const name of FOREIGN) {
         const hit = new RegExp(
           `(?:bg|text|border|ring|fill|stroke|from|to|via)-${name}\\b`,
@@ -497,6 +513,20 @@ describe("примитивы shadcn", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("опираются на базовый цвет границы, и он задан", () => {
+    // shadcn пишет голый `border`, ожидая базового слоя, который красит границы
+    // по умолчанию. В Tailwind v4 без такого слоя голый `border` — это
+    // `currentColor`, то есть почти белая линия цвета текста вместо #20272d.
+    // Сборка при этом целая, и увидеть это можно только глазами.
+    const emitsBareBorder = readdirSync(dir)
+      .filter((f) => f.endsWith(".tsx"))
+      .some((f) => /"[^"]*\bborder\b(?![-\w])/.test(readFileSync(`${dir}/${f}`, "utf8")));
+    if (!emitsBareBorder) return;
+
+    const theme = readFileSync("src/styles/index.css", "utf8");
+    expect(theme).toMatch(/@layer\s+base[\s\S]*border-color/);
   });
 });
 ```
@@ -529,6 +559,33 @@ Expected: FAIL — список нарушителей из свежесгене
 ```
 
 `secondary` и `destructive` не переносятся: ни один вызов их не просит.
+
+В `card.tsx` у `Card` снять привнесённую раскладку и вернуть коробку прежней геометрии:
+
+```ts
+        "rounded-[var(--radius-card)] border bg-surface text-text",
+```
+
+Уходят `flex flex-col gap-6 py-6 shadow-sm` и `rounded-xl`. Прежний `Card` был голой
+коробкой без мнений о раскладке, и оба вызова пользуются им именно так: `Terminal.tsx:18`
+кладёт внутрь один чарт, `UserInfoTabs.tsx:23` — панель вкладок и таблицу, где `gap-6`
+сложился бы с собственным `mb-2` панели. Раскладкой в shadcn заведуют `CardHeader` и
+`CardContent`, которых здесь нет. Радиус — из токена макета, а не `xl`.
+
+В `src/styles/index.css`, после блока `@theme inline`, добавить базовый слой:
+
+```css
+/*
+ * shadcn пишет голый `border`, ожидая базового слоя. В Tailwind v4 умолчание —
+ * `currentColor`, поэтому без этих трёх строк каждая карточка, каждый диалог и
+ * каждая ручка панели чертят почти белую линию цвета текста вместо границы.
+ */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+}
+```
 
 Остальные нарушители из шага 4 — в базовых классах `button.tsx` и в `card.tsx` / `input.tsx`
 — переводятся по словарю: `bg-background` → `bg-bg`, `bg-card` → `bg-surface`,
@@ -588,7 +645,7 @@ Expected: всё зелёное, включая страж инвентаря и
 - [ ] **Step 10: Коммит**
 
 ```bash
-git add -A src/components src/features
+git add -A src/components src/features src/styles tsconfig.json package.json pnpm-lock.yaml
 git commit -m "refactor(ui): три примитива уходят к shadcn, словарь токенов остаётся терминала"
 ```
 
