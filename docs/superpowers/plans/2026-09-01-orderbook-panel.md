@@ -977,10 +977,12 @@ git commit -m "feat(orderbook): сетка книги, шаг группиров
 
 ```ts
   test("клик по биду переносит цену в тикет", async ({ page, world }) => {
+    // `enterTerminal` уже возвращает `trade` (пейдж-обжект `TradePanel`) и `book`.
+    // Слаг вкладки — строчный: тип `TradeTab` = "market" | "limit" | "stop" | "take-profit".
     const { book, trade } = await enterTerminal(page, world);
     const price = (await book.bidRow(0).innerText()).split("\n")[0];
     await book.bidRow(0).click();
-    await expect(trade.tab("Limit")).toHaveAttribute("aria-pressed", "true");
+    await expect(trade.tab("limit")).toHaveAttribute("aria-pressed", "true");
     await expect(trade.limitPriceInput).toHaveValue(price.replace(/,/g, ""));
   });
 
@@ -1036,7 +1038,7 @@ pnpm test:e2e --grep "переносит цену|повторный клик"
   );
 ```
 
-`Price.fmt` даёт строку без разделителей групп — именно её ждёт `DecimalInput`. Если `fmt` печатает больше знаков, чем `maxDecimals={2}` у поля, обрезать до двух знаков **на входе в поле**, а не в сторе.
+`Price.fmt` даёт строку без разделителей групп — проверено: `69990` и `2445.16`, именно то, что ждёт `DecimalInput`. Если `fmt` печатает больше знаков, чем `maxDecimals={2}` у поля, обрезать до двух знаков **на входе в поле**, а не в сторе.
 
 - [ ] **Шаг 5: Гейт**
 
