@@ -3,7 +3,7 @@ import { type ISessionSigner } from "@liq/sdk";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type Props = {
   manager: ISessionSigner;
@@ -52,9 +52,9 @@ export function SessionKeyModal({ manager, onClose }: Props) {
         className="w-[360px] max-w-[calc(100vw-32px)]"
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-text">
+          <DialogTitle className="text-sm font-semibold text-text">
             {isActive ? "1-click trading active" : "Enable 1-click trading"}
-          </h2>
+          </DialogTitle>
           <button
             type="button"
             aria-label="Close"

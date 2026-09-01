@@ -26,9 +26,20 @@ describe("format", () => {
   it("fmtPrice renders thousands, up to 2dp", () => {
     expect(fmtPrice(74210n * WAD)).toBe("74,210");
   });
-  it("fmtQty trims trailing zeros", () => {
+  it("fmtQty trims trailing zeros from the fraction only", () => {
     expect(fmtQty(WAD / 2n)).toBe("0.5");
     expect(fmtQty(4n * WAD)).toBe("4");
+    // 1.250 WAD -> "1.25": the trailing fractional zero is trimmed, the
+    // integer part is untouched.
+    expect(fmtQty(1250n * (WAD / 1000n))).toBe("1.25");
+    expect(fmtQty(0n)).toBe("0");
+  });
+  it("fmtQty never eats trailing zeros in the integer part", () => {
+    // The old regex `\.?0+$` stripped trailing zeros off the WHOLE string,
+    // not just the fraction, so 10/100/1000 all rendered as "1".
+    expect(fmtQty(10n * WAD)).toBe("10");
+    expect(fmtQty(100n * WAD)).toBe("100");
+    expect(fmtQty(1000n * WAD)).toBe("1000");
   });
   it("fmtPctFromBps treats 100 bps = 1%", () => {
     expect(fmtPctFromBps(250n)).toBe("2.50%");

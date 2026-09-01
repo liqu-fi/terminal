@@ -12,6 +12,12 @@ async function widthOf(locator: Locator): Promise<number> {
   return box!.width;
 }
 
+async function heightOf(locator: Locator): Promise<number> {
+  const box = await locator.boundingBox();
+  expect(box, "element must have a layout box").not.toBeNull();
+  return box!.height;
+}
+
 test.describe("раскладка терминала", () => {
   test("чарт сворачивается и разворачивается", async ({ page, world }) => {
     const { layout, trade } = await enterTerminal(page, world);
@@ -51,9 +57,16 @@ test.describe("раскладка терминала", () => {
     world,
   }) => {
     const { layout, trade, market } = await enterTerminal(page, world);
+    const collapsedHeight = await heightOf(layout.bottomPanel);
+
     await layout.toggleBottomFullscreen();
     await expect(layout.bottomPanel).toBeVisible();
     await expect(trade.root).toBeHidden();
+    // bottom-panel is rendered in both states, so visibility alone is
+    // tautological — assert the geometry actually changed, the way the
+    // chart-collapse test above does for width.
+    const fullscreenHeight = await heightOf(layout.bottomPanel);
+    expect(fullscreenHeight).toBeGreaterThan(collapsedHeight + 100);
 
     // Обратный путь — тот случай, где раскладка рискует не восстановиться:
     // bottom-row был единственной панелью группы, а верхняя строка (чарт +

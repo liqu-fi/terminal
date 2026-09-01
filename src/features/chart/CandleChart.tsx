@@ -11,6 +11,17 @@ import { useEffect, useMemo, useRef } from "react";
 import { useCandles } from "./useCandles";
 import { toLwcBar } from "./candleMapping";
 
+/**
+ * `lightweight-charts` wants concrete color strings, but the palette is
+ * declared once in `src/styles/tokens.css` and that file is its one owner —
+ * hardcoding hexes here would silently drift from a repaint of the tokens.
+ */
+function cssVar(name: string): string {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+}
+
 export function CandleChart({ marketId }: { marketId: bigint | undefined }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -26,21 +37,25 @@ export function CandleChart({ marketId }: { marketId: bigint | undefined }) {
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
+    const muted = cssVar("--muted");
+    const border = cssVar("--border");
+    const long = cssVar("--long");
+    const short = cssVar("--short");
     const chart = createChart(node, {
       autoSize: true,
-      layout: { background: { color: "transparent" }, textColor: "#8b90a0" },
+      layout: { background: { color: "transparent" }, textColor: muted },
       grid: {
-        vertLines: { color: "#1c1f28" },
-        horzLines: { color: "#1c1f28" },
+        vertLines: { color: border },
+        horzLines: { color: border },
       },
       timeScale: { timeVisible: true, secondsVisible: false },
     });
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#2ebd85",
-      downColor: "#f6465d",
+      upColor: long,
+      downColor: short,
       borderVisible: false,
-      wickUpColor: "#2ebd85",
-      wickDownColor: "#f6465d",
+      wickUpColor: long,
+      wickDownColor: short,
     });
     chartRef.current = chart;
     seriesRef.current = series;
