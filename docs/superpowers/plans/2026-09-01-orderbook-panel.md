@@ -752,7 +752,7 @@ git commit -m "feat(orderbook): панель в оболочке термина�
 - Modify: `e2e/pages/TerminalPanels.ts`, `e2e/tier1/20-orderbook.spec.ts`
 
 **Interfaces:**
-- Consumes: всё из задачи 2 (`askSlots`, `bidSlots`, `fmtBook*`, `barPct`, `ratioPct`, `baseSymbolOf`), каркас из задачи 3.
+- Consumes: всё из задачи 2 (`askSlots`, `bidSlots`, `fmtBook*`, `barPct`, `ratioPct`, `baseSymbolOf`), каркас из задачи 3, `sseOrderbookFrame` из задачи 3 (объявлен, но до этой задачи никем не вызывался — живая ветка `useOrderbook` без него не покрыта вовсе).
 - Produces: `data-testid` — `book-view-{both|bids|asks}`, `book-tick-select`, `book-tick-option-*`, `book-ask-*`, `book-bid-*`, `book-spread`, `book-imbalance`, `book-imbalance-bid`, `book-imbalance-ask`. Клик по строке подключается задачей 5.
 
 **Что здесь легко сделать неправильно.**
@@ -802,6 +802,24 @@ pnpm dlx shadcn@latest add toggle-group dropdown-menu
     await expect(book.bidRow(0)).toContainText("69,990");
     await book.selectTick(1); // шаг 100: три верхних бида схлопываются в 69,900
     await expect(book.bidRow(0)).toContainText("69,900");
+  });
+
+  test("живой снимок книги вытесняет затравку", async ({ page, world }) => {
+    const { book } = await enterTerminal(page, world);
+    await expect(book.bidRow(0)).toContainText("69,990");
+
+    // Тот же рынок, книга сдвинута на $100 вверх. Событие обязано победить
+    // затравку по времени: `useOrderbook` берёт не последнего пришедшего, а
+    // того, чья отметка свежее.
+    world.sseFrames = [
+      sseOrderbookFrame("200", {
+        bids: [{ price: (70_100n * WAD).toString(), size: WAD.toString() }],
+        asks: [{ price: (70_200n * WAD).toString(), size: WAD.toString() }],
+        asOf: Date.now() + 1000,
+      }),
+    ];
+
+    await expect(book.bidRow(0)).toContainText("70,100", { timeout: 15_000 });
   });
 
   test("полоса дисбаланса показывает перевес сторон", async ({ page, world }) => {
@@ -929,6 +947,7 @@ pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm build && pnpm 
 | Не менять `depth` при смене шага (оставить прежний массив) | «смена шага перегруппировывает книгу» |
 | Взять `bidShare` по показанному срезу вместо `book.bidShare` | ни один — это осознанно непокрытая точка; отметить в отчёте |
 | Убрать разворот асков (`askSlots`) | юнит «лучший аск стоит последним» из задачи 2 + e2e «лучший аск вплотную к спреду» |
+| Передать в `sseOrderbookFrame` поле `asOf` вместо `timestamp` | «живой снимок книги вытесняет затравку» |
 
 - [ ] **Шаг 8: Коммит**
 
