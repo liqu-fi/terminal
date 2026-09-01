@@ -473,16 +473,31 @@ pnpm test src/components/ui   # vocabulary.test.ts обязан остаться
 ```
 
 ```ts
-/** Книга вокруг цены: три бида ниже, три аска выше, шаг $1. */
+/** Сколько уровней на сторону отдаёт мок: хватает и на 10+10, и на 20 в одну сторону. */
+const BOOK_LEVELS = 20;
+
+/**
+ * Книга вокруг цены, шаг $10.
+ *
+ * @remarks Шаг выбран не произвольно: при цене мира $70 000 первый шаг из
+ * `bookTickOptions` равен 10, и книга с шагом $1 схлопнулась бы в одну строку
+ * на сторону — сетка была бы пустой, а спека проверяла бы группировку вместо
+ * книги. Уровни ложатся на границы группы один в один: бид 69 990 округляется
+ * вниз в 69 990, аск 70 010 вверх в 70 010.
+ */
 function defaultBook(price: bigint): MockWorld["orderbook"] {
-  const step = WAD;
-  const level = (p: bigint, size: string) => ({
+  const step = 10n * WAD;
+  const level = (p: bigint, i: number) => ({
     price: p.toString(),
-    size: (BigInt(size) * WAD).toString(),
+    size: (BigInt(i + 1) * WAD).toString(),
   });
   return {
-    bids: [level(price - step, "1"), level(price - 2n * step, "2"), level(price - 3n * step, "3")],
-    asks: [level(price + step, "1"), level(price + 2n * step, "2"), level(price + 3n * step, "3")],
+    bids: Array.from({ length: BOOK_LEVELS }, (_, i) =>
+      level(price - BigInt(i + 1) * step, i),
+    ),
+    asks: Array.from({ length: BOOK_LEVELS }, (_, i) =>
+      level(price + BigInt(i + 1) * step, i),
+    ),
     asOf: Date.now(),
   };
 }
@@ -762,14 +777,16 @@ pnpm dlx shadcn@latest add toggle-group dropdown-menu
     const { book } = await enterTerminal(page, world);
     await expect(book.asks).toHaveCount(10);
     await expect(book.bids).toHaveCount(10);
-    // мир отдаёт биды 69,999/69,998/69,997 и аски 70,001/70,002/70,003
-    await expect(book.bidRow(0)).toContainText("69,999");
-    await expect(book.askRow(9)).toContainText("70,001");
+    // мир отдаёт 20 уровней на сторону шагом $10 вокруг $70 000; шаг группировки
+    // по умолчанию — тоже 10, поэтому уровни видны как есть
+    await expect(book.bidRow(0)).toContainText("69,990");
+    await expect(book.askRow(9)).toContainText("70,010");
   });
 
   test("строка спреда показывает величину и долю", async ({ page, world }) => {
     const { book } = await enterTerminal(page, world);
-    await expect(book.spread).toContainText("2");
+    // лучший бид 69 990, лучший аск 70 010 — спред ровно 20, а не ширина группы
+    await expect(book.spread).toContainText("20");
     await expect(book.spread).toContainText("%");
   });
 
@@ -782,9 +799,9 @@ pnpm dlx shadcn@latest add toggle-group dropdown-menu
 
   test("смена шага перегруппировывает книгу", async ({ page, world }) => {
     const { book } = await enterTerminal(page, world);
-    const before = await book.bidRow(0).innerText();
-    await book.selectTick(1);
-    await expect(book.bidRow(0)).not.toHaveText(before);
+    await expect(book.bidRow(0)).toContainText("69,990");
+    await book.selectTick(1); // шаг 100: три верхних бида схлопываются в 69,900
+    await expect(book.bidRow(0)).toContainText("69,900");
   });
 
   test("полоса дисбаланса показывает перевес сторон", async ({ page, world }) => {
