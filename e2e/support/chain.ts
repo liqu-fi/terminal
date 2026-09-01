@@ -24,6 +24,7 @@ import {
   multicall3Abi,
   perpsMarketProxyAbi,
 } from "./contracts";
+import { WAD } from "./constants";
 import { findAccount, type MockWorld, type ReceiptLog } from "./world";
 
 const MAX_UINT256 = (1n << 256n) - 1n;
@@ -71,6 +72,12 @@ export const TOKEN_OF_OWNER_SELECTOR = toFunctionSelector(
 export const GET_OPEN_POSITION_SELECTOR = toFunctionSelector(
   combinedAbi.find(
     (i) => i.type === "function" && i.name === "getOpenPosition",
+  ) as AbiFunction,
+);
+/** The read `useEnrichedPositions` (0.42+) actually fires — see mockChain's hold. */
+export const GET_ACCOUNT_FULL_POSITION_INFO_SELECTOR = toFunctionSelector(
+  combinedAbi.find(
+    (i) => i.type === "function" && i.name === "getAccountFullPositionInfo",
   ) as AbiFunction,
 );
 
@@ -150,6 +157,47 @@ function computeRead(
     }
     case "canLiquidate": {
       return [false];
+    }
+    // Replaces the per-market getOpenPosition loop as of SDK 0.42's
+    // useEnrichedPositions: one call returns every open (nonzero-size)
+    // position, each carrying its own entryPrice (no longer derived
+    // client-side from indexPrice/pnl — see @liqpro/liq-onchain's
+    // toFullPositionInfo). The mock still HAS to derive it here from the
+    // fixture's totalPnl/accruedFunding/positionSize, using the same
+    // formula @liqpro/liq-onchain's deriveEntryPrice uses, since
+    // PositionFixture stores pnl+size, not a stored entry price.
+    case "getAccountFullPositionInfo": {
+      const account = findAccount(world, args[0] as bigint);
+      const rows = (account?.positions ?? [])
+        .filter((p) => p.positionSize !== 0n)
+        .map((p) => {
+          const market = world.markets.find((m) => m.id === p.marketId);
+          const pricePnl = p.totalPnl - p.accruedFunding;
+          const entryPrice =
+            world.indexPrice - (pricePnl * WAD) / p.positionSize;
+          return {
+            marketId: BigInt(p.marketId),
+            size: p.positionSize,
+            pnl: p.totalPnl,
+            accruedFunding: p.accruedFunding,
+            chargedInterest: 0n,
+            currentPrice: world.indexPrice,
+            entryPrice,
+            requiredInitialMargin: 0n,
+            requiredMaintenanceMargin: 0n,
+            marketName: market?.symbol ?? "",
+            marketSymbol: market?.symbol ?? "",
+          };
+        });
+      return [rows];
+    }
+    // Account-level margins paired with the position read above in the same
+    // multicall (getAccountPositionSnapshot). No fixture models per-account
+    // required margins yet, so 0 for all three — safe: accountMargin()'s
+    // ratio()/leverageFor()/liquidationPriceFor() all guard the zero case
+    // (see @liqpro/liq-core's accountMargin) rather than dividing by it.
+    case "getRequiredMargins": {
+      return [0n, 0n, 0n];
     }
     case "getOpenPosition": {
       const account = findAccount(world, args[0] as bigint);

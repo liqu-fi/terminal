@@ -130,6 +130,45 @@ export const perpsMarketProxyAbi = [
     inputs: [{ name: "accountId", type: "uint128" }],
     outputs: [{ name: "", type: "bool" }],
   },
+  // The SDK's useEnrichedPositions/getAccountPositionSnapshot (0.42) reads
+  // positions through these two, not the per-market getOpenPosition below —
+  // that older read is unused by the app now but kept for ABI completeness.
+  {
+    name: "getAccountFullPositionInfo",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "accountId", type: "uint128" }],
+    outputs: [
+      {
+        name: "detailedPositions",
+        type: "tuple[]",
+        components: [
+          { name: "marketId", type: "uint128" },
+          { name: "size", type: "int256" },
+          { name: "pnl", type: "int256" },
+          { name: "accruedFunding", type: "int256" },
+          { name: "chargedInterest", type: "uint256" },
+          { name: "currentPrice", type: "uint256" },
+          { name: "entryPrice", type: "uint256" },
+          { name: "requiredInitialMargin", type: "uint256" },
+          { name: "requiredMaintenanceMargin", type: "uint256" },
+          { name: "marketName", type: "string" },
+          { name: "marketSymbol", type: "string" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "getRequiredMargins",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "accountId", type: "uint128" }],
+    outputs: [
+      { name: "requiredInitialMargin", type: "uint256" },
+      { name: "requiredMaintenanceMargin", type: "uint256" },
+      { name: "maxLiquidationReward", type: "uint256" },
+    ],
+  },
   {
     name: "getOpenPosition",
     type: "function",
