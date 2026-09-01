@@ -1,25 +1,22 @@
 import path from "node:path";
-import { createLogger } from "vite";
 import { defineConfig } from "vitest/config";
 
-/**
- * Логгер Vite без одного чужого сообщения.
- *
- * @remarks `@turnkey/react-wallet-kit` поставляет sourcemap'ы, ссылающиеся на
- * несуществующие исходники, и Vite печатает по строке на каждый её модуль —
- * около сорока строк перед каждым прогоном. Глушится ровно это сообщение, а не
- * весь канал через `logLevel: "error"`: предупреждения о неразрешённых импортах
- * и прочие настоящие жалобы Vite должны доходить.
- */
-const logger = createLogger();
-const warn = logger.warn.bind(logger);
-logger.warn = (msg, options) => {
-  if (msg.includes("points to missing source files")) return;
-  warn(msg, options);
-};
-
 export default defineConfig({
-  customLogger: logger,
+  /**
+   * Канал `warn` Vite приглушён на время прогона тестов.
+   *
+   * @remarks `@turnkey/react-wallet-kit` поставляет sourcemap'ы, ссылающиеся на
+   * несуществующие исходники, и Vite печатает по строке на каждый её модуль —
+   * семьдесят строк перед каждым прогоном, стоит любому тесту потянуть
+   * `@liq/react`. Сузить до одного сообщения через `customLogger` нельзя:
+   * сообщение печатает логгер *окружения* (`loadAndTransform` берёт
+   * `const { config, pluginContainer, logger } = environment`), а `customLogger`
+   * из корня конфига до него не доходит — проверено подменой обоих методов
+   * `warn` и `warnOnce`, шум остался прежним. Цена решения: настоящие
+   * предупреждения Vite в прогоне тестов тоже не видны; ошибки — видны, и
+   * неразрешённый импорт роняет файл теста, а не прячется в `warn`.
+   */
+  logLevel: "error",
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "./src") },
   },
