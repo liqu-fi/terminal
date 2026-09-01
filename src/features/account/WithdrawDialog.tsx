@@ -13,8 +13,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { Dialog } from "../../components/ui/Dialog";
 import { fmtUsd, wadToFixed } from "../../lib/format";
 
 function parseAmount(amount: string): bigint {
@@ -125,9 +130,22 @@ export function WithdrawDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <div data-testid="withdraw-dialog">
-        <h3 className="mb-3 text-sm font-semibold">Withdraw sUSDC</h3>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent
+        data-testid="withdraw-dialog"
+        overlayTestId="dialog-overlay"
+        className="w-[320px]"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-sm font-semibold">
+            Withdraw sUSDC
+          </DialogTitle>
+        </DialogHeader>
         {hasDebt && (
           <div
             className="mb-3 rounded border border-short/40 bg-short/10 p-2 text-[11px] text-short"
@@ -208,7 +226,7 @@ export function WithdrawDialog({
                 : "Withdraw"}
           </Button>
         </div>
-      </div>
+      </DialogContent>
     </Dialog>
   );
 }
