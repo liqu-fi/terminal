@@ -30,7 +30,11 @@ describe("примитивы shadcn", () => {
 
     const offenders: string[] = [];
     for (const file of files) {
-      const src = readFileSync(`${dir}/${file}`, "utf8");
+      // Комментарии выбрасываем: правило должно быть можно объяснить прозой
+      // рядом с кодом, назвав запрещённые имена, и не сломать этим само себя.
+      const src = readFileSync(`${dir}/${file}`, "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*$/gm, "");
       for (const name of FOREIGN) {
         const hit = new RegExp(
           `(?:bg|text|border|ring|fill|stroke|from|to|via)-${name}\\b`,
@@ -39,5 +43,21 @@ describe("примитивы shadcn", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("опираются на базовый цвет границы, и он задан", () => {
+    // shadcn пишет голый `border`, ожидая базового слоя, который красит границы
+    // по умолчанию. В Tailwind v4 без такого слоя голый `border` — это
+    // `currentColor`, то есть почти белая линия цвета текста вместо #20272d.
+    // Сборка при этом целая, и увидеть это можно только глазами.
+    const emitsBareBorder = readdirSync(dir)
+      .filter((f) => f.endsWith(".tsx"))
+      .some((f) =>
+        /"[^"]*\bborder\b(?![-\w])/.test(readFileSync(`${dir}/${f}`, "utf8")),
+      );
+    if (!emitsBareBorder) return;
+
+    const theme = readFileSync("src/styles/index.css", "utf8");
+    expect(theme).toMatch(/@layer\s+base[\s\S]*border-color/);
   });
 });

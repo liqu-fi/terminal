@@ -10,8 +10,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Прежний `primary` был умолчанием и красился в `bg-accent`: восемь
-        // вызовов не передают variant вовсе, и подмена на дефолтный фон
-        // shadcn (токена с таким именем в теме нет) стёрла бы им фон.
+        // вызовов не передают variant вовсе, и подмена на shadcn-овский
+        // `bg-primary` (токена с таким именем в теме нет) стёрла бы им фон.
         default: "bg-accent text-white hover:bg-accent/90",
         long: "bg-long text-[#06281d] hover:bg-long/90",
         short: "bg-short text-white hover:bg-short/90",
