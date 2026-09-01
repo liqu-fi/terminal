@@ -22,11 +22,16 @@ export function useBookTick(price: bigint) {
     () => bookTickOptions(price === 0n ? null : Price(price)),
     [price],
   );
+  // Сверка по содержимому, а не по ссылке: `bookTickOptions` возвращает новый
+  // массив на каждый вызов, а `options` мемоизирован по цене — значит на КАЖДОМ
+  // тике марк-цены ссылка новая, даже когда набор шагов тот же. Сверка по
+  // ссылке заказывала на каждый такой тик лишний проход рендера всей панели.
+  const optionsKey = options.join(",");
   const [tick, setTick] = useState<bigint>(() => options[0]);
-  const [prevOptions, setPrevOptions] = useState(options);
+  const [prevKey, setPrevKey] = useState(optionsKey);
 
-  if (options !== prevOptions) {
-    setPrevOptions(options);
+  if (optionsKey !== prevKey) {
+    setPrevKey(optionsKey);
     if (!options.some((o) => o === tick)) setTick(options[0]);
   }
 

@@ -4,7 +4,9 @@ import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
-// shadcn-словарь заменён нашим (см. таблицу в task-4-report.md):
+// shadcn-словарь заменён нашим. Перенос дословный и самодостаточный —
+// каждая строка ниже называет и токен shadcn, и токен темы терминала,
+// которым он заменён:
 //   bg-popover / text-popover-foreground → bg-surface / text-text
 //     (тот же перенос, что Card делает для bg-card/text-card-foreground)
 //   focus:bg-accent / focus:text-accent-foreground → focus:bg-surface-2 / focus:text-text

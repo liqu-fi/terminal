@@ -57,6 +57,24 @@ describe("askSlots", () => {
     expect(out[2]?.price).toBe(Price.parse("101"));
     expect(out[1]?.price).toBe(Price.parse("102"));
   });
+
+  // Внутренний `slice(0, slots)` стоит ДО `reverse()`, и покрыт только этим
+  // тестом: `padSlots` режет уже развёрнутый список с головы, поэтому без
+  // внутреннего среза к спреду прижались бы ХУДШИЕ аски, а лучшие уехали бы
+  // за экран. Остальные случаи в файле — `asks.length < slots`, где среза как
+  // будто и нет.
+  it("глубокая книга: у спреда лучший аск, худшие отброшены", () => {
+    const asks = [
+      row("101", "1", "1"),
+      row("102", "1", "2"),
+      row("103", "1", "3"),
+      row("104", "1", "4"),
+    ];
+    const out = askSlots(asks, 2);
+    expect(out).toHaveLength(2);
+    expect(out[1]?.price).toBe(Price.parse("101"));
+    expect(out[0]?.price).toBe(Price.parse("102"));
+  });
 });
 
 describe("bidSlots", () => {
