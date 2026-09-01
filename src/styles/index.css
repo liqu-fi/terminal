@@ -1,3 +1,4 @@
+@import "@fontsource-variable/inter";
 @import "tailwindcss";
 @import "./tokens.css";
 
@@ -11,6 +12,8 @@
   --color-accent: var(--accent);
   --color-long: var(--long);
   --color-short: var(--short);
+  --color-long-soft: var(--long-soft);
+  --color-short-soft: var(--short-soft);
   --radius-card: var(--radius);
   --font-sans: var(--font);
 }

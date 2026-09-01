@@ -1,14 +1,22 @@
+/*
+ * Палитра снята с макета «Liqu — Trading Flows» (Frame.png) пипеткой.
+ * Нейтральная намеренно: эталон форкают и перекрашивают, поэтому здесь нет
+ * брендовых цветов Liqu (#8eed2e / #ed2472).
+ */
 :root {
-  --bg: #101218;
-  --surface: #161922;
-  --surface-2: #0e1016;
-  --border: #242833;
-  --text: #e6e8ee;
-  --muted: #8b90a0;
-  --accent: #5b7cfa;
-  --long: #2ebd85;
-  --short: #f6465d;
+  --bg: #070a0d;
+  --surface: #11171c;
+  --surface-2: #000000;
+  --border: #20272d;
+  --text: #f7f9fb;
+  --muted: #8f9da9;
+  --accent: #5aa6d2;
+  --long: #3dbb6b;
+  --short: #f0445a;
+  /* Подложки строк стакана: тонированный фон, а не прозрачность поверх фона. */
+  --long-soft: #0d1f18;
+  --short-soft: #231116;
   --radius: 10px;
   --radius-sm: 6px;
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
