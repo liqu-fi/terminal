@@ -18,5 +18,6 @@
   --short-soft: #231116;
   --radius: 10px;
   --radius-sm: 6px;
-  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Именно `Inter Variable`: это семейство объявляет @fontsource-variable/inter. */
+  --font: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
