@@ -340,7 +340,7 @@ export function bidSlots(bids: readonly BookRow[], slots: number): Slot[] {
 
 /** Цена группы: знаков ровно столько, сколько различает шаг. */
 export function fmtBookPrice(price: bigint, tick: bigint): string {
-  const decimals = tickDecimals(tick as never);
+  const decimals = tickDecimals(Price(tick));
   return Number(wadToFixed(price, decimals)).toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -390,7 +390,7 @@ export function baseSymbolOf(symbol: string | undefined): string {
 }
 ```
 
-Если `Price`/`Qty` из `@liq/sdk` не принимаются `tickDecimals` без приведения — привести один раз в `fmtBookPrice`, как показано, и не тащить `as never` дальше.
+Обычный `bigint` превращается в `Price`/`Qty` **конструктором бренда** — `Price(x)`, `Qty(x)`, — и никогда `x as never`: такое приведение типизируется как `null | never`, то есть отключает проверку типов вместо того, чтобы её пройти.
 
 **Поправка, внесённая после начала задачи (дефект плана).** Три функции форматирования выше написаны на `Intl` вручную, а в `@liq/core` уже есть `formatPrice` / `formatQty` / `formatWad` / `compactUsd` / `suggestDecimalsFor` с опциями `minDecimals`, `maxDecimals`, `round`, `sign`, `suffix`, `grouping`, `compact` (последний включается выше 10 000 — ровно тот порог, что задан константой). Правило арки — готовое вместо своего, поэтому `fmtBookPrice` = `formatPrice` с `min/maxDecimals = tickDecimals(tick)`, `fmtBookSize` = `formatQty`, `fmtBookTotal` = `formatQty` с `compact: true`. Помнить: SDK по умолчанию **усекает**, а не округляет.
 
@@ -628,11 +628,11 @@ const SLOTS_BOTH = 10;
 export function OrderBookPanel() {
   const { marketId } = useSelectedMarket();
   const markPrice = useMarkPrice();
-  const tick = bookTickOptions(markPrice === 0n ? null : (markPrice as never))[0];
+  const tick = bookTickOptions(markPrice === 0n ? null : Price(markPrice))[0];
   const { book, isLoading, unavailable, error } = useOrderbook(marketId ?? null, {
     tick,
     depth: SLOTS_BOTH,
-    markPrice: markPrice === 0n ? undefined : (markPrice as never),
+    markPrice: markPrice === 0n ? undefined : Price(markPrice),
   });
 
   const isEmpty = book.bids.length === 0 && book.asks.length === 0;
@@ -868,7 +868,7 @@ import { useEffect, useMemo, useState } from "react";
  */
 export function useBookTick(price: bigint) {
   const options = useMemo(
-    () => bookTickOptions(price === 0n ? null : (price as never)),
+    () => bookTickOptions(price === 0n ? null : Price(price)),
     [price],
   );
   const [tick, setTick] = useState<bigint>(() => options[0]);
@@ -978,18 +978,22 @@ git commit -m "feat(orderbook): сетка книги, шаг группиров
 ```ts
   test("клик по биду переносит цену в тикет", async ({ page, world }) => {
     // `enterTerminal` уже возвращает `trade` (пейдж-обжект `TradePanel`) и `book`.
-    // Слаг вкладки — строчный: тип `TradeTab` = "market" | "limit" | "stop" | "take-profit".
+    // Слаг вкладки в пейдж-обжекте строчный (`TradeTab` в `TerminalPanels.ts`),
+    // локальное состояние формы — с заглавной (`Tab` = "Market" | "Limit" | …).
     const { book, trade } = await enterTerminal(page, world);
-    const price = (await book.bidRow(0).innerText()).split("\n")[0];
+    // Лучший бид фикстуры — 69 990; книга печатает его с разделителем групп,
+    // поле — без. Читать текст строки нельзя: три ячейки — grid-элементы, и
+    // `innerText` режет их построчно по-разному в разных раскладках.
+    await expect(book.bidRow(0)).toContainText("69,990");
     await book.bidRow(0).click();
     await expect(trade.tab("limit")).toHaveAttribute("aria-pressed", "true");
-    await expect(trade.limitPriceInput).toHaveValue(price.replace(/,/g, ""));
+    await expect(trade.limitPriceInput).toHaveValue("69990");
   });
 
   test("повторный клик после ручной правки возвращает цену уровня", async ({ page, world }) => {
     const { book, trade } = await enterTerminal(page, world);
     await book.bidRow(0).click();
-    await trade.setLimitPrice("1");
+    await trade.limitPriceInput.fill("1");
     await book.bidRow(0).click();
     await expect(trade.limitPriceInput).not.toHaveValue("1");
   });
@@ -1012,9 +1016,11 @@ pnpm test:e2e --grep "переносит цену|повторный клик"
   const setLimitPrice = useTradeStore((s) => s.setLimitPrice);
 
   const pick = (price: bigint) => {
-    // Порядок обязателен: `setOrderType` перетирает `limitPrice`.
+    // Порядок обязателен и проверен по `dist` SDK: `setOrderType` пишет
+    // `limitPrice: type === MARKET ? null : undefined`, то есть при LIMIT
+    // затирает цену в `undefined`. Сначала тип, потом цена.
     setOrderType(OrderType.LIMIT);
-    setLimitPrice(price as never);
+    setLimitPrice(Price(price));
   };
 ```
 
@@ -1038,7 +1044,7 @@ pnpm test:e2e --grep "переносит цену|повторный клик"
   );
 ```
 
-`Price.fmt` даёт строку без разделителей групп — проверено: `69990` и `2445.16`, именно то, что ждёт `DecimalInput`. Если `fmt` печатает больше знаков, чем `maxDecimals={2}` у поля, обрезать до двух знаков **на входе в поле**, а не в сторе.
+`Price.fmt` — это `formatWei`: целая часть без разделителей групп, хвост нулей срезан. Проверено: `69990` и `2445.16`, именно то, что ждёт `DecimalInput`. Если `fmt` печатает больше знаков, чем `maxDecimals={2}` у поля, обрезать до двух знаков **на входе в поле**, а не в сторе.
 
 - [ ] **Шаг 5: Гейт**
 
