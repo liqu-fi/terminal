@@ -398,7 +398,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
         await error(route, world.faults.tradesStatus);
         return;
       }
-      await send(route, world.trades);
+      await send(route, { rows: world.trades, nextCursor: null });
       return;
     }
 
