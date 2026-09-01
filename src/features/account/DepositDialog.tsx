@@ -2,9 +2,14 @@ import { Margin } from "@liq/sdk";
 import { useAccountId, useDepositMutation } from "@liq/react";
 import { useState } from "react";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { Dialog } from "../../components/ui/Dialog";
 import { fmtUsd, wadToFixed } from "../../lib/format";
 import { useUsdcBalanceWad } from "./useUsdcBalance";
 
@@ -59,9 +64,22 @@ export function DepositDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <div data-testid="deposit-dialog">
-        <h3 className="mb-3 text-sm font-semibold">Deposit USDC</h3>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent
+        data-testid="deposit-dialog"
+        overlayTestId="dialog-overlay"
+        className="w-[320px]"
+      >
+        <DialogHeader className="mb-3">
+          <DialogTitle className="text-sm font-semibold">
+            Deposit USDC
+          </DialogTitle>
+        </DialogHeader>
         {balance !== undefined && (
           <div className="mb-1 flex justify-between text-[11px] text-muted">
             <span>Wallet balance</span>
@@ -129,7 +147,7 @@ export function DepositDialog({
             {deposit.isPending ? "Depositing…" : "Deposit"}
           </Button>
         </div>
-      </div>
+      </DialogContent>
     </Dialog>
   );
 }

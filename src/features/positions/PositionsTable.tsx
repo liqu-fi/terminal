@@ -42,7 +42,7 @@ export function PositionsTable() {
               >
                 {symbolOf(p.marketId)} {long ? "↑" : "↓"}
               </td>
-              <td>{fmtQty(p.size)}</td>
+              <td>{fmtQty(p.size < 0n ? -p.size : p.size)}</td>
               <td>{fmtPrice(p.entryPrice)}</td>
               <td className={p.unrealizedPnl < 0n ? "text-short" : "text-long"}>
                 {fmtSignedUsd(p.unrealizedPnl)}

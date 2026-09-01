@@ -2,7 +2,8 @@ import { useSessionKey } from "@liq/react";
 import { type ISessionSigner } from "@liq/sdk";
 import { useState } from "react";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type Props = {
   manager: ISessionSigner;
@@ -10,11 +11,8 @@ type Props = {
 };
 
 /**
- * Modal for creating or revoking a session-key grant (1-click trading).
- *
- * @remarks
- * Plain fixed-overlay modal (no Radix Dialog in the terminal). Open state is
- * owned by SessionKeyButton; this component only renders the panel + actions.
+ * Панель гранта сессионного ключа поверх shadcn `Dialog`. Открытым
+ * состоянием владеет `SessionKeyButton`.
  */
 export function SessionKeyModal({ manager, onClose }: Props) {
   const { isActive, expiresAt, createSession, revokeSession } =
@@ -42,19 +40,21 @@ export function SessionKeyModal({ manager, onClose }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      data-testid="session-key-modal-overlay"
-      onClick={onClose}
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <div
-        className="w-[360px] max-w-[calc(100vw-32px)] rounded-[var(--radius-card)] border border-border bg-surface p-4 text-text"
-        onClick={(e) => e.stopPropagation()}
+      <DialogContent
+        overlayTestId="session-key-modal-overlay"
+        showCloseButton={false}
+        className="w-[360px] max-w-[calc(100vw-32px)]"
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-text">
+          <DialogTitle className="text-sm font-semibold text-text">
             {isActive ? "1-click trading active" : "Enable 1-click trading"}
-          </h2>
+          </DialogTitle>
           <button
             type="button"
             aria-label="Close"
@@ -115,7 +115,7 @@ export function SessionKeyModal({ manager, onClose }: Props) {
             </p>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

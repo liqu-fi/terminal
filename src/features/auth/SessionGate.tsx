@@ -10,7 +10,7 @@ import { type ReactNode, useEffect } from "react";
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env } from "../../config/env";
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { SessionKeyButton } from "../session-keys/SessionKeyButton";
 import { ConnectButton } from "../wallet/ConnectButton";
 import { sessionStage } from "./sessionStage";

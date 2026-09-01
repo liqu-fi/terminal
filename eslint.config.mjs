@@ -21,4 +21,12 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
+  {
+    // Здесь лежат примитивы, и рукописные тоже: у них принято экспортировать
+    // рядом с компонентом его cva-варианты — `export { Button, buttonVariants }`.
+    // Правило стережёт горячую перезагрузку в модулях экрана, а не в этой папке,
+    // и генерируемые файлы мы ради него не переписываем.
+    files: ["src/components/ui/**/*.tsx"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
 );

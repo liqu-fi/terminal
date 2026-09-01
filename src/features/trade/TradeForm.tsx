@@ -2,7 +2,7 @@ import { Price, Side } from "@liq/sdk";
 import { useAccountId, useAvailableMarginQuery } from "@liq/react";
 import { useState } from "react";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { DecimalInput } from "../../components/ui/DecimalInput";
 import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
@@ -187,7 +187,7 @@ export function TradeForm() {
 
   return (
     <div
-      className="flex w-[240px] shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
+      className="flex w-full flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
       data-testid="trade-form"
     >
       <div className="flex gap-1 text-[11px]">

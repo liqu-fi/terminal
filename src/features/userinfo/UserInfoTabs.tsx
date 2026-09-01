@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Card } from "../../components/ui/Card";
+import { Card } from "@/components/ui/card";
 import { HistoryTable } from "../history/HistoryTable";
 import { OpenOrdersTable } from "../orders/OpenOrdersTable";
 import { PositionsTable } from "../positions/PositionsTable";

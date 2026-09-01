@@ -1,3 +1,5 @@
+@import "@fontsource-variable/inter";
+@import "tw-animate-css";
 @import "tailwindcss";
 @import "./tokens.css";
 
@@ -11,8 +13,21 @@
   --color-accent: var(--accent);
   --color-long: var(--long);
   --color-short: var(--short);
+  --color-long-soft: var(--long-soft);
+  --color-short-soft: var(--short-soft);
   --radius-card: var(--radius);
   --font-sans: var(--font);
+}
+
+/*
+ * shadcn пишет голый `border`, ожидая базового слоя. В Tailwind v4 умолчание —
+ * `currentColor`, поэтому без этих трёх строк каждая карточка, каждый диалог и
+ * каждая ручка панели чертят почти белую линию цвета текста вместо границы.
+ */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 html,

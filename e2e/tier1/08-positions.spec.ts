@@ -3,7 +3,12 @@ import { AppPage } from "../pages/AppPage";
 import { enterTerminal } from "../pages/flows";
 import { UserInfoPanel } from "../pages/TerminalPanels";
 import { expect, seed, test } from "../support/fixtures";
-import { armHold, longPositionFixture, readyWorld, releaseHold } from "../support/world";
+import {
+  armHold,
+  longPositionFixture,
+  readyWorld,
+  releaseHold,
+} from "../support/world";
 
 test.describe("positions", () => {
   test("renders an open position row", async ({ page, world }) => {
@@ -53,6 +58,9 @@ test.describe("positions", () => {
     await expect(row).toContainText("↓"); // short side glyph (long renders ↑)
     // the market cell color is purely side-driven (long ⇒ text-long)
     await expect(row.locator("td").first()).toHaveClass(/text-short/);
+    // Size is magnitude-only: the short glyph + red color already say
+    // "short", so a signed size would double the negation ("↓ −1").
+    await expect(row.locator("td").nth(1)).toHaveText("1");
   });
 
   test("renders positions across multiple markets", async ({ page, world }) => {
@@ -107,11 +115,20 @@ test.describe("positions", () => {
     await expect(userInfo.positionRow(MARKET.id)).toBeVisible();
   });
 
-  test("the selected user-info tab is marked active", async ({ page, world }) => {
+  test("the selected user-info tab is marked active", async ({
+    page,
+    world,
+  }) => {
     const { userInfo } = await enterTerminal(page, world);
     await userInfo.selectTab("open-orders");
 
-    await expect(userInfo.tab("open-orders")).toHaveAttribute("aria-pressed", "true");
-    await expect(userInfo.tab("positions")).toHaveAttribute("aria-pressed", "false");
+    await expect(userInfo.tab("open-orders")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(userInfo.tab("positions")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 });

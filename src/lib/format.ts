@@ -64,8 +64,14 @@ export function fmtPrice(v: bigint): string {
 }
 
 export function fmtQty(v: bigint): string {
-  // trim trailing zeros from the 18-dec decimal string
-  return formatUnits(v, 18).replace(/\.?0+$/, "") || "0";
+  // Trim trailing zeros from the FRACTION only — a blind `/\.?0+$/` over the
+  // whole string also eats trailing zeros off the integer part (10 -> "1",
+  // 100 -> "1"), which is wrong on a trading screen.
+  const s = formatUnits(v, 18);
+  const [int, frac] = s.split(".");
+  if (frac === undefined) return s;
+  const trimmed = frac.replace(/0+$/, "");
+  return trimmed ? `${int}.${trimmed}` : int;
 }
 
 /** Bps is RAW (100 = 1%), not 18-decimal. */

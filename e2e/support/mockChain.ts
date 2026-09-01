@@ -10,7 +10,7 @@ import {
   handleEthCall,
   MODIFY_COLLATERAL_SELECTOR,
   TOKEN_OF_OWNER_SELECTOR,
-  GET_OPEN_POSITION_SELECTOR,
+  GET_ACCOUNT_FULL_POSITION_INFO_SELECTOR,
 } from "./chain";
 import type { MockWorld } from "./world";
 
@@ -87,7 +87,11 @@ function buildBlock(world: MockWorld) {
   };
 }
 
-function dispatch(world: MockWorld, method: string, params: unknown[]): unknown {
+function dispatch(
+  world: MockWorld,
+  method: string,
+  params: unknown[],
+): unknown {
   switch (method) {
     case "eth_chainId":
       return "0x18c7";
@@ -101,7 +105,11 @@ function dispatch(world: MockWorld, method: string, params: unknown[]): unknown 
     case "eth_call": {
       const tx = (params[0] ?? {}) as { to?: string; data?: string };
       try {
-        return handleEthCall(world, (tx.to ?? "").toLowerCase(), tx.data ?? "0x");
+        return handleEthCall(
+          world,
+          (tx.to ?? "").toLowerCase(),
+          tx.data ?? "0x",
+        );
       } catch (err) {
         throw new RpcRevert(
           err instanceof Error ? err.message : "execution reverted",
@@ -110,7 +118,9 @@ function dispatch(world: MockWorld, method: string, params: unknown[]): unknown 
     }
     case "eth_getTransactionReceipt": {
       const hash = params[0] as string;
-      return world.receipts[hash] !== undefined ? buildReceipt(world, hash) : null;
+      return world.receipts[hash] !== undefined
+        ? buildReceipt(world, hash)
+        : null;
     }
     case "eth_getTransactionByHash": {
       const hash = params[0] as string;
@@ -170,12 +180,15 @@ async function awaitHolds(world: MockWorld, msg: RpcMessage): Promise<void> {
   }
   if (msg.method === "eth_call") {
     const data = String((msg.params?.[0] as { data?: string })?.data ?? "");
-    if (world.holds.accountRead && data.includes(TOKEN_OF_OWNER_SELECTOR.slice(2))) {
+    if (
+      world.holds.accountRead &&
+      data.includes(TOKEN_OF_OWNER_SELECTOR.slice(2))
+    ) {
       await world.holds.accountRead.promise;
     }
     if (
       world.holds.positionsRead &&
-      data.includes(GET_OPEN_POSITION_SELECTOR.slice(2))
+      data.includes(GET_ACCOUNT_FULL_POSITION_INFO_SELECTOR.slice(2))
     ) {
       await world.holds.positionsRead.promise;
     }
@@ -191,7 +204,11 @@ export async function mockChain(page: Page, world: MockWorld): Promise<void> {
     }
     const handleOne = (msg: RpcMessage) => {
       try {
-        return { jsonrpc: "2.0", id: msg.id, result: dispatch(world, msg.method, msg.params ?? []) };
+        return {
+          jsonrpc: "2.0",
+          id: msg.id,
+          result: dispatch(world, msg.method, msg.params ?? []),
+        };
       } catch (err) {
         return {
           jsonrpc: "2.0",
@@ -204,7 +221,9 @@ export async function mockChain(page: Page, world: MockWorld): Promise<void> {
         };
       }
     };
-    const body = Array.isArray(parsed) ? parsed.map(handleOne) : handleOne(parsed);
+    const body = Array.isArray(parsed)
+      ? parsed.map(handleOne)
+      : handleOne(parsed);
     await route.fulfill({
       status: 200,
       contentType: "application/json",
