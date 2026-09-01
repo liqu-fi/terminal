@@ -40,6 +40,9 @@ describe("format", () => {
     expect(fmtQty(10n * WAD)).toBe("10");
     expect(fmtQty(100n * WAD)).toBe("100");
     expect(fmtQty(1000n * WAD)).toBe("1000");
+    // Знак сохраняется: таблицы зовут `fmtQty` и на отрицательных величинах.
+    expect(fmtQty(-10n * WAD)).toBe("-10");
+    expect(fmtQty(-1n * (WAD / 2n))).toBe("-0.5");
   });
   it("fmtPctFromBps treats 100 bps = 1%", () => {
     expect(fmtPctFromBps(250n)).toBe("2.50%");
