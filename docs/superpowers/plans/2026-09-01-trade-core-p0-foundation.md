@@ -44,6 +44,10 @@ import { globSync, readFileSync } from "node:fs";
 
 const STATIC = /data-testid="([^"]+)"/g;
 const TEMPLATE = /data-testid=\{`([^`]+)`\}/g;
+// Идентификатор доезжает до DOM и пропом: `<DialogContent overlayTestId="…">`.
+// Инвентарь считает идентификаторы, а не синтаксис их передачи, иначе перевод
+// оверлея на проп читался бы как потеря контракта.
+const PROP = /(?:overlayTestId|testid)="([^"]+)"/g;
 
 /**
  * Инвентарь `data-testid` исходников. Шаблонный идентификатор нормализуется
@@ -58,6 +62,7 @@ export function collectTestIds(root = "src"): string[] {
     for (const [, id] of source.matchAll(STATIC)) ids.add(id);
     for (const [, tpl] of source.matchAll(TEMPLATE))
       ids.add(tpl.replace(/\$\{[^}]*\}/g, "*"));
+    for (const [, id] of source.matchAll(PROP)) ids.add(id);
   }
   return [...ids].sort();
 }
@@ -501,7 +506,11 @@ pnpm dlx shadcn@latest add dialog
 
 ```tsx
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <DialogContent data-testid="deposit-dialog" className="w-[320px]">
+      <DialogContent
+        data-testid="deposit-dialog"
+        overlayTestId="dialog-overlay"
+        className="w-[320px]"
+      >
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold">Deposit USDC</DialogTitle>
         </DialogHeader>
@@ -523,7 +532,11 @@ pnpm dlx shadcn@latest add dialog
 
 ```tsx
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <DialogContent data-testid="withdraw-dialog" className="w-[320px]">
+      <DialogContent
+        data-testid="withdraw-dialog"
+        overlayTestId="dialog-overlay"
+        className="w-[320px]"
+      >
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold">Withdraw sUSDC</DialogTitle>
         </DialogHeader>
@@ -590,6 +603,8 @@ function DialogContent({
 
 Если в поставленной версии `showCloseButton` уже есть — оставить как есть и добавить только `overlayTestId`.
 
+Оба денежных диалога передают `overlayTestId="dialog-overlay"` **явно**, не полагаясь на умолчание: инвентарь из Task 1 читает исходники, и идентификатор, живущий только в значении по умолчанию, читался бы как исчезнувший контракт.
+
 - [ ] **Step 8: Удалить прежний Dialog**
 
 ```bash
@@ -600,7 +615,7 @@ grep -rn "components/ui/Dialog\"" src   # Expected: пусто
 - [ ] **Step 9: Прогнать полный гейт**
 
 Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e`
-Expected: зелёное, включая новую спеку и прежнюю `03-deposit-withdraw`. Особое внимание — сценариям отмены и ожидания в `03`: закрытие теперь идёт через `onOpenChange`, и потерянный проброс проявится именно там.
+Expected: зелёное, включая новую спеку, прежнюю `03-deposit-withdraw` и **страж инвентаря без обновления снапшота** — задача переносит идентификаторы, а не заводит новые. Особое внимание — сценариям отмены и ожидания в `03`: закрытие теперь идёт через `onOpenChange`, и потерянный проброс проявится именно там.
 
 - [ ] **Step 10: Коммит**
 
