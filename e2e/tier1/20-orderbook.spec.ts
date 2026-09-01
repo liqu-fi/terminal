@@ -1,6 +1,7 @@
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
-import { readyWorld } from "../support/world";
+import { WAD } from "../support/constants";
+import { readyWorld, sseOrderbookFrame } from "../support/world";
 
 test.describe("order book panel", () => {
   test("панель видна и по умолчанию открыта на книге", async ({
@@ -32,5 +33,114 @@ test.describe("order book panel", () => {
     );
     await expect(book.empty).toBeVisible();
     await expect(book.unavailable).toHaveCount(0);
+  });
+
+  test("книга рисует обе стороны, лучший аск — вплотную к спреду", async ({
+    page,
+    world,
+  }) => {
+    const { book } = await enterTerminal(page, world);
+    await expect(book.asks).toHaveCount(10);
+    await expect(book.bids).toHaveCount(10);
+    // мир отдаёт 20 уровней на сторону шагом $10 вокруг $70 000; шаг группировки
+    // по умолчанию — тоже 10, поэтому уровни видны как есть
+    await expect(book.bidRow(0)).toContainText("69,990");
+    await expect(book.askRow(9)).toContainText("70,010");
+  });
+
+  test("строка спреда показывает величину и долю", async ({ page, world }) => {
+    const { book } = await enterTerminal(page, world);
+    // лучший бид 69 990, лучший аск 70 010 — спред ровно 20, а не ширина группы
+    await expect(book.spread).toContainText("20");
+    await expect(book.spread).toContainText("%");
+
+    // При шаге 10 (умолчание) группа совпадает с сырым уровнем один в один,
+    // поэтому «asks[0].price − bids[0].price» дал бы то же самое число и не
+    // отличил бы правильный расчёт от неправильного. Шаг 100 разводит их:
+    // группа даёт 200 (69,900 и 70,100), а настоящий спред остаётся 20.
+    await book.selectTick(1);
+    await expect(book.spread).toContainText("20");
+    await expect(book.spread).not.toContainText("200");
+  });
+
+  test("режим «только биды» убирает аски и удваивает число строк", async ({
+    page,
+    world,
+  }) => {
+    const { book } = await enterTerminal(page, world);
+    await book.setView("bids");
+    await expect(book.asks).toHaveCount(0);
+    await expect(book.bids).toHaveCount(20);
+  });
+
+  test("смена шага перегруппировывает книгу", async ({ page, world }) => {
+    const { book } = await enterTerminal(page, world);
+    await expect(book.bidRow(0)).toContainText("69,990");
+    await book.selectTick(1); // шаг 100: три верхних бида схлопываются в 69,900
+    await expect(book.bidRow(0)).toContainText("69,900");
+  });
+
+  test("живой снимок книги вытесняет затравку", async ({ page, world }) => {
+    const { book } = await enterTerminal(page, world);
+    await expect(book.bidRow(0)).toContainText("69,990");
+
+    // Тот же рынок, книга сдвинута на $100 вверх. Событие обязано победить
+    // затравку по времени: `useOrderbook` берёт не последнего пришедшего, а
+    // того, чья отметка свежее.
+    world.sseFrames = [
+      sseOrderbookFrame("200", {
+        bids: [{ price: (70_100n * WAD).toString(), size: WAD.toString() }],
+        asks: [{ price: (70_200n * WAD).toString(), size: WAD.toString() }],
+        asOf: Date.now() + 1000,
+      }),
+    ];
+
+    await expect(book.bidRow(0)).toContainText("70,100", { timeout: 15_000 });
+  });
+
+  test("полоса дисбаланса показывает перевес сторон", async ({
+    page,
+    world,
+  }) => {
+    const { book } = await enterTerminal(page, world);
+    await expect(book.imbalance).toBeVisible();
+    await expect(book.imbalance).toContainText("%");
+  });
+
+  test("полоса дисбаланса читает всю книгу, а не только показанный срез", async ({
+    page,
+    world,
+  }) => {
+    // Видимых (режим «обе стороны», depth=10) бидов — 10, по 1 каждый: срез
+    // суммируется в 10. Но за экраном ещё 5 уровней по 100 — полный бид-объём
+    // 510. Асков — 15 по 1, итого 15 на всю книгу (10 видно). Если бы полоса
+    // считалась по показанному срезу (10 против 10), она бы легла 50/50; по
+    // всей книге (510 против 15) перевес почти весь у бидов — 97%.
+    const level = (price: bigint, size: bigint) => ({
+      price: price.toString(),
+      size: size.toString(),
+    });
+    const bids = [
+      ...Array.from({ length: 10 }, (_, i) =>
+        level(70_000n * WAD - BigInt(i + 1) * 10n * WAD, WAD),
+      ),
+      ...Array.from({ length: 5 }, (_, i) =>
+        level(69_890n * WAD - BigInt(i) * 10n * WAD, 100n * WAD),
+      ),
+    ];
+    const asks = Array.from({ length: 15 }, (_, i) =>
+      level(70_000n * WAD + BigInt(i + 1) * 10n * WAD, WAD),
+    );
+
+    const { book } = await enterTerminal(page, world, () =>
+      readyWorld({ orderbook: { bids, asks, asOf: Date.now() } }),
+    );
+
+    await expect(
+      book.imbalance.getByTestId("book-imbalance-bid"),
+    ).toContainText("97");
+    await expect(
+      book.imbalance.getByTestId("book-imbalance-ask"),
+    ).toContainText("3");
   });
 });

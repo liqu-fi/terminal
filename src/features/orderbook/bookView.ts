@@ -1,4 +1,10 @@
-import { type BookRow, formatPrice, formatQty, Price, tickDecimals } from "@liq/sdk";
+import {
+  type BookRow,
+  formatPrice,
+  formatQty,
+  Price,
+  tickDecimals,
+} from "@liq/sdk";
 
 import { toNum } from "@/lib/format";
 
@@ -95,14 +101,19 @@ export function barPct(total: bigint, maxTotal: bigint): number {
 }
 
 /**
- * Доля бидов в процентах.
+ * Доля бидов в процентах, усечённая до целого.
  *
  * @remarks `null` приходит, когда сторон нет вовсе; перевеса в этом случае
  * тоже нет, и половина честнее нуля, который читался бы как «все продают».
+ * Усечение, а не округление: `(ratio * 100n) / 10n ** 18n` — целочисленное
+ * деление bigint, оно уже отбросило дробную часть до того, как значение
+ * попало в `Number`, так что `Math.round` поверх него был мёртвым кодом —
+ * округлять там было уже нечего. Для строки спреда, где сотые доли процента
+ * важны, эта функция не годится — там печатает `formatRatio` из SDK.
  */
 export function ratioPct(ratio: bigint | null): number {
   if (ratio === null) return 50;
-  return Math.round(Number((ratio * 100n) / 10n ** 18n));
+  return Number((ratio * 100n) / 10n ** 18n);
 }
 
 /** Базовый актив рынка: `ETH-PERP` → `ETH`. Без рынка — пустая строка. */

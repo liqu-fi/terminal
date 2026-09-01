@@ -148,12 +148,20 @@ export class OrderBookPanel {
   readonly unavailable: Locator;
   readonly empty: Locator;
   readonly error: Locator;
+  readonly asks: Locator;
+  readonly bids: Locator;
+  readonly spread: Locator;
+  readonly imbalance: Locator;
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("orderbook-panel");
     this.unavailable = page.getByTestId("book-unavailable");
     this.empty = page.getByTestId("book-empty");
     this.error = page.getByTestId("book-error");
+    this.asks = page.locator('[data-testid^="book-ask-"]');
+    this.bids = page.locator('[data-testid^="book-bid-"]');
+    this.spread = page.getByTestId("book-spread");
+    this.imbalance = page.getByTestId("book-imbalance");
   }
 
   tab(name: "book" | "trades"): Locator {
@@ -162,6 +170,20 @@ export class OrderBookPanel {
 
   selectTab(name: "book" | "trades"): Promise<void> {
     return this.tab(name).click();
+  }
+
+  askRow(i: number): Locator {
+    return this.page.getByTestId(`book-ask-${i}`);
+  }
+  bidRow(i: number): Locator {
+    return this.page.getByTestId(`book-bid-${i}`);
+  }
+  setView(v: "both" | "bids" | "asks"): Promise<void> {
+    return this.page.getByTestId(`book-view-${v}`).click();
+  }
+  async selectTick(index: number): Promise<void> {
+    await this.page.getByTestId("book-tick-select").click();
+    await this.page.getByTestId(`book-tick-option-${index}`).click();
   }
 }
 
