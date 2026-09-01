@@ -9,6 +9,7 @@ import {
   fmtBookPrice,
   fmtBookSize,
   fmtBookTotal,
+  fmtTapeTime,
   padSlots,
   ratioPct,
 } from "../bookView";
@@ -37,6 +38,13 @@ describe("padSlots", () => {
       row("101", "1", "3"),
     ];
     expect(padSlots(rows, 2, "end")).toHaveLength(2);
+  });
+
+  // Дженерик: раскладка не завязана на форму `BookRow` — той же функцией
+  // добивает себя лента сделок (`TapeRow[]`), у которой нет поля `total`.
+  it("работает с произвольной формой строки, не только с BookRow", () => {
+    const out = padSlots(["a", "b"], 4, "end");
+    expect(out).toEqual(["a", "b", null, null]);
   });
 });
 
@@ -135,5 +143,17 @@ describe("baseSymbolOf", () => {
 
   it("без рынка возвращает пустую строку, а не выдуманный тикер", () => {
     expect(baseSymbolOf(undefined)).toBe("");
+  });
+});
+
+describe("fmtTapeTime", () => {
+  it("печатает часы:минуты:секунды в UTC с ведущими нулями", () => {
+    // 2024-06-01T00:00:00.000Z
+    expect(fmtTapeTime(1_717_200_000_000)).toBe("00:00:00");
+  });
+
+  it("не путает единицы с десятками — ведущие нули на месте", () => {
+    // 2024-06-01T03:05:09.000Z
+    expect(fmtTapeTime(1_717_211_109_000)).toBe("03:05:09");
   });
 });

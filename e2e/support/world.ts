@@ -6,6 +6,8 @@
  * state that subsequent reads (accounts.list) and gateway responses observe —
  * exactly like a real backend, but deterministic and in-process.
  */
+import { parseUnits } from "viem";
+
 import { CHAIN_ID, MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
 
 export type OrderMode = "BOOK" | "ONCHAIN" | "RECENTLY_CHANGED";
@@ -507,6 +509,44 @@ export function sseOrderbookFrame(
     type: "orderbook_snapshot",
     channel: `orderbook:${marketId}`,
     data: { marketId, bids: book.bids, asks: book.asks, timestamp: book.asOf },
+  })}\n\n`;
+}
+
+/**
+ * Кадр SSE с одной сделкой. Форма — `TradeEvent` из @liq/core: `type: "trade"`,
+ * канал `` `trades:${marketId}` ``.
+ *
+ * @remarks `price`/`size` — человеческие десятичные строки ("70500", "1.5"),
+ * как в вызовах этого хелпера, а не WAD-строки: на проводе (`FillBroadcastEventSchema`,
+ * тот же контракт, что у `OrderbookBroadcastEventSchema`/`PriceBroadcastEventSchema`)
+ * поле — WAD-масштабированное, как и везде в этом файле (`tradeFixture`,
+ * `defaultBook`), только там это делает вызывающий код через `n * WAD`; здесь —
+ * `parseUnits`, чтобы вызов оставался коротким числом, которое видно глазами
+ * в тексте теста. `timestamp` по умолчанию — «сейчас», заведомо новее любой
+ * REST-строки фикстуры (та печатается фиксированным прошлым временем из
+ * `tradeFixture`), так что сценарий «живое событие встаёт наверх ленты» не
+ * обязан явно называть момент.
+ */
+export function sseTradeFrame(
+  marketId: string,
+  trade: {
+    price: string;
+    size: string;
+    side: "BUY" | "SELL";
+    timestamp?: number;
+  },
+): string {
+  const { price, size, side, timestamp = Date.now() } = trade;
+  return `data: ${JSON.stringify({
+    type: "trade",
+    channel: `trades:${marketId}`,
+    data: {
+      marketId,
+      price: parseUnits(price, 18).toString(),
+      size: parseUnits(size, 18).toString(),
+      side,
+      timestamp,
+    },
   })}\n\n`;
 }
 

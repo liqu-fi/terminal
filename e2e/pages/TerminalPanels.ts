@@ -152,6 +152,8 @@ export class OrderBookPanel {
   readonly bids: Locator;
   readonly spread: Locator;
   readonly imbalance: Locator;
+  readonly tapeRows: Locator;
+  readonly tapeEmpty: Locator;
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("orderbook-panel");
@@ -162,6 +164,8 @@ export class OrderBookPanel {
     this.bids = page.locator('[data-testid^="book-bid-"]');
     this.spread = page.getByTestId("book-spread");
     this.imbalance = page.getByTestId("book-imbalance");
+    this.tapeRows = page.locator('[data-testid^="tape-row-"]');
+    this.tapeEmpty = page.getByTestId("tape-empty");
   }
 
   tab(name: "book" | "trades"): Locator {

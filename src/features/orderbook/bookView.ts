@@ -12,19 +12,24 @@ import { toNum } from "@/lib/format";
 export type Slot = BookRow | null;
 
 /**
- * Раскладывает сторону книги в сетку фиксированной высоты.
+ * Раскладывает список строк в сетку фиксированной высоты.
  *
- * @remarks Высота панели не должна зависеть от толщины книги: иначе соседний
- * график дёргается на каждом снимке. Лишние строки отбрасываются, недостающие
- * добиваются пустыми слотами с той стороны, которая дальше от спреда.
+ * @remarks Высота панели не должна зависеть от толщины содержимого — иначе
+ * соседний график или соседняя вкладка дёргается на каждом снимке. Лишние
+ * строки отбрасываются, недостающие добиваются пустыми слотами с указанной
+ * стороны. Дженерик, а не `BookRow[]`: та же раскладка нужна ленте сделок
+ * (`TapeRow[]` в `useTradesTape.ts`) — рядов книги от рядов ленты эта функция
+ * ничем не отличает, обеим достаточно `slice` + добивки.
  */
-export function padSlots(
-  rows: readonly BookRow[],
+export function padSlots<T>(
+  rows: readonly T[],
   slots: number,
   where: "start" | "end",
-): Slot[] {
+): (T | null)[] {
   const kept = rows.slice(0, slots);
-  const blanks = Array.from<Slot>({ length: Math.max(0, slots - kept.length) });
+  const blanks = Array.from<T | null>({
+    length: Math.max(0, slots - kept.length),
+  });
   const filled = blanks.fill(null);
   return where === "start" ? [...filled, ...kept] : [...kept, ...filled];
 }
@@ -119,4 +124,18 @@ export function ratioPct(ratio: bigint | null): number {
 /** Базовый актив рынка: `ETH-PERP` → `ETH`. Без рынка — пустая строка. */
 export function baseSymbolOf(symbol: string | undefined): string {
   return symbol?.split(/[-/]/)[0]?.toUpperCase() ?? "";
+}
+
+/**
+ * Время строки ленты сделок: часы:минуты:секунды, UTC, с ведущими нулями.
+ *
+ * @remarks UTC, а не локальное время машины — тик ленты приходит раз в
+ * секунды, и плавающее локальное смещение браузера не добавляет пользы,
+ * которой не даёт фиксированная зона; взамен UTC делает функцию чистой и
+ * проверяемой юнит-тестом без подмены `Intl`/`TZ` окружения выполнения.
+ */
+export function fmtTapeTime(timestamp: number): string {
+  const d = new Date(timestamp);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }

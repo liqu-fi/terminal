@@ -11,6 +11,7 @@ import { useSelectedMarket } from "../market/useSelectedMarket";
 import { BookGrid } from "./BookGrid";
 import { baseSymbolOf } from "./bookView";
 import { TickSelect } from "./TickSelect";
+import { TradesTape } from "./TradesTape";
 import { useBookTick } from "./useBookTick";
 
 type BookViewMode = "both" | "bids" | "asks";
@@ -127,7 +128,13 @@ export function OrderBookPanel() {
         </TabsContent>
 
         <TabsContent value="trades" className="flex-1">
-          <div data-testid="trades-tape-placeholder" />
+          {/* Keyed on the market: a switch remounts the tape so its live
+              buffer starts empty rather than briefly mixing in ticks that
+              belonged to the previous market. */}
+          <TradesTape
+            key={marketId?.toString() ?? "none"}
+            marketId={marketId}
+          />
         </TabsContent>
       </Tabs>
     </Card>
