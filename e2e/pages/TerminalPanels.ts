@@ -143,6 +143,28 @@ async function setRange(slider: Locator, value: number): Promise<void> {
   }, value);
 }
 
+export class OrderBookPanel {
+  readonly root: Locator;
+  readonly unavailable: Locator;
+  readonly empty: Locator;
+  readonly error: Locator;
+
+  constructor(private readonly page: Page) {
+    this.root = page.getByTestId("orderbook-panel");
+    this.unavailable = page.getByTestId("book-unavailable");
+    this.empty = page.getByTestId("book-empty");
+    this.error = page.getByTestId("book-error");
+  }
+
+  tab(name: "book" | "trades"): Locator {
+    return this.page.getByTestId(`orderbook-tab-${name}`);
+  }
+
+  selectTab(name: "book" | "trades"): Promise<void> {
+    return this.tab(name).click();
+  }
+}
+
 export class LayoutPanel {
   readonly chartPanel: Locator;
   readonly chartCollapseToggle: Locator;

@@ -136,6 +136,12 @@ export interface MockWorld {
   openOrders: GatewayOrder[];
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
+  /** Снимок книги для GET /markets/:id/orderbook (WAD-строки). */
+  orderbook: {
+    bids: Array<{ price: string; size: string }>;
+    asks: Array<{ price: string; size: string }>;
+    asOf: number;
+  };
 
   // --- fault injection ---
   faults: {
@@ -158,6 +164,7 @@ export interface MockWorld {
     candlesStatus?: number;
     ordersStatus?: number;
     tradesStatus?: number;
+    orderbookStatus?: number;
     // wallet: reject the next eth_requestAccounts (user dismisses the connect prompt)
     connectRejects?: boolean;
     // gateway: status override for POST /session-keys (grant registration)
@@ -235,6 +242,35 @@ function defaultCandles(price: bigint): MockWorld["candles"] {
   }));
 }
 
+/** Сколько уровней на сторону отдаёт мок: хватает и на 10+10, и на 20 в одну сторону. */
+const BOOK_LEVELS = 20;
+
+/**
+ * Книга вокруг цены, шаг $10.
+ *
+ * @remarks Шаг выбран не произвольно: при цене мира $70 000 первый шаг из
+ * `bookTickOptions` равен 10, и книга с шагом $1 схлопнулась бы в одну строку
+ * на сторону — сетка была бы пустой, а спека проверяла бы группировку вместо
+ * книги. Уровни ложатся на границы группы один в один: бид 69 990 округляется
+ * вниз в 69 990, аск 70 010 вверх в 70 010.
+ */
+function defaultBook(price: bigint): MockWorld["orderbook"] {
+  const step = 10n * WAD;
+  const level = (p: bigint, i: number) => ({
+    price: p.toString(),
+    size: (BigInt(i + 1) * WAD).toString(),
+  });
+  return {
+    bids: Array.from({ length: BOOK_LEVELS }, (_, i) =>
+      level(price - BigInt(i + 1) * step, i),
+    ),
+    asks: Array.from({ length: BOOK_LEVELS }, (_, i) =>
+      level(price + BigInt(i + 1) * step, i),
+    ),
+    asOf: Date.now(),
+  };
+}
+
 export interface ScenarioOptions {
   accounts?: AccountFixture[];
   price?: bigint;
@@ -242,6 +278,16 @@ export interface ScenarioOptions {
   openOrders?: GatewayOrder[];
   conditionalOrders?: GatewayOrder[];
   trades?: TradeRow[];
+  orderbook?: MockWorld["orderbook"];
+  /**
+   * Fault overrides active from the world's construction, not just after
+   * `enterTerminal` returns. Needed for faults that must be live for the
+   * very first REST call a mounting terminal fires (e.g. the orderbook
+   * seed query, which — unlike most gateway queries — never refetches:
+   * `useOrderbook`'s seed has `retry: false, staleTime: Infinity`, so a
+   * fault set on `world.faults` after boot would never be observed).
+   */
+  faults?: MockWorld["faults"];
 }
 
 /** A connected wallet that owns NO perps account yet. */
@@ -269,7 +315,8 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     openOrders: opts.openOrders ?? [],
     conditionalOrders: opts.conditionalOrders ?? [],
     trades: opts.trades ?? [],
-    faults: {},
+    orderbook: opts.orderbook ?? defaultBook(price),
+    faults: opts.faults ?? {},
     submittedOrders: [],
     cancelledOrderIds: [],
     lastCollateralDelta: 0n,
@@ -449,6 +496,18 @@ export function sseCandleFrame(
     data: bar,
   };
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+/** Кадр SSE со снимком книги. Форма — `OrderbookSnapshotEvent` из @liq/core. */
+export function sseOrderbookFrame(
+  marketId: string,
+  book: MockWorld["orderbook"],
+): string {
+  return `data: ${JSON.stringify({
+    type: "orderbook_snapshot",
+    channel: `orderbook:${marketId}`,
+    data: { marketId, bids: book.bids, asks: book.asks, timestamp: book.asOf },
+  })}\n\n`;
 }
 
 export function longPositionFixture(

@@ -59,7 +59,8 @@ function marketFull(world: MockWorld) {
 }
 
 function orderListFor(world: MockWorld, status: string | null): GatewayOrder[] {
-  if (status && status.includes("TRIGGER_PENDING")) return world.conditionalOrders;
+  if (status && status.includes("TRIGGER_PENDING"))
+    return world.conditionalOrders;
   return world.openOrders;
 }
 
@@ -93,7 +94,11 @@ function restSubmittedOrder(
 }
 
 const SSE_LONGPOLL_MS = 20_000;
-const OPEN_STATUSES = new Set(["PENDING", "PARTIALLY_FILLED", "TRIGGER_PENDING"]);
+const OPEN_STATUSES = new Set([
+  "PENDING",
+  "PARTIALLY_FILLED",
+  "TRIGGER_PENDING",
+]);
 
 /**
  * Long-poll the SSE stream: hold the connection open until a frame is queued
@@ -262,6 +267,24 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
         (s) => s.id !== sessionKey[1],
       );
       await send(route, { ok: true });
+      return;
+    }
+
+    // --- orderbook -----------------------------------------------------------
+    // Must precede the generic "/markets" endsWith check below: a more
+    // specific path segment ("/orderbook") has to be matched first, or the
+    // broader match would swallow it.
+    const book = path.match(/\/markets\/([^/]+)\/orderbook$/);
+    if (book) {
+      if (world.faults.orderbookStatus) {
+        await error(
+          route,
+          world.faults.orderbookStatus,
+          "ORDERBOOK_UNAVAILABLE",
+        );
+        return;
+      }
+      await send(route, world.orderbook);
       return;
     }
 
