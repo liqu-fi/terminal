@@ -1,7 +1,14 @@
 import type { TradeEventData } from "@liq/sdk";
 import { describe, expect, it } from "vitest";
 
-import { freshLiveRows, fromLiveEvent, type TapeRow } from "../useTradesTape";
+import {
+  EMPTY_LIVE_BUFFER,
+  freshLiveRows,
+  fromLiveEvent,
+  pushLive,
+  TAPE_LIMIT,
+  type TapeRow,
+} from "../useTradesTape";
 
 const row = (over: Partial<TapeRow>): TapeRow => ({
   key: "k",
@@ -94,5 +101,44 @@ describe("fromLiveEvent", () => {
     expect(fromLiveEvent(liveEvent({ side: "UNKNOWN" }), 0)).toBeNull();
     expect(fromLiveEvent(liveEvent({ side: "" }), 0)).toBeNull();
     expect(fromLiveEvent(liveEvent({ side: "buy" }), 0)).toBeNull();
+  });
+});
+
+describe("pushLive", () => {
+  // Ключи различает счётчик буфера, и его инкремент — единственное место, где
+  // это происходит. Пока буфер не насыщен, длина растёт вместе со счётчиком, и
+  // подмена одного другим (`seq: rows.length` — ровно то, от чего
+  // предостерегает TSDoc) не видна. Коллизия появляется только когда в буфере
+  // встречаются два тика, пришедшие уже на полный буфер, то есть не раньше
+  // чем на TAPE_LIMIT + 2 событии — потому счёт идёт с запасом, а не «на одно
+  // больше лимита».
+  it("ключи не повторяются и после насыщения буфера", () => {
+    const total = TAPE_LIMIT + 10;
+    const emitted: string[] = [];
+    let buf = EMPTY_LIVE_BUFFER;
+    for (let i = 0; i < total; i++) {
+      // Полезная нагрузка одна и та же нарочно: так приходят филлы одного
+      // матча — общий timestamp, общая цена мейкера, различить нечем.
+      buf = pushLive(buf, liveEvent());
+      emitted.push(buf.rows[0].key);
+    }
+    expect(buf.rows).toHaveLength(TAPE_LIMIT);
+    expect(new Set(emitted).size).toBe(total);
+    expect(new Set(buf.rows.map((r) => r.key)).size).toBe(buf.rows.length);
+  });
+
+  it("новый тик встаёт наверх буфера", () => {
+    const buf = pushLive(
+      pushLive(EMPTY_LIVE_BUFFER, liveEvent({ price: "1" })),
+      liveEvent({ price: "2" }),
+    );
+    expect(buf.rows.map((r) => r.price)).toEqual([2n, 1n]);
+  });
+
+  // Нераспознанное событие не должно ни попадать в ленту, ни тратить счётчик,
+  // ни выглядеть для React сменой состояния.
+  it("нераспознанная сторона возвращает тот же буфер", () => {
+    const buf = pushLive(EMPTY_LIVE_BUFFER, liveEvent({ side: "UNKNOWN" }));
+    expect(buf).toBe(EMPTY_LIVE_BUFFER);
   });
 });

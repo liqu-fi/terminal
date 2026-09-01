@@ -17,6 +17,7 @@ import { useSubmitConditionalOrder } from "./mutations/useSubmitConditionalOrder
 import { useSubmitLimitOrder } from "./mutations/useSubmitLimitOrder";
 import { useSubmitMarketOrder } from "./mutations/useSubmitMarketOrder";
 import { acceptablePrice } from "./orderMath";
+import { shouldAdoptLevel } from "./shouldAdoptLevel";
 import { SizeField } from "./SizeField";
 import { SizePercent } from "./SizePercent";
 import { TradePreviewRow } from "./TradePreviewRow";
@@ -56,24 +57,15 @@ export function TradeForm() {
   const [tp, setTp] = useState("");
   const [sl, setSl] = useState("");
 
-  // Стор — канал, по которому книга передаёт выбранный уровень.
-  //
-  // Отсечка по `prev` обязательна: zustand v5 в `set()` всегда собирает новый
-  // объект, поэтому листенер зовётся на КАЖДУЮ запись в стор, чем бы она ни
-  // была. Селекторной формы у стора нет — он создан без
-  // `subscribeWithSelector`. Сегодня в него пишет только `pickLevel`, но Ф2
-  // сажает на этот же стор весь тикет, и первый же `setSide` при непустом
-  // `limitPrice` насильно вернул бы вкладку Limit и затёр цену, введённую
-  // руками.
-  //
-  // Повторный клик по тому же уровню отсечку проходит: `pickLevel` сперва
-  // зовёт `setOrderType(LIMIT)`, а тот пишет `limitPrice: undefined` — цена
-  // успевает смениться дважды (69990n → undefined → 69990n).
+  // Стор — канал, по которому книга передаёт выбранный уровень. Какие записи
+  // в стор считать «книга выбрала уровень», решает `shouldAdoptLevel` —
+  // чистой функцией, потому что внутри подписки этот предикат нечем
+  // проверить: писать в стор из теста здесь некому, в него ходит только
+  // `BookGrid`. Обоснование обоих отказов — в TSDoc предиката.
   useEffect(
     () =>
       useTradeStore.subscribe((s, prev) => {
-        if (s.limitPrice === prev.limitPrice) return;
-        if (s.limitPrice === null || s.limitPrice === undefined) return;
+        if (!shouldAdoptLevel(prev.limitPrice, s.limitPrice)) return;
         setTab("Limit");
         // `Price.fmt` не режет дробную часть под поле — обрезаем на входе
         // в поле, а не в сторе (стор хранит цену бренда).

@@ -4,7 +4,8 @@ import { useState } from "react";
 
 import { parseWadLoose } from "@/lib/format";
 
-const TAPE_LIMIT = 50;
+/** Сколько строк держит лента — и REST-страница, и живой буфер. */
+export const TAPE_LIMIT = 50;
 
 /**
  * One row of the public trade tape — a settled fill or a live tick,
@@ -128,9 +129,35 @@ export interface UseTradesTapeResult {
  * `TAPE_LIMIT`, и после переполнения длина перестала бы расти, а ключи —
  * различаться.
  */
-interface LiveBuffer {
+export interface LiveBuffer {
   rows: TapeRow[];
   seq: number;
+}
+
+/** Начальное состояние буфера: тиков нет, счётчик на нуле. */
+export const EMPTY_LIVE_BUFFER: LiveBuffer = { rows: [], seq: 0 };
+
+/**
+ * Кладёт живой тик в буфер, возвращая новое состояние.
+ *
+ * @remarks Вынесено из апдейтера `setLive` не ради красоты: инкремент
+ * счётчика — единственное место, где ключ живой строки становится
+ * уникальным, и внутри `setState` его нечем проверить. Счётчик инкрементится
+ * сам и НЕ выводится из `rows.length`: буфер обрезан по {@link TAPE_LIMIT},
+ * после насыщения длина перестаёт расти, и ключи начали бы повторяться —
+ * ровно та коллизия, от которой ключ и уводили (см. {@link TapeRow}).
+ *
+ * Событие с нераспознанной стороной буфер не меняет и счётчика не тратит:
+ * возвращается та же ссылка `prev`, чтобы React не считал это изменением
+ * состояния и не платил лишним рендером.
+ */
+export function pushLive(prev: LiveBuffer, data: TradeEventData): LiveBuffer {
+  const row = fromLiveEvent(data, prev.seq);
+  if (row === null) return prev;
+  return {
+    rows: [row, ...prev.rows].slice(0, TAPE_LIMIT),
+    seq: prev.seq + 1,
+  };
 }
 
 /**
@@ -155,24 +182,25 @@ export function useTradesTape(
   const filter: ListTradesQuery =
     marketId != null ? { marketId, limit: TAPE_LIMIT } : { limit: TAPE_LIMIT };
   const { data, isLoading } = useTradesRestQuery(filter);
-  const restRows = (data?.rows ?? []).map(fromRestRow);
+  /**
+   * Страница REST — только когда есть рынок, чью ленту мы показываем.
+   *
+   * @remarks Без рынка фильтр теряет `marketId`, и гейтвей отвечает
+   * МЕЖРЫНОЧНЫМ потоком: вкладка Trades нарисовала бы чужие сделки рядом с
+   * «рынок не выбран». Запрос при этом всё равно уходит — `useTradesRestQuery`
+   * не принимает `enabled` и выключить себя не даёт; лишний `GET /trades` при
+   * пустом рынке остаётся за SDK, здесь отсекается только показ.
+   */
+  const restRows =
+    marketId != null ? (data?.rows ?? []).map(fromRestRow) : [];
 
   const event = useMarketChannel(marketId, "trades");
   const [lastEvent, setLastEvent] = useState(event);
-  const [live, setLive] = useState<LiveBuffer>({ rows: [], seq: 0 });
+  const [live, setLive] = useState<LiveBuffer>(EMPTY_LIVE_BUFFER);
 
   if (event !== lastEvent) {
     setLastEvent(event);
-    if (event) {
-      setLive((prev) => {
-        const row = fromLiveEvent(event.data, prev.seq);
-        if (row === null) return prev;
-        return {
-          rows: [row, ...prev.rows].slice(0, TAPE_LIMIT),
-          seq: prev.seq + 1,
-        };
-      });
-    }
+    if (event) setLive((prev) => pushLive(prev, event.data));
   }
 
   const rows = [...freshLiveRows(live.rows, restRows), ...restRows].slice(
@@ -180,5 +208,7 @@ export function useTradesTape(
     TAPE_LIMIT,
   );
 
-  return { rows, isLoading };
+  // Ожидание страницы — тоже только при рынке: без него ждать нечего, а
+  // «Loading trades…» навсегда читалось бы как «сейчас приедет».
+  return { rows, isLoading: marketId != null && isLoading };
 }
