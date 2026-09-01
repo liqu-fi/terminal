@@ -421,9 +421,10 @@ git commit -m "style(tokens): палитра снята с макета, а не
 ### Task 4: `Button`, `Card`, `Input` на shadcn
 
 **Files:**
-- Create: `src/components/ui/button.tsx`, `src/components/ui/card.tsx`, `src/components/ui/input.tsx` (ставит CLI)
-- Modify: `src/components/ui/button.tsx` (варианты `long` / `short` / `ghost` под токены)
 - Delete: `src/components/ui/Button.tsx`, `src/components/ui/Card.tsx`, `src/components/ui/Input.tsx`
+- Create: `src/components/ui/button.tsx`, `src/components/ui/card.tsx`, `src/components/ui/input.tsx` (ставит CLI)
+- Modify: `src/components/ui/button.tsx` (словарь вариантов — терминала, не shadcn)
+- Create: `src/components/ui/__tests__/vocabulary.test.ts`
 - Modify: `src/components/ui/DecimalInput.tsx` (внутрь shadcn `Input`)
 - Modify: `src/features/auth/SessionGate.tsx`, `src/features/wallet/ConnectButton.tsx`, `src/features/trade/TradeForm.tsx`, `src/features/trade/ConditionalFields.tsx`, `src/features/session-keys/SessionKeyModal.tsx`, `src/features/account/DepositDialog.tsx`, `src/features/account/WithdrawDialog.tsx`, `src/features/terminal/Terminal.tsx`, `src/features/userinfo/UserInfoTabs.tsx`
 
@@ -431,27 +432,117 @@ git commit -m "style(tokens): палитра снята с макета, а не
 - Consumes: `cn` из `@/lib/utils` (Task 2), токены (Task 3).
 - Produces: `Button` с `variant: "default" | "long" | "short" | "ghost" | "outline" | "link"`, `Card`, `Input` из `@/components/ui/*`. `DecimalInput` сохраняет прежний API: `value`, `onValueChange`, `maxDecimals`, `invalid`, `rightSlot`.
 
-- [ ] **Step 1: Поставить компоненты**
+- [ ] **Step 1: Убрать прежние примитивы до генерации**
+
+Именно до, а не после: файловая система macOS нечувствительна к регистру, поэтому
+`button.tsx` и `Button.tsx` — один и тот же путь, и CLI перезаписал бы старый файл, оставив
+в индексе git запись под прежним именем.
+
+```bash
+git rm src/components/ui/Button.tsx src/components/ui/Card.tsx src/components/ui/Input.tsx
+```
+
+Дерево временно не собирается — девять файлов ссылаются на удалённое. Это ожидаемо: гейт
+стоит в конце задачи.
+
+- [ ] **Step 2: Поставить компоненты**
 
 ```bash
 pnpm dlx shadcn@latest add button card input
 ```
 
-Ожидается: файлы в `src/components/ui/` строчными именами (`button.tsx`), рядом со старыми (`Button.tsx`) — на macOS файловая система нечувствительна к регистру, поэтому CLI может **перезаписать** старый файл. Если это произошло — старый код всё равно удаляется в этой задаче; сверить `git status` и продолжать.
+- [ ] **Step 3: Написать падающий тест на словарь токенов**
 
-- [ ] **Step 2: Добавить варианты сторон в `button.tsx`**
-
-В `buttonVariants` (cva), в объект `variants.variant`, добавить и переопределить:
+`src/components/ui/__tests__/vocabulary.test.ts`:
 
 ```ts
-        long: "bg-long text-[#06281d] hover:bg-long/90",
-        short: "bg-short text-white hover:bg-short/90",
-        ghost: "bg-surface-2 text-muted border border-border hover:text-text",
+import { readdirSync, readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+/**
+ * shadcn генерирует компоненты под свой словарь токенов — `bg-primary`,
+ * `text-foreground`, `ring-ring`, `border-input`. Терминал этого словаря не
+ * заводит: у него собственный (`bg-accent`, `text-text`, `border-border`).
+ * Утилита с неопределённым токеном сборку не ломает — Tailwind молча выдаёт
+ * пустоту, и кнопка теряет фон только на экране. Ни страж инвентаря, ни
+ * локаторы e2e цвета не проверяют, так что поймать это может только здесь.
+ */
+const FOREIGN = [
+  "primary",
+  "secondary",
+  "destructive",
+  "background",
+  "foreground",
+  "input",
+  "popover",
+  "card",
+  "ring",
+];
+
+describe("примитивы shadcn", () => {
+  const dir = "src/components/ui";
+
+  it("говорят словарём терминала, а не своим", () => {
+    const files = readdirSync(dir).filter((f) => f.endsWith(".tsx"));
+    expect(files.length).toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const file of files) {
+      const src = readFileSync(`${dir}/${file}`, "utf8");
+      for (const name of FOREIGN) {
+        const hit = new RegExp(
+          `(?:bg|text|border|ring|fill|stroke|from|to|via)-${name}\\b`,
+        ).exec(src);
+        if (hit) offenders.push(`${file}: ${hit[0]}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
 ```
 
-`long` и `short` дословно повторяют прежние классы удаляемого `Button.tsx`, `ghost` — тоже: вариант с этим именем в shadcn есть, но выглядит иначе, и молчаливая подмена изменила бы вид трёх кнопок.
+- [ ] **Step 4: Прогнать — тест падает**
 
-- [ ] **Step 3: Перевести импорты**
+Run: `pnpm test -- vocabulary`
+Expected: FAIL — список нарушителей из свежесгенерированных `button.tsx`, `card.tsx`,
+`input.tsx` (`bg-primary`, `text-card-foreground`, `border-input`, `ring-ring` и подобные).
+Выписать этот список: он и есть перечень мест, которые правит шаг 5.
+
+- [ ] **Step 5: Перевести примитивы на словарь терминала**
+
+В `button.tsx` заменить объект `variants.variant` в `buttonVariants` целиком на:
+
+```ts
+      variant: {
+        // Прежний `primary` был умолчанием и красился в `bg-accent`: восемь
+        // вызовов не передают variant вовсе, и подмена на shadcn-овский
+        // `bg-primary` (токена с таким именем в теме нет) стёрла бы им фон.
+        default: "bg-accent text-white hover:bg-accent/90",
+        long: "bg-long text-[#06281d] hover:bg-long/90",
+        short: "bg-short text-white hover:bg-short/90",
+        // Вариант с этим именем есть и в shadcn, но выглядит иначе; молчаливая
+        // подмена изменила бы вид трёх кнопок. Классы прежние, дословно.
+        ghost: "bg-surface-2 text-muted border border-border hover:text-text",
+        outline: "border border-border bg-transparent hover:bg-surface-2",
+        link: "text-accent underline-offset-4 hover:underline",
+      },
+```
+
+`secondary` и `destructive` не переносятся: ни один вызов их не просит.
+
+Остальные нарушители из шага 4 — в базовых классах `button.tsx` и в `card.tsx` / `input.tsx`
+— переводятся по словарю: `bg-background` → `bg-bg`, `bg-card` → `bg-surface`,
+`text-card-foreground` / `text-foreground` → `text-text`, `text-muted-foreground` →
+`text-muted`, `border-input` → `border-border`, `ring-ring` → `ring-accent`,
+`bg-popover` → `bg-surface`. Кольцо фокуса переводится, а не выбрасывается: невидимое
+кольцо — это потерянная доступность, а не косметика.
+
+- [ ] **Step 6: Прогнать — тест проходит**
+
+Run: `pnpm test -- vocabulary`
+Expected: PASS.
+
+- [ ] **Step 7: Перевести импорты**
 
 Замены механические, по одной на файл:
 
@@ -473,9 +564,12 @@ pnpm dlx shadcn@latest add button card input
 grep -rn "ui/\(Button\|Card\|Input\)\"" src   # Expected: пусто
 ```
 
-- [ ] **Step 4: Перевести `DecimalInput` на shadcn `Input`**
+- [ ] **Step 8: Перевести `DecimalInput` на shadcn `Input`**
 
-В `src/components/ui/DecimalInput.tsx` заменить голый `<input …>` на `<Input …>` из `@/components/ui/input`, сохранив без изменений: `inputMode="decimal"`, `autoComplete="off"`, `aria-invalid`, вызов `sanitizeDecimal(e.target.value, maxDecimals)`, обёртку `relative flex items-center` и `rightSlot`. Классы состояния перевести на `cn`:
+В `src/components/ui/DecimalInput.tsx` заменить голый `<input …>` на `<Input …>` из
+`@/components/ui/input`, сохранив без изменений: `inputMode="decimal"`,
+`autoComplete="off"`, `aria-invalid`, вызов `sanitizeDecimal(e.target.value, maxDecimals)`,
+обёртку `relative flex items-center` и `rightSlot`. Классы состояния перевести на `cn`:
 
 ```tsx
         className={cn(
@@ -485,24 +579,17 @@ grep -rn "ui/\(Button\|Card\|Input\)\"" src   # Expected: пусто
         )}
 ```
 
-- [ ] **Step 5: Удалить прежние примитивы**
-
-```bash
-git rm src/components/ui/Button.tsx src/components/ui/Card.tsx src/components/ui/Input.tsx
-```
-
-(Если шаг 1 их уже перезаписал — файлов не будет, это ожидаемо.)
-
-- [ ] **Step 6: Прогнать полный гейт**
+- [ ] **Step 9: Прогнать полный гейт**
 
 Run: `pnpm typecheck && node_modules/.bin/eslint . && pnpm test && pnpm test:e2e`
-Expected: всё зелёное, включая страж инвентаря из Task 1 и 17 спек tier-1. Падение стража означает, что при переносе импорта потерялся `data-testid` — искать в диффе.
+Expected: всё зелёное, включая страж инвентаря из Task 1 и 113 тестов tier-1. Падение стража
+означает, что при переносе импорта потерялся `data-testid` — искать в диффе.
 
-- [ ] **Step 7: Коммит**
+- [ ] **Step 10: Коммит**
 
 ```bash
 git add -A src/components src/features
-git commit -m "refactor(ui): три примитива уходят к shadcn, варианты сторон переезжают дословно"
+git commit -m "refactor(ui): три примитива уходят к shadcn, словарь токенов остаётся терминала"
 ```
 
 ---
