@@ -46,17 +46,11 @@ describe("примитивы shadcn", () => {
   });
 
   it("опираются на базовый цвет границы, и он задан", () => {
-    // shadcn пишет голый `border`, ожидая базового слоя, который красит границы
-    // по умолчанию. В Tailwind v4 без такого слоя голый `border` — это
-    // `currentColor`, то есть почти белая линия цвета текста вместо #20272d.
-    // Сборка при этом целая, и увидеть это можно только глазами.
-    const emitsBareBorder = readdirSync(dir)
-      .filter((f) => f.endsWith(".tsx"))
-      .some((f) =>
-        /"[^"]*\bborder\b(?![-\w])/.test(readFileSync(`${dir}/${f}`, "utf8")),
-      );
-    if (!emitsBareBorder) return;
-
+    // shadcn пишет границы, ожидая базового слоя, который красит их по
+    // умолчанию. В Tailwind v4 без такого слоя `border` — это `currentColor`,
+    // то есть почти белая линия цвета текста вместо #20272d. Сборка при этом
+    // целая, и увидеть это можно только глазами. Проверка безусловна: правило
+    // верно всегда, а условие по текущим файлам однажды выключит её молча.
     const theme = readFileSync("src/styles/index.css", "utf8");
     expect(theme).toMatch(/@layer\s+base[\s\S]*border-color/);
   });
