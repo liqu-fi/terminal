@@ -312,13 +312,29 @@ describe("токены", () => {
     expect(tokens).toContain("--short-soft:");
   });
 
-  it("шрифт, названный в стеке, приложение и правда везёт", () => {
+  it("шрифт, названный первым в стеке, приложение и правда везёт", () => {
     // Первый шрифт стека, доставшийся приложению случайно (он оказался у
-    // пользователя в системе), — не выбор, а совпадение. Стек имеет право
-    // называть Inter только пока index.css его импортирует.
-    if (tokens.includes("Inter")) {
-      expect(theme).toContain("@fontsource-variable/inter");
-    }
+    // пользователя в системе), — не выбор, а совпадение. Импорта пакета для
+    // этого мало: имя семейства в токене должно совпасть с тем, которое пакет
+    // объявляет. `@fontsource-variable/inter` объявляет `Inter Variable`, и
+    // стек, начинающийся с `Inter`, до самохостящегося шрифта не доходит —
+    // именно этот разрыв тест и стережёт.
+    const SYSTEM = ["system-ui", "-apple-system", "sans-serif", "serif", "monospace"];
+    const first = tokens.match(/--font:\s*"?([^",;]+)"?/)![1].trim();
+    if (SYSTEM.includes(first)) return; // стек намеренно системный — везти нечего
+
+    const imported = theme.match(/@import\s+"(@fontsource[^"]*)"/)?.[1];
+    expect(
+      imported,
+      `стек начинается с «${first}», но ни один пакет шрифта не импортирован`,
+    ).toBeDefined();
+
+    const declared = [
+      ...readFileSync(`node_modules/${imported}/index.css`, "utf8").matchAll(
+        /font-family:\s*'([^']+)'/g,
+      ),
+    ].map((m) => m[1]);
+    expect(declared).toContain(first);
   });
 });
 ```
@@ -363,7 +379,8 @@ pnpm add @fontsource-variable/inter
   --short-soft: #231116;
   --radius: 10px;
   --radius-sm: 6px;
-  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Именно `Inter Variable`: это семейство объявляет @fontsource-variable/inter. */
+  --font: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 ```
 
