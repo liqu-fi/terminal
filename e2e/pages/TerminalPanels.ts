@@ -143,6 +143,28 @@ async function setRange(slider: Locator, value: number): Promise<void> {
   }, value);
 }
 
+export class LayoutPanel {
+  readonly chartPanel: Locator;
+  readonly chartCollapseToggle: Locator;
+  readonly bottomPanel: Locator;
+  readonly bottomFullscreenToggle: Locator;
+
+  constructor(page: Page) {
+    this.chartPanel = page.getByTestId("chart-panel");
+    this.chartCollapseToggle = page.getByTestId("chart-collapse-toggle");
+    this.bottomPanel = page.getByTestId("bottom-panel");
+    this.bottomFullscreenToggle = page.getByTestId("bottom-fullscreen-toggle");
+  }
+
+  toggleChart(): Promise<void> {
+    return this.chartCollapseToggle.click();
+  }
+
+  toggleBottomFullscreen(): Promise<void> {
+    return this.bottomFullscreenToggle.click();
+  }
+}
+
 export class UserInfoPanel {
   constructor(private readonly page: Page) {}
 

@@ -7,6 +7,7 @@ import { type MockWorld, readyWorld } from "../support/world";
 import { AppPage } from "./AppPage";
 import {
   DepositDialog,
+  LayoutPanel,
   MarketHeaderPanel,
   TradePanel,
   UserInfoPanel,
@@ -16,6 +17,7 @@ import {
 export interface Terminal {
   app: AppPage;
   market: MarketHeaderPanel;
+  layout: LayoutPanel;
   trade: TradePanel;
   userInfo: UserInfoPanel;
   deposit: DepositDialog;
@@ -38,6 +40,7 @@ export async function enterTerminal(
   return {
     app,
     market: new MarketHeaderPanel(page),
+    layout: new LayoutPanel(page),
     trade: new TradePanel(page),
     userInfo: new UserInfoPanel(page),
     deposit: new DepositDialog(page),
