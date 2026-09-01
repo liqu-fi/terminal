@@ -1,10 +1,11 @@
-import { OrderType, Price, formatRatio, type BookSnapshot } from "@liq/sdk";
+import { formatRatio, type BookSnapshot } from "@liq/sdk";
 import { useTradeStore } from "@liq/react";
 
 import { fmtPrice } from "@/lib/format";
 
 import { BookRow } from "./BookRow";
 import { askSlots, bidSlots, fmtBookPrice, ratioPct } from "./bookView";
+import { pickLevel } from "./pickLevel";
 
 interface BookGridProps {
   book: BookSnapshot;
@@ -34,13 +35,11 @@ export function BookGrid({
   const setOrderType = useTradeStore((s) => s.setOrderType);
   const setLimitPrice = useTradeStore((s) => s.setLimitPrice);
 
-  // Порядок обязателен и проверен по `dist` SDK: `setOrderType` пишет
-  // `limitPrice: type === MARKET ? null : undefined`, то есть при LIMIT
-  // затирает цену в `undefined`. Сначала тип, потом цена.
-  const pick = (price: bigint) => {
-    setOrderType(OrderType.LIMIT);
-    setLimitPrice(Price(price));
-  };
+  // Порядок несущий — см. TSDoc `pickLevel`. Вынесена в чистую функцию,
+  // чтобы инвариант (стор после клика держит и `orderType`, и `limitPrice`)
+  // проверялся юнит-тестом на самой функции, а не только через рендер формы.
+  const pick = (price: bigint) =>
+    pickLevel({ setOrderType, setLimitPrice }, price);
 
   const showAsks = view !== "bids";
   const showBids = view !== "asks";
