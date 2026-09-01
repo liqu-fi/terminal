@@ -1,4 +1,4 @@
-import { Card } from "../../components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { CandleChart } from "../chart/CandleChart";
 import { MarketHeader } from "../market/MarketHeader";
 import { useSelectedMarket } from "../market/useSelectedMarket";
