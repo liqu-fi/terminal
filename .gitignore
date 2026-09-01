@@ -35,3 +35,6 @@ playwright-report
 test-results
 .vercel
 .env*
+
+# рабочая директория superpowers/SDD — черновики, не код
+.superpowers/
