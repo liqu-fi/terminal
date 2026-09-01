@@ -36,7 +36,7 @@ export function OrderBookPanel() {
 
   const slots = view === "both" ? SLOTS_BOTH : SLOTS_ONE_SIDE;
 
-  const { book, isLoading, unavailable, error } = useOrderbook(
+  const { book, asOf, isLoading, unavailable, error } = useOrderbook(
     marketId ?? null,
     {
       tick: Price(tick),
@@ -46,6 +46,17 @@ export function OrderBookPanel() {
   );
 
   const isEmpty = book.bids.length === 0 && book.asks.length === 0;
+  /**
+   * Показывать нечего: снимка не было ни из REST-затравки, ни из подписки.
+   *
+   * @remarks Именно это, а не `error`, решает судьбу сообщений об отказе.
+   * Затравка живёт с `retry: false, staleTime: Infinity` и без
+   * `refetchInterval` — её ошибка не гаснет никогда, так что движок,
+   * поднявшийся после отказа, давал бы «Order book failed to load.» поверх
+   * исправной живой книги до самой смены рынка. `unavailable` при этом
+   * гаснет сам (у него в условии есть источник), а `error` — нет.
+   */
+  const nothingToShow = asOf === null;
 
   return (
     <Card
@@ -94,19 +105,26 @@ export function OrderBookPanel() {
             >
               Loading order book…
             </p>
-          ) : unavailable ? (
+          ) : nothingToShow && unavailable ? (
             <p
               className="py-6 text-center text-sm text-muted"
               data-testid="book-unavailable"
             >
               No matching engine is maintaining this book right now.
             </p>
-          ) : error ? (
+          ) : nothingToShow && error ? (
             <p
               className="py-6 text-center text-sm text-short"
               data-testid="book-error"
             >
               Order book failed to load.
+            </p>
+          ) : marketId == null ? (
+            <p
+              className="py-6 text-center text-sm text-muted"
+              data-testid="book-no-market"
+            >
+              No market selected — no book to show.
             </p>
           ) : isEmpty ? (
             <p

@@ -532,7 +532,16 @@ export function sseTradeFrame(
   trade: {
     price: string;
     size: string;
-    side: "BUY" | "SELL";
+    /**
+     * Сторона как на проводе — голая строка, а не пара литералов.
+     *
+     * @remarks `TradeEventData.side` в SDK типизирован `string`
+     * (`FillBroadcastEventSchema` разбирает его как `z.string()`), поэтому
+     * значение вне пары — форма, которую провод действительно способен
+     * прислать. Сузив тип здесь, мок запретил бы сценарий, который у
+     * гейтвея возможен.
+     */
+    side: string;
     timestamp?: number;
   },
 ): string {

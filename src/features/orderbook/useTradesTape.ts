@@ -11,12 +11,18 @@ const TAPE_LIMIT = 50;
  * normalized to a single shape.
  *
  * @remarks `key` is the REST row's `id` for a fill; a live tick has none
- * ({@link TradeEventData} reports no id), so its key is synthetic —
- * `live-{timestamp}-{price}`. `txHash` is `null` for every live row for the
- * same reason: the event never carries one, and printing an explorer link
- * anyway would assert a fact the event never reported. Maker/taker role is
- * absent from this shape entirely — the tape is the public feed, and role
- * only exists relative to one account's own history (see `HistoryTable`).
+ * ({@link TradeEventData} reports no id), so its key comes from the live
+ * buffer's own counter. It must NOT be derived from the payload: the matcher
+ * writes every fill of one match in a single loop under a shared `timestamp`,
+ * and a fill's price is the maker's limit price — a taker sweeping two makers
+ * at the SAME level emits two events identical in both fields. A key built
+ * from them would collide, and React would silently drop one of the two rows
+ * on the next re-render: the tape would undercount a real trade. `txHash` is
+ * `null` for every live row for a related reason: the event never carries one,
+ * and printing an explorer link anyway would assert a fact the event never
+ * reported. Maker/taker role is absent from this shape entirely — the tape is
+ * the public feed, and role only exists relative to one account's own history
+ * (see `HistoryTable`).
  */
 export interface TapeRow {
   key: string;
@@ -38,49 +44,93 @@ function fromRestRow(row: TradeRow): TapeRow {
   };
 }
 
-function fromLiveEvent(data: TradeEventData): TapeRow {
+/**
+ * A live tick as a tape row — or `null` when its side isn't one of the two
+ * literals the tape can colour.
+ *
+ * @remarks {@link TradeEventData} types `side` as a bare `string`, so a value
+ * outside the pair is a shape the wire can actually deliver. The old
+ * `side === "SELL" ? "SELL" : "BUY"` painted every such event green — a
+ * statement about the market that nothing reported. Dropping the event instead
+ * costs only latency: the same fill comes back on the next REST page, already
+ * typed. Same trade-off as the strict `>` boundary in {@link freshLiveRows} —
+ * the truth late beats a lie now.
+ *
+ * @param seq - The buffer's monotonic counter; the row's key, see
+ * {@link TapeRow}.
+ */
+export function fromLiveEvent(
+  data: TradeEventData,
+  seq: number,
+): TapeRow | null {
+  const side =
+    data.side === "SELL" ? "SELL" : data.side === "BUY" ? "BUY" : null;
+  if (side === null) return null;
   return {
-    key: `live-${data.timestamp}-${data.price}`,
+    key: `live-${seq}`,
     timestamp: data.timestamp,
     price: parseWadLoose(data.price),
     size: parseWadLoose(data.size),
-    side: data.side === "SELL" ? "SELL" : "BUY",
+    side,
     txHash: null,
   };
 }
 
 /**
- * Live rows still worth showing: only events strictly newer than the
- * freshest REST row.
+ * Live rows still worth showing: only events strictly newer than the freshest
+ * REST row.
  *
- * @remarks There is no id to dedupe by — a live tick simply doesn't carry
- * one (see {@link TapeRow}). `useTradesRestQuery`'s page is stale for 15s;
- * live ticks about the same fills arrive well before that window elapses.
- * Once the next REST refetch catches up, a duplicate stops being newer than
- * its own now-present REST row and drops out on its own — no row is ever
- * compared against another for equality. An empty REST page (still loading,
- * or a market with no history yet) sets no boundary at all — every live row
- * passes rather than none.
+ * @remarks There is no id to dedupe by — a live tick simply doesn't carry one
+ * (see {@link TapeRow}) — so the boundary is a timestamp, not an equality
+ * check: no row is ever compared against another. A live tick that a later
+ * REST page also carries stays visible until that page replaces it; it is not
+ * shown twice, because the live copy sits above the page rather than beside
+ * it. Nothing in the terminal makes that page arrive on a schedule:
+ * `useTradesRestQuery` has no `refetchInterval` and this hook can't give it
+ * one, so a refetch happens only on window focus or a remount (a market switch
+ * or a tab switch back to Trades). An empty REST page (still loading, or a
+ * market with no history yet) sets no boundary at all — every live row passes
+ * rather than none.
+ *
+ * The boundary is `Math.max` over the whole page, not `restRows[0]`: the
+ * gateway sorts newest-first, but nothing here enforces that, and reading only
+ * the head would silently take a stale boundary from a page sorted the other
+ * way. Over a correctly sorted page the two agree.
  *
  * Strict `>`, not `>=`, is deliberate: fills from one match are written in a
- * single transaction and can share the freshest REST row's `timestamp` down
- * to the millisecond (see `ListTradesQuery.cursor`'s TSDoc in the SDK) — a
- * live tick at that exact boundary may be a *different* trade from the same
- * match, not a duplicate. `>` holds it back one REST page rather than risk
- * showing it twice; a trade appearing ~15s late is honest, a trade shown
- * twice is a lie about what happened on the market.
+ * single transaction and can share the freshest REST row's `timestamp` down to
+ * the millisecond (see `ListTradesQuery.cursor`'s TSDoc in the SDK) — a live
+ * tick at that exact boundary may be a *different* trade from the same match,
+ * not a duplicate. `>` holds it back one REST page rather than risk showing it
+ * twice; a trade appearing a page late is honest, a trade shown twice is a lie
+ * about what happened on the market.
  */
 export function freshLiveRows(
   live: readonly TapeRow[],
   restRows: readonly TapeRow[],
 ): TapeRow[] {
-  const boundary = restRows[0]?.timestamp ?? -Infinity;
+  const boundary = restRows.reduce(
+    (newest, row) => Math.max(newest, row.timestamp),
+    -Infinity,
+  );
   return live.filter((row) => row.timestamp > boundary);
 }
 
 export interface UseTradesTapeResult {
   rows: TapeRow[];
   isLoading: boolean;
+}
+
+/**
+ * Живые тики и счётчик их ключей — одно состояние.
+ *
+ * @remarks Счётчик не выводится из длины `rows`: буфер обрезан по
+ * `TAPE_LIMIT`, и после переполнения длина перестала бы расти, а ключи —
+ * различаться.
+ */
+interface LiveBuffer {
+  rows: TapeRow[];
+  seq: number;
 }
 
 /**
@@ -109,18 +159,23 @@ export function useTradesTape(
 
   const event = useMarketChannel(marketId, "trades");
   const [lastEvent, setLastEvent] = useState(event);
-  const [live, setLive] = useState<TapeRow[]>([]);
+  const [live, setLive] = useState<LiveBuffer>({ rows: [], seq: 0 });
 
   if (event !== lastEvent) {
     setLastEvent(event);
     if (event) {
-      setLive((prev) =>
-        [fromLiveEvent(event.data), ...prev].slice(0, TAPE_LIMIT),
-      );
+      setLive((prev) => {
+        const row = fromLiveEvent(event.data, prev.seq);
+        if (row === null) return prev;
+        return {
+          rows: [row, ...prev.rows].slice(0, TAPE_LIMIT),
+          seq: prev.seq + 1,
+        };
+      });
     }
   }
 
-  const rows = [...freshLiveRows(live, restRows), ...restRows].slice(
+  const rows = [...freshLiveRows(live.rows, restRows), ...restRows].slice(
     0,
     TAPE_LIMIT,
   );

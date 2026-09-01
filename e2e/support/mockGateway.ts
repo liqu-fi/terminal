@@ -93,6 +93,17 @@ function restSubmittedOrder(
   else world.conditionalOrders.push(order);
 }
 
+/**
+ * Сколько мок держит SSE-соединение открытым, ожидая кадр.
+ *
+ * @remarks Дедлайн — обрыв без последствий: пустой ответ по нему НЕ заставляет
+ * клиента переподключиться (`pump` в `SseService` просто выходит из цикла по
+ * `done`, а переподключение происходит только при смене набора каналов). Значит
+ * спека, простоявшая до присваивания `world.sseFrames` дольше этого срока,
+ * кадр не получит вовсе и упадёт по таймауту без внятной причины. Нынешние
+ * укладываются с запасом (их собственные таймауты — 15 с); длинную сцену надо
+ * либо резать, либо поднимать это число вместе с ней.
+ */
 const SSE_LONGPOLL_MS = 20_000;
 const OPEN_STATUSES = new Set([
   "PENDING",
@@ -297,10 +308,17 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     const book = path.match(/\/markets\/([^/]+)\/orderbook$/);
     if (book) {
       if (world.faults.orderbookStatus) {
+        // Код зависит от статуса, а не пришит к маршруту: 503 гейтвей отдаёт
+        // с `ORDERBOOK_UNAVAILABLE` («книгу никто не ведёт» — состояние
+        // рынка), любой другой отказ — обычная поломка. С пришитым кодом SDK
+        // считал `unavailable` и на 500, то есть ветка `book-error` была
+        // недостижима из тестов вовсе.
         await error(
           route,
           world.faults.orderbookStatus,
-          "ORDERBOOK_UNAVAILABLE",
+          world.faults.orderbookStatus === 503
+            ? "ORDERBOOK_UNAVAILABLE"
+            : "internal",
         );
         return;
       }
@@ -437,6 +455,9 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- trades ------------------------------------------------------------
     if (path.endsWith("/trades")) {
+      // Барьер для сцены загрузки ленты: спека держит ответ и проверяет
+      // `tape-loading`, потом отпускает и проверяет `tape-empty`.
+      await world.holds.tradesRead?.promise;
       if (world.faults.tradesStatus) {
         await error(route, world.faults.tradesStatus);
         return;

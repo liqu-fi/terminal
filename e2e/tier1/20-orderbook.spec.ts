@@ -24,6 +24,64 @@ test.describe("order book panel", () => {
     await expect(book.empty).toHaveCount(0);
   });
 
+  // Ветка `book-error` не была задействована ни одной спекой — потому
+  // перепутанный порядок веток панели и дожил до ревью. 503 — это состояние
+  // рынка («движка нет»), любой другой отказ — поломка, и показывать их
+  // одинаково нельзя.
+  test("500 на затравке — это отказ загрузки, а не отсутствие движка", async ({
+    page,
+    world,
+  }) => {
+    const { book } = await enterTerminal(page, world, () =>
+      readyWorld({ faults: { orderbookStatus: 500 } }),
+    );
+    await expect(book.error).toBeVisible();
+    await expect(book.unavailable).toHaveCount(0);
+    await expect(book.empty).toHaveCount(0);
+  });
+
+  test("живой кадр после отказа затравки показывает книгу, а не отказ", async ({
+    page,
+    world,
+  }) => {
+    // Затравка ходит один раз: `retry: false, staleTime: Infinity` и никакого
+    // `refetchInterval` — её ошибка сама не гаснет. Движок, поднявшийся уже
+    // после отказа, гасит `unavailable` (появился источник), но `error`
+    // остаётся навсегда: сообщение об отказе имеет право показываться только
+    // когда показывать нечего, то есть при `asOf === null`.
+    const { book } = await enterTerminal(page, world, () =>
+      readyWorld({ faults: { orderbookStatus: 503 } }),
+    );
+    await expect(book.unavailable).toBeVisible();
+
+    world.sseFrames = [
+      sseOrderbookFrame("200", {
+        bids: [{ price: (70_100n * WAD).toString(), size: WAD.toString() }],
+        asks: [{ price: (70_200n * WAD).toString(), size: WAD.toString() }],
+        asOf: Date.now(),
+      }),
+    ];
+
+    await expect(book.bidRow(0)).toContainText("70,100", { timeout: 15_000 });
+    await expect(book.unavailable).toHaveCount(0);
+    await expect(book.error).toHaveCount(0);
+  });
+
+  test("без выбранного рынка книга не выдаёт себя за пустую", async ({
+    page,
+    world,
+  }) => {
+    // `/markets` лежит ⇒ `useSelectedMarket().marketId` так и остаётся
+    // `undefined`, книга выключена и снимка не будет никогда. «Book is empty»
+    // здесь было бы утверждением о рынке, которого на экране нет.
+    const { book } = await enterTerminal(page, world, () =>
+      readyWorld({ faults: { marketsStatus: 500 } }),
+    );
+    await expect(book.noMarket).toBeVisible();
+    await expect(book.empty).toHaveCount(0);
+    await expect(book.error).toHaveCount(0);
+  });
+
   test("пустая живая книга — не отказ: торгует пул", async ({
     page,
     world,

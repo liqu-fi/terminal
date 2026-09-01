@@ -21,9 +21,24 @@ interface TradesTapeProps {
  * `useTradesTape` for why.
  */
 export function TradesTape({ marketId }: TradesTapeProps) {
-  const { rows } = useTradesTape(marketId ?? null);
+  const { rows, isLoading } = useTradesTape(marketId ?? null);
   const networkId = useNetworkId();
   const explorerUrl = getChainConfig(networkId).blockExplorer?.url;
+
+  // Первый переход на вкладку монтирует запрос заново, поэтому без этой ветки
+  // «No trades yet.» печаталось до того, как что-либо приехало — подставленное
+  // утверждение, которое читается как измеренное. Соседняя книга избегает того
+  // же своим `book-loading`.
+  if (isLoading) {
+    return (
+      <p
+        className="py-6 text-center text-sm text-muted"
+        data-testid="tape-loading"
+      >
+        Loading trades…
+      </p>
+    );
+  }
 
   if (rows.length === 0) {
     return (
