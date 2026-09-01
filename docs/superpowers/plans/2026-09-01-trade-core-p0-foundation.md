@@ -276,6 +276,7 @@ git commit -m "build(ui): alias @/ и components.json — площадка по�
 **Files:**
 - Modify: `src/styles/tokens.css`
 - Modify: `src/styles/index.css`
+- Modify: `package.json` (шрифт)
 - Create: `src/styles/__tests__/tokens.test.ts`
 
 **Interfaces:**
@@ -310,6 +311,15 @@ describe("токены", () => {
     expect(tokens).toContain("--long-soft:");
     expect(tokens).toContain("--short-soft:");
   });
+
+  it("шрифт, названный в стеке, приложение и правда везёт", () => {
+    // Первый шрифт стека, доставшийся приложению случайно (он оказался у
+    // пользователя в системе), — не выбор, а совпадение. Стек имеет право
+    // называть Inter только пока index.css его импортирует.
+    if (tokens.includes("Inter")) {
+      expect(theme).toContain("@fontsource-variable/inter");
+    }
+  });
 });
 ```
 
@@ -318,7 +328,17 @@ describe("токены", () => {
 Run: `pnpm test -- tokens`
 Expected: FAIL — `--long-soft` не определён.
 
-- [ ] **Step 3: Записать палитру**
+- [ ] **Step 3: Поставить шрифт макета**
+
+Макет набран Inter. Стек, называющий шрифт, которого приложение не везёт, разрешается
+только у тех, у кого Inter случайно стоит в системе, — у остальных молча падает в
+`system-ui`. Пакет самохостится, внешнего запроса не делает, форкер снимает его одной строкой.
+
+```bash
+pnpm add @fontsource-variable/inter
+```
+
+- [ ] **Step 4: Записать палитру**
 
 `src/styles/tokens.css` целиком:
 
@@ -347,29 +367,35 @@ Expected: FAIL — `--long-soft` не определён.
 }
 ```
 
-- [ ] **Step 4: Расширить `@theme inline`**
+- [ ] **Step 5: Расширить `@theme inline` и подключить шрифт**
 
-В `src/styles/index.css`, внутрь блока `@theme inline`, добавить к существующим строкам:
+В `src/styles/index.css` первой строкой, до `@import "tailwindcss";`:
+
+```css
+@import "@fontsource-variable/inter";
+```
+
+и внутрь блока `@theme inline`, к существующим строкам:
 
 ```css
   --color-long-soft: var(--long-soft);
   --color-short-soft: var(--short-soft);
 ```
 
-- [ ] **Step 5: Прогнать тесты**
+- [ ] **Step 6: Прогнать тесты**
 
 Run: `pnpm test -- tokens`
-Expected: PASS (2 теста).
+Expected: PASS (3 теста).
 
-- [ ] **Step 6: Убедиться, что экран не сломан**
+- [ ] **Step 7: Убедиться, что экран не сломан**
 
 Run: `pnpm test:e2e`
 Expected: 17 спек tier-1 зелёные. Цвета не участвуют в локаторах, поэтому падение здесь означает опечатку в CSS, а не смену палитры.
 
-- [ ] **Step 7: Коммит**
+- [ ] **Step 8: Коммит**
 
 ```bash
-git add src/styles
+git add src/styles package.json pnpm-lock.yaml
 git commit -m "style(tokens): палитра снята с макета, а не с бренда Liqu"
 ```
 
