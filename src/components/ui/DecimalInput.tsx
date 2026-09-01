@@ -1,5 +1,7 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { sanitizeDecimal } from "../../lib/decimal";
 
 type Props = Omit<
@@ -32,15 +34,19 @@ export function DecimalInput({
 }: Props) {
   return (
     <div className="relative flex items-center">
-      <input
+      <Input
         inputMode="decimal"
         autoComplete="off"
         value={value}
         aria-invalid={invalid || undefined}
-        onChange={(e) => onValueChange(sanitizeDecimal(e.target.value, maxDecimals))}
-        className={`w-full rounded-[var(--radius-sm)] border bg-surface-2 px-2 py-1.5 text-sm text-text outline-none focus:border-accent ${
-          invalid ? "border-short" : "border-border"
-        } ${rightSlot ? "pr-16" : ""} ${className}`}
+        onChange={(e) =>
+          onValueChange(sanitizeDecimal(e.target.value, maxDecimals))
+        }
+        className={cn(
+          invalid ? "border-short" : "border-border",
+          rightSlot && "pr-16",
+          className,
+        )}
         {...props}
       />
       {rightSlot && (

@@ -2,7 +2,7 @@ import { Price, Side } from "@liq/sdk";
 import { useAccountId, useAvailableMarginQuery } from "@liq/react";
 import { useState } from "react";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { DecimalInput } from "../../components/ui/DecimalInput";
 import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";

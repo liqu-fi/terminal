@@ -1,6 +1,6 @@
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;

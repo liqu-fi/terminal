@@ -2,7 +2,7 @@ import { useSessionKey } from "@liq/react";
 import { type ISessionSigner } from "@liq/sdk";
 import { useState } from "react";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   manager: ISessionSigner;

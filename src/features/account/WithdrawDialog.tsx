@@ -12,7 +12,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { Button } from "../../components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { DecimalInput } from "../../components/ui/DecimalInput";
 import { Dialog } from "../../components/ui/Dialog";
 import { fmtUsd, wadToFixed } from "../../lib/format";
