@@ -187,7 +187,7 @@ export function TradeForm() {
 
   return (
     <div
-      className="flex w-[240px] shrink-0 flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
+      className="flex w-full flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
       data-testid="trade-form"
     >
       <div className="flex gap-1 text-[11px]">

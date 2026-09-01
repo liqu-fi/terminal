@@ -1,13 +1,30 @@
+import { type Locator } from "@playwright/test";
+
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 
+/** `boundingBox()` returns `null` for a detached/hidden element; assert it
+ * exists before reading `width` so a layout regression fails loudly here
+ * instead of surfacing as a confusing `undefined` comparison below. */
+async function widthOf(locator: Locator): Promise<number> {
+  const box = await locator.boundingBox();
+  expect(box, "element must have a layout box").not.toBeNull();
+  return box!.width;
+}
+
 test.describe("раскладка терминала", () => {
   test("чарт сворачивается и разворачивается", async ({ page, world }) => {
-    const { layout } = await enterTerminal(page, world);
+    const { layout, trade } = await enterTerminal(page, world);
     await expect(layout.chartPanel).toBeVisible();
+    const expandedWidth = await widthOf(trade.root);
 
     await layout.toggleChart();
     await expect(layout.chartPanel).toBeHidden();
+    // Свёрнутый чарт обязан отдавать освободившуюся ширину форме, а не
+    // просто прятать свою карточку внутри неизменной колонки — иначе
+    // "свёртка" — это обман, а не раскладка.
+    const collapsedWidth = await widthOf(trade.root);
+    expect(collapsedWidth).toBeGreaterThan(expandedWidth + 100);
 
     await layout.toggleChart();
     await expect(layout.chartPanel).toBeVisible();
@@ -29,13 +46,21 @@ test.describe("раскладка терминала", () => {
     await expect(layout.chartPanel).toBeHidden();
   });
 
-  test("нижняя панель разворачивается на весь экран", async ({
+  test("нижняя панель разворачивается на весь экран и обратно", async ({
     page,
     world,
   }) => {
-    const { layout, trade } = await enterTerminal(page, world);
+    const { layout, trade, market } = await enterTerminal(page, world);
     await layout.toggleBottomFullscreen();
     await expect(layout.bottomPanel).toBeVisible();
     await expect(trade.root).toBeHidden();
+
+    // Обратный путь — тот случай, где раскладка рискует не восстановиться:
+    // bottom-row был единственной панелью группы, а верхняя строка (чарт +
+    // форма) и шапка рынка монтируются заново.
+    await layout.toggleBottomFullscreen();
+    await expect(trade.root).toBeVisible();
+    await expect(layout.chartPanel).toBeVisible();
+    await expect(market.root).toBeVisible();
   });
 });

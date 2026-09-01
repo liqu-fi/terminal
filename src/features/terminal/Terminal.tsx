@@ -19,6 +19,12 @@ import { useSelectedMarket } from "../market/useSelectedMarket";
 import { TradeForm } from "../trade/TradeForm";
 import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 
+// react-resizable-panels@4 treats a numeric `defaultSize`/`minSize`/`maxSize`
+// as PIXELS (see the library's `PanelProps` doc comment) — a bare string is
+// what means percent-of-group. Every size below is a string on purpose; only
+// the collapsed chart-column strip is intentionally pixel-fixed ("Npx").
+const CHART_STRIP_PX = "44px";
+
 export function Terminal() {
   const { marketId } = useSelectedMarket();
   const chartCollapsed = useTerminalUiStore((s) => s.chartCollapsed);
@@ -34,9 +40,26 @@ export function Terminal() {
       <ResizablePanelGroup orientation="vertical" className="flex-1">
         {!bottomFullscreen && (
           <>
-            <ResizablePanel id="chart-row" defaultSize={55} minSize={25}>
-              <ResizablePanelGroup orientation="horizontal">
-                <ResizablePanel id="chart-column" defaultSize={70} minSize={40}>
+            <ResizablePanel id="chart-row" defaultSize="55" minSize="25">
+              {/* Keyed by collapse state: `defaultSize`/`minSize`/`maxSize`
+                  are only consulted when a panel first registers with the
+                  group, so freeing the chart column's width on collapse
+                  needs a fresh mount, not just a prop change. Remounting
+                  (rather than the library's own `collapsible` +
+                  `collapsedSize`) also means there is no drag-to-collapse
+                  gesture to fall out of sync with `useTerminalUiStore` —
+                  the store's boolean is the only thing that decides which
+                  layout is mounted. */}
+              <ResizablePanelGroup
+                key={chartCollapsed ? "chart-collapsed" : "chart-expanded"}
+                orientation="horizontal"
+              >
+                <ResizablePanel
+                  id="chart-column"
+                  defaultSize={chartCollapsed ? CHART_STRIP_PX : "70"}
+                  minSize={chartCollapsed ? CHART_STRIP_PX : "40"}
+                  maxSize={chartCollapsed ? CHART_STRIP_PX : undefined}
+                >
                   <div className="flex h-full flex-col gap-2">
                     <div className="flex items-center justify-end">
                       <button
@@ -62,8 +85,15 @@ export function Terminal() {
                     )}
                   </div>
                 </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel id="trade-column" defaultSize={30} minSize={20}>
+                {/* Locked to CHART_STRIP_PX on both sides while collapsed —
+                    nothing to drag, so the handle is disabled rather than
+                    left as a dead affordance. */}
+                <ResizableHandle withHandle disabled={chartCollapsed} />
+                <ResizablePanel
+                  id="trade-column"
+                  defaultSize={chartCollapsed ? "100" : "30"}
+                  minSize="20"
+                >
                   <TradeForm />
                 </ResizablePanel>
               </ResizablePanelGroup>
@@ -73,8 +103,8 @@ export function Terminal() {
         )}
         <ResizablePanel
           id="bottom-row"
-          defaultSize={bottomFullscreen ? 100 : 45}
-          minSize={20}
+          defaultSize={bottomFullscreen ? "100" : "45"}
+          minSize="20"
         >
           <div className="flex h-full flex-col" data-testid="bottom-panel">
             <div className="flex items-center justify-end">
