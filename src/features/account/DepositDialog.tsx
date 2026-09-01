@@ -75,7 +75,7 @@ export function DepositDialog({
         overlayTestId="dialog-overlay"
         className="w-[320px]"
       >
-        <DialogHeader>
+        <DialogHeader className="mb-3">
           <DialogTitle className="text-sm font-semibold">
             Deposit USDC
           </DialogTitle>
