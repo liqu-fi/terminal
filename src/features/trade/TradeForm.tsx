@@ -28,6 +28,15 @@ type Tab = (typeof TABS)[number];
 
 const SLIPPAGE_BPS = 50n; // 0.5%
 
+/**
+ * Знаков после запятой в поле лимитной цены.
+ *
+ * @remarks Одно число на два места: сам `DecimalInput` и мост из книги, который
+ * режет под него `Price.fmt`. Разойдясь, они дадут поле, молча отбрасывающее
+ * то, что мост в него положил, — и ни один тест этого не увидит.
+ */
+const LIMIT_PRICE_DECIMALS = 2;
+
 export function TradeForm() {
   const { marketId, market } = useSelectedMarket();
   const accountId = useAccountId();
@@ -56,9 +65,11 @@ export function TradeForm() {
       useTradeStore.subscribe((s) => {
         if (s.limitPrice === null || s.limitPrice === undefined) return;
         setTab("Limit");
-        // `Price.fmt` не режет дробную часть до `maxDecimals={2}` поля —
-        // обрезаем на входе в поле, а не в сторе (стор хранит цену бренда).
-        setLimitPrice(sanitizeDecimal(Price.fmt(s.limitPrice), 2));
+        // `Price.fmt` не режет дробную часть под поле — обрезаем на входе
+        // в поле, а не в сторе (стор хранит цену бренда).
+        setLimitPrice(
+          sanitizeDecimal(Price.fmt(s.limitPrice), LIMIT_PRICE_DECIMALS),
+        );
       }),
     [],
   );
@@ -255,7 +266,7 @@ export function TradeForm() {
           <DecimalInput
             value={limitPrice}
             onValueChange={setLimitPrice}
-            maxDecimals={2}
+            maxDecimals={LIMIT_PRICE_DECIMALS}
             placeholder="0.00"
             data-testid="limit-price-input"
           />
