@@ -107,12 +107,31 @@ const OPEN_STATUSES = new Set([
  * lost to a stale/aborted connection (the app reconnects when its channel set
  * changes after orders load; that abandoned request must not consume the frame
  * meant for the live one).
+ *
+ * @remarks `generation` is this request's 1-based rank in `world.sseConnections`
+ * at the moment it registered. The client aborts its old connection *before*
+ * opening the new one, but the old connection's route handler keeps running —
+ * `route.fulfill()` on an aborted request does not reliably throw (observed
+ * empirically: it can resolve and clear `world.sseFrames` for a browser-side
+ * request nobody is listening to any more). Comparing the live
+ * `world.sseConnections.length` against the snapshotted `generation` catches
+ * this: once a *newer* connection has registered, this one stops racing for
+ * frames and returns empty, leaving them for the connection that's actually
+ * still attached to the page.
  */
-async function sseLongPoll(world: MockWorld): Promise<string[]> {
+async function sseLongPoll(
+  world: MockWorld,
+  generation: number,
+): Promise<string[]> {
   const deadline = Date.now() + SSE_LONGPOLL_MS;
-  while (Date.now() < deadline && world.sseFrames.length === 0) {
+  while (
+    Date.now() < deadline &&
+    world.sseFrames.length === 0 &&
+    world.sseConnections.length === generation
+  ) {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
+  if (world.sseConnections.length !== generation) return [];
   return [...world.sseFrames];
 }
 
@@ -168,7 +187,8 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       world.sseConnections.push(
         (url.searchParams.get("channels") ?? "").split(","),
       );
-      const frames = await sseLongPoll(world);
+      const generation = world.sseConnections.length;
+      const frames = await sseLongPoll(world, generation);
       try {
         await route.fulfill({
           status: 200,

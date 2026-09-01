@@ -127,15 +127,22 @@ export function baseSymbolOf(symbol: string | undefined): string {
 }
 
 /**
- * Время строки ленты сделок: часы:минуты:секунды, UTC, с ведущими нулями.
+ * Время строки ленты сделок: часы:минуты:секунды, местное время зрителя.
  *
- * @remarks UTC, а не локальное время машины — тик ленты приходит раз в
- * секунды, и плавающее локальное смещение браузера не добавляет пользы,
- * которой не даёт фиксированная зона; взамен UTC делает функцию чистой и
- * проверяемой юнит-тестом без подмены `Intl`/`TZ` окружения выполнения.
+ * @remarks Местное, а не UTC — `useMarketTrades.ts` в референсной арке Liqu
+ * и соседняя `HistoryTable` на этом же экране обе печатают время сделки
+ * через `toLocaleTimeString`; лента в UTC рядом с историей в местном была
+ * бы двумя разными часами на одном экране. Готовое форматирование браузера,
+ * не свой `padStart` по `getUTC*` — как и по всей арке. Детерминированность
+ * для тестов идёт не отсюда: e2e пришпиливает `timezoneId: "UTC"` в
+ * `playwright.config.ts`, а юнит-тест на этот файл проверяет только форму
+ * строки, не конкретное значение (значение зависит от TZ машины).
  */
 export function fmtTapeTime(timestamp: number): string {
-  const d = new Date(timestamp);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+  return new Date(timestamp).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 }

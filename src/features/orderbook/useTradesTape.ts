@@ -61,6 +61,14 @@ function fromLiveEvent(data: TradeEventData): TapeRow {
  * compared against another for equality. An empty REST page (still loading,
  * or a market with no history yet) sets no boundary at all — every live row
  * passes rather than none.
+ *
+ * Strict `>`, not `>=`, is deliberate: fills from one match are written in a
+ * single transaction and can share the freshest REST row's `timestamp` down
+ * to the millisecond (see `ListTradesQuery.cursor`'s TSDoc in the SDK) — a
+ * live tick at that exact boundary may be a *different* trade from the same
+ * match, not a duplicate. `>` holds it back one REST page rather than risk
+ * showing it twice; a trade appearing ~15s late is honest, a trade shown
+ * twice is a lie about what happened on the market.
  */
 export function freshLiveRows(
   live: readonly TapeRow[],
