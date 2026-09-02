@@ -131,6 +131,22 @@ export interface SessionKeyRecord {
   expiresAt: number;
 }
 
+/** Динамическая часть строки `/markets/full`. */
+export interface WireMarketDynamic {
+  openInterest: string | null;
+  currentFundingRate: string | null;
+  indexPrice: string | null;
+}
+
+/** Окно объёма за сутки, как его отдаёт шлюз. */
+export interface WireVolumeWindow {
+  volumeUsd: string;
+  volumeBase: string;
+  trades: number;
+  windowStart: number;
+  windowEnd: number;
+}
+
 export interface MockWorld {
   wallet: string;
   /** Chain the injected wallet reports (eth_chainId / net_version); mutable —
@@ -173,6 +189,25 @@ export interface MockWorld {
   }>;
   /** Per-market candle override; the /candles route falls back to `candles`. */
   candlesByMarket?: Record<string, MockWorld["candles"]>;
+  /**
+   * Оракульные бары по id рынка; маршрут падает на общий рамп из `price`.
+   *
+   * @remarks Отдельно от `candles`, потому что маршруты разные и смысл разный:
+   * оракульный ряд непрерывен по построению, торговый молчит там, где не
+   * торговали.
+   */
+  oracleCandles: Record<string, MockWorld["candles"]>;
+  /**
+   * Динамика рынка — то, что шлюз кладёт в `dynamic` строки `/markets/full`.
+   * Отсутствие ключа даёт `dynamic: null`.
+   */
+  marketDynamic: Record<string, WireMarketDynamic>;
+  /**
+   * Окно объёма по id рынка. Три состояния, и мир обязан выражать каждое:
+   * ключа нет — поля нет в ответе (шлюз старее 0.33.0); `null` — отправлено
+   * пустым; объект — измерено.
+   */
+  marketVolume24h: Record<string, WireVolumeWindow | null>;
   openOrders: GatewayOrder[];
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
@@ -275,7 +310,10 @@ export interface Hold {
 }
 
 function defaultCandles(price: bigint): MockWorld["candles"] {
-  const base = 1_717_200_000; // fixed; LWC only needs ascending unique seconds
+  // Ряд кончается текущим часом, а не датой из прошлого: последний бар должен
+  // быть формирующимся, иначе живой цене некуда домешиваться и чарт выглядит
+  // застывшим — тем же, чем он был бы на сломанном потоке.
+  const base = Math.floor(Date.now() / 1000 / 3600) * 3600 - 24 * 3600; // fixed; LWC only needs ascending unique seconds
   const p = price.toString();
   return Array.from({ length: 30 }, (_, i) => ({
     timestamp: base + i * 60,
@@ -287,6 +325,35 @@ function defaultCandles(price: bigint): MockWorld["candles"] {
     tradeCount: 1,
     lastTradePrice: p,
   }));
+}
+
+/**
+ * Двадцать пять часовых баров ровно на +1 % от края до края.
+ *
+ * @remarks Ровно столько, сколько просит `useDailyChange`, и ровно тот
+ * процент, который спека может утверждать текстом: плоский ряд доказал бы
+ * только то, что ноль рисуется.
+ */
+export function defaultOracleCandles(price: bigint): MockWorld["candles"] {
+  // Ряд кончается текущим часом, а не датой из прошлого: последний бар должен
+  // быть формирующимся, иначе живой цене некуда домешиваться и чарт выглядит
+  // застывшим — тем же, чем он был бы на сломанном потоке.
+  const base = Math.floor(Date.now() / 1000 / 3600) * 3600 - 24 * 3600;
+  const from = (price * 100n) / 101n;
+  return Array.from({ length: 25 }, (_, i) => {
+    const close = from + ((price - from) * BigInt(i)) / 24n;
+    const c = close.toString();
+    return {
+      timestamp: base + i * 3600,
+      open: c,
+      high: c,
+      low: c,
+      close: c,
+      volume: WAD.toString(),
+      tradeCount: 1,
+      lastTradePrice: c,
+    };
+  });
 }
 
 /** Сколько уровней на сторону отдаёт мок: хватает и на 10+10, и на 20 в одну сторону. */
@@ -322,6 +389,9 @@ export interface ScenarioOptions {
   accounts?: AccountFixture[];
   price?: bigint;
   markets?: Market[];
+  oracleCandles?: Record<string, MockWorld["candles"]>;
+  marketDynamic?: Record<string, WireMarketDynamic>;
+  marketVolume24h?: Record<string, WireVolumeWindow | null>;
   openOrders?: GatewayOrder[];
   conditionalOrders?: GatewayOrder[];
   trades?: TradeRow[];
@@ -363,6 +433,24 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
       updatedAt: "2026-01-01T00:00:00.000Z",
     },
     candles: defaultCandles(price),
+    oracleCandles: opts.oracleCandles ?? {},
+    marketDynamic: opts.marketDynamic ?? {
+      [MARKET.id]: {
+        openInterest: (211_980n * WAD).toString(),
+        // −0,0009 %/сут, как в макете.
+        currentFundingRate: (-9n * WAD) / 1_000_000n + "",
+        indexPrice: price.toString(),
+      },
+    },
+    marketVolume24h: opts.marketVolume24h ?? {
+      [MARKET.id]: {
+        volumeUsd: (3_350_000n * WAD).toString(),
+        volumeBase: (48n * WAD).toString(),
+        trades: 120,
+        windowStart: 1_717_113_600,
+        windowEnd: 1_717_200_000,
+      },
+    },
     openOrders: opts.openOrders ?? [],
     conditionalOrders: opts.conditionalOrders ?? [],
     trades: opts.trades ?? [],
@@ -614,6 +702,27 @@ export function sseCandleFrame(
     data: bar,
   };
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+/**
+ * Кадр SSE с тиком оракульной цены — `PriceUpdateEvent` из @liq/core,
+ * канал `` `price:${marketId}` ``.
+ *
+ * @remarks `price` — WAD-строка, как на проводе; `timestamp` в СЕКУНДАХ:
+ * шлюз намеренно не шлёт по этому каналу миллисекунды, и `useCandles`
+ * складывает бар именно по секундной метке. Умолчание — «сейчас», чтобы тик
+ * попадал в формирующийся бар, а не в закрытый.
+ */
+export function ssePriceFrame(
+  marketId: string,
+  price: bigint,
+  timestampSec: number = Math.floor(Date.now() / 1000),
+): string {
+  return `data: ${JSON.stringify({
+    type: "price_update",
+    channel: `price:${marketId}`,
+    data: { marketId, price: price.toString(), timestamp: timestampSec },
+  })}\n\n`;
 }
 
 /** Кадр SSE со снимком книги. Форма — `OrderbookSnapshotEvent` из @liq/core. */

@@ -9,8 +9,9 @@ import {
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
 import { AccountPanel } from "../account/AccountPanel";
-import { CandleChart } from "../chart/CandleChart";
+import { ChartFrame } from "../chart/ChartFrame";
 import { MarketHeader } from "../market/MarketHeader";
+import { MarketTabs } from "../market/MarketTabs";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { OrderBookPanel } from "../orderbook/OrderBookPanel";
 import { TradeForm } from "../trade/TradeForm";
@@ -30,6 +31,7 @@ export function Terminal() {
 
   return (
     <div className="flex flex-1 flex-col gap-3" data-testid="terminal-root">
+      {!bottomFullscreen && <MarketTabs />}
       {!bottomFullscreen && <MarketHeader />}
       <ResizablePanelGroup orientation="vertical" className="flex-1">
         {!bottomFullscreen && (
@@ -74,7 +76,7 @@ export function Terminal() {
                     </div>
                     {!chartCollapsed && (
                       <Card className="flex-1 p-2" data-testid="chart-panel">
-                        <CandleChart marketId={marketId} />
+                        <ChartFrame marketId={marketId} />
                       </Card>
                     )}
                   </div>

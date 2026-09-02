@@ -1,11 +1,11 @@
-import { WAD } from "../support/constants";
 import { enterTerminal } from "../pages/flows";
+import { MARKET, WAD } from "../support/constants";
 import { expect, test } from "../support/fixtures";
 import {
   limitOrderFixture,
   readyWorld,
-  sseCandleFrame,
   sseOrderUpdateFrame,
+  ssePriceFrame,
 } from "../support/world";
 
 test.describe("live SSE updates", () => {
@@ -101,20 +101,22 @@ test.describe("live SSE updates", () => {
     await expect(market.margin).toHaveText(/\$4,000\.00/, { timeout: 15_000 });
   });
 
-  test("the chart subscribes to 1m candles and redraws on a streamed bar", async ({
+
+  test("чарт перерисовывается на тике цены из потока", async ({
     page,
     world,
   }) => {
+    // Раньше здесь проверялась подписка на `candles:{id}:1m`. Ряд теперь
+    // читается с оракульного маршрута, а живёт он каналом `price:{id}`:
+    // `useCandles` домешивает тик в формирующийся бар. Механизм остался
+    // потоковым, сменился канал — свойство то же, чарт обязан ожить.
     const { app } = await enterTerminal(page, world);
-    // The chart's channel is part of some SSE connection's channel set.
-    await expect
-      .poll(() =>
-        world.sseConnections.some((c) => c.includes("candles:200:1m")),
-      )
-      .toBe(true);
+    await expect(page.locator("canvas").first()).toBeVisible({
+      timeout: 15_000,
+    });
 
-    // Pixel-hash every canvas: a new bar far from the flat 70k history forces
-    // an autoscale + redraw, so the hash MUST change when the bar lands.
+    // Пиксельный хеш всех канвасов: цена вдали от ровной истории 70k заставляет
+    // шкалу пересчитаться, так что хеш обязан измениться.
     const canvasHash = () =>
       page.evaluate(() => {
         let h = 5381;
@@ -125,27 +127,11 @@ test.describe("live SSE updates", () => {
         }
         return h;
       });
-    await expect(page.locator("canvas").first()).toBeVisible({
-      timeout: 15_000,
-    });
     const before = await canvasHash();
 
-    const lastTs = world.candles.at(-1)!.timestamp;
-    const p80k = (80_000n * WAD).toString();
-    world.sseFrames = [
-      sseCandleFrame("200", {
-        bucketStartTs: lastTs + 60,
-        open: p80k,
-        high: p80k,
-        low: p80k,
-        close: p80k,
-        volume: WAD.toString(),
-        tradeCount: 1,
-        lastTradePrice: p80k,
-      }),
-    ];
-    await expect.poll(() => world.sseFrames.length).toBe(0); // delivered
-    await expect.poll(canvasHash, { timeout: 15_000 }).not.toBe(before);
-    await expect(app.terminal).toBeVisible(); // still healthy
+    world.sseFrames = [ssePriceFrame(MARKET.id, 80_000n * WAD)];
+    await expect.poll(() => world.sseFrames.length).toBe(0); // доставлен
+    await expect.poll(canvasHash, { timeout: 20_000 }).not.toBe(before);
+    await expect(app.terminal).toBeVisible();
   });
 });

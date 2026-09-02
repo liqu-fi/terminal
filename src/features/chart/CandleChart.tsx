@@ -1,6 +1,9 @@
+import type { OracleCandleInterval } from "@liq/core";
+import { useCandles } from "@liq/react";
 import {
   CandlestickSeries,
   createChart,
+  PriceScaleMode,
   type CandlestickData,
   type IChartApi,
   type ISeriesApi,
@@ -8,8 +11,10 @@ import {
 } from "lightweight-charts";
 import { useEffect, useMemo, useRef } from "react";
 
-import { useCandles } from "./useCandles";
+import type { ChartScaleMode } from "@/stores/useTerminalUiStore";
+
 import { toLwcBar } from "./candleMapping";
+import { CHART_ROUTE } from "./chartRanges";
 
 /**
  * `lightweight-charts` wants concrete color strings, but the palette is
@@ -22,12 +27,28 @@ function cssVar(name: string): string {
     .trim();
 }
 
-export function CandleChart({ marketId }: { marketId: bigint | undefined }) {
+export function CandleChart({
+  marketId,
+  interval,
+  bars: barCount,
+  scaleMode,
+  autoScale,
+}: {
+  marketId: bigint | undefined;
+  interval: OracleCandleInterval;
+  /** Глубина истории; считается рамкой из выбранного окна. */
+  bars: number;
+  scaleMode: ChartScaleMode;
+  autoScale: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
-  const candles = useCandles(marketId, "1m");
+  const { bars: candles } = useCandles(marketId, interval, {
+    bars: barCount,
+    route: CHART_ROUTE,
+  });
   const bars = useMemo<CandlestickData<UTCTimestamp>[]>(
     () => candles.map(toLwcBar),
     [candles],
@@ -74,6 +95,22 @@ export function CandleChart({ marketId }: { marketId: bigint | undefined }) {
     series.setData(bars);
     chart.timeScale().fitContent();
   }, [bars]);
+
+  // Режим шкалы — отдельным эффектом: он не зависит от данных, а применение
+  // его вместе с ними перерисовывало бы шкалу на каждом баре.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.priceScale("right").applyOptions({
+      mode:
+        scaleMode === "percent"
+          ? PriceScaleMode.Percentage
+          : scaleMode === "log"
+            ? PriceScaleMode.Logarithmic
+            : PriceScaleMode.Normal,
+      autoScale,
+    });
+  }, [scaleMode, autoScale]);
 
   return <div ref={containerRef} className="h-full w-full" />;
 }

@@ -14,8 +14,11 @@ type UserTab =
 
 export class MarketHeaderPanel {
   readonly root: Locator;
-  readonly marketSelect: Locator;
+  readonly pill: Locator;
+  readonly search: Locator;
+  readonly searchInput: Locator;
   readonly price: Locator;
+  readonly change: Locator;
   readonly funding: Locator;
   readonly margin: Locator;
   readonly depositButton: Locator;
@@ -23,12 +26,38 @@ export class MarketHeaderPanel {
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("market-header");
-    this.marketSelect = page.getByTestId("market-select");
+    this.pill = page.getByTestId("market-pill");
+    this.search = page.getByTestId("market-search-popover");
+    this.searchInput = page.getByTestId("market-search-input");
     this.price = page.getByTestId("market-price");
+    this.change = page.getByTestId("market-change");
     this.funding = page.getByTestId("funding-rate");
     this.margin = page.getByTestId("available-margin");
     this.depositButton = page.getByTestId("open-deposit-button");
     this.withdrawButton = page.getByTestId("open-withdraw-button");
+  }
+
+  /** Все строки открытого поиска. */
+  get searchRows(): Locator {
+    return this.page.locator('[data-testid^="market-row-"]');
+  }
+  marketRow(id: string): Locator {
+    return this.page.getByTestId(`market-row-${id}`);
+  }
+  favoriteStar(id: string): Locator {
+    return this.page.getByTestId(`market-favorite-${id}`);
+  }
+  stat(name: string): Locator {
+    return this.page.getByTestId(`stat-${name}`);
+  }
+  async openSearch(): Promise<void> {
+    await this.pill.click();
+    await this.search.waitFor();
+  }
+  /** Открыть поиск и выбрать рынок — путь, которым его меняет человек. */
+  async pickMarket(id: string): Promise<void> {
+    await this.openSearch();
+    await this.marketRow(id).click();
   }
 
   openDeposit(): Promise<void> {
@@ -405,5 +434,42 @@ export class AccountPanelPage {
   }
   get withdrawButton(): Locator {
     return this.page.getByTestId("account-withdraw-button");
+  }
+}
+
+export class MarketTabsPanel {
+  constructor(private readonly page: Page) {}
+
+  get root(): Locator {
+    return this.page.getByTestId("market-tabs");
+  }
+  tab(id: string): Locator {
+    return this.page.getByTestId(`market-tab-${id}`);
+  }
+  close(id: string): Locator {
+    return this.page.getByTestId(`market-tab-close-${id}`);
+  }
+  get addButton(): Locator {
+    return this.page.getByTestId("market-tabs-add");
+  }
+  unit(kind: "pct" | "usd"): Locator {
+    return this.page.getByTestId(`change-unit-${kind}`);
+  }
+}
+
+export class ChartFramePage {
+  constructor(private readonly page: Page) {}
+
+  get root(): Locator {
+    return this.page.getByTestId("chart-frame");
+  }
+  interval(iv: string): Locator {
+    return this.page.getByTestId(`chart-interval-${iv}`);
+  }
+  range(key: string): Locator {
+    return this.page.getByTestId(`chart-range-${key}`);
+  }
+  scale(name: "percent" | "log" | "auto"): Locator {
+    return this.page.getByTestId(`chart-scale-${name}`);
   }
 }

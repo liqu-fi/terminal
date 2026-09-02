@@ -6,9 +6,11 @@ import { seed } from "../support/fixtures";
 import { type MockWorld, readyWorld } from "../support/world";
 import { AppPage } from "./AppPage";
 import {
+  ChartFramePage,
   DepositDialog,
   LayoutPanel,
   MarketHeaderPanel,
+  MarketTabsPanel,
   OrderBookPanel,
   TradePanel,
   UserInfoPanel,
@@ -18,6 +20,8 @@ import {
 export interface Terminal {
   app: AppPage;
   market: MarketHeaderPanel;
+  tabs: MarketTabsPanel;
+  chart: ChartFramePage;
   layout: LayoutPanel;
   trade: TradePanel;
   userInfo: UserInfoPanel;
@@ -42,6 +46,8 @@ export async function enterTerminal(
   return {
     app,
     market: new MarketHeaderPanel(page),
+    tabs: new MarketTabsPanel(page),
+    chart: new ChartFramePage(page),
     layout: new LayoutPanel(page),
     trade: new TradePanel(page),
     userInfo: new UserInfoPanel(page),

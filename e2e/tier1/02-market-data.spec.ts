@@ -12,8 +12,7 @@ test.describe("market data", () => {
   }) => {
     const { market } = await enterTerminal(page, world);
 
-    await expect(market.marketSelect).toHaveValue("200");
-    await expect(market.marketSelect).toContainText("BTC");
+    await expect(market.pill).toContainText("BTC");
     await expect(market.price).toHaveText(/\$70,000/);
     await expect(market.funding).toHaveText(/0\.1000%/);
     await expect(market.margin).toHaveText(/\$5,000\.00/);
@@ -76,12 +75,9 @@ test.describe("market data", () => {
       readyWorld({ markets: [MARKET, MARKET_ETH] }),
     );
     // defaults to the first market, with both options available
-    await expect(market.marketSelect).toHaveValue("200");
-    await expect(market.marketSelect).toContainText("BTC");
-    await expect(market.marketSelect).toContainText("ETH");
-
-    await market.marketSelect.selectOption("201");
-    await expect(market.marketSelect).toHaveValue("201"); // switched to ETH
+    await expect(market.pill).toContainText("BTC");
+    await market.pickMarket("201");
+    await expect(market.pill).toContainText("ETH"); // switched to ETH
     await expect(market.price).toBeVisible(); // header still renders the new market
   });
 
@@ -109,7 +105,7 @@ test.describe("market data", () => {
 
     const market = new MarketHeaderPanel(page);
     await expect(market.price).toContainText("—");
-    await expect(market.marketSelect).toContainText("BTC"); // markets loaded
+    await expect(market.pill).toContainText("BTC"); // markets loaded
   });
 
   test("a funding fetch failure shows an em-dash", async ({ page, world }) => {
@@ -142,30 +138,31 @@ test.describe("market data", () => {
     world,
   }) => {
     const { market } = await enterTerminal(page, world); // default readyWorld → 1 market
-    await expect(market.marketSelect.locator("option")).toHaveCount(1);
+    await market.openSearch();
+    await expect(market.searchRows).toHaveCount(1);
   });
 
-  test("switching market re-subscribes the chart to the new candle channel", async ({
+  test("switching market re-points the chart at the new market series", async ({
     page,
     world,
   }) => {
-    const { market } = await enterTerminal(page, world, () => {
-      const w = readyWorld({ markets: [MARKET, MARKET_ETH] });
-      w.candlesByMarket = {
-        [MARKET.id]: w.candles,
-        [MARKET_ETH.id]: w.candles.map((c, i) => ({
-          ...c,
-          close: (3_000n * WAD + BigInt(i) * WAD).toString(),
-        })),
-      };
-      return w;
+    const { market } = await enterTerminal(page, world, () =>
+      readyWorld({ markets: [MARKET, MARKET_ETH] }),
+    );
+
+    // Чарт больше не слушает SSE-канал закрытых минуток: он читает оракульный
+    // ряд и домешивает живую цену. Доказательство переезда рынка — запрос
+    // истории нового рынка, а не подписка старого механизма.
+    const asked: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("oracle-candles")) asked.push(r.url());
     });
 
-    await market.marketSelect.selectOption(MARKET_ETH.id);
+    await market.pickMarket(MARKET_ETH.id);
     await expect
       .poll(() =>
-        world.sseConnections.some((chs) =>
-          chs.some((c) => c.includes(`candles:${MARKET_ETH.id}:1m`)),
+        asked.some((u) =>
+          u.includes(`/markets/${MARKET_ETH.id}/oracle-candles`),
         ),
       )
       .toBe(true);
