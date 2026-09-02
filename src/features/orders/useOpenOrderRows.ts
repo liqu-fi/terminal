@@ -1,4 +1,4 @@
-import type { GatewayOrder } from "@liq/core";
+import { type GatewayOrder, isInFlight } from "@liq/core";
 import {
   useAccountId,
   useCancelOrderMutation,
@@ -15,6 +15,16 @@ export interface OrderRow {
   symbol: string;
   cancel: (id: string) => void;
   cancelling: boolean;
+  /**
+   * Можно ли ещё отменить.
+   *
+   * @remarks Ордер в полёте (`MATCHED`, `SETTLEMENT_SUBMITTED`,
+   * `FAILED_RETRYABLE`) вышел из книги, но исхода ещё не получил: отменять
+   * нечего, отмена вернула бы отказ шлюза. До SDK 0.46.0 такой ордер не
+   * попадал ни в открытый список, ни в историю и просто исчезал с экрана
+   * между матчингом и сеттлментом; теперь он виден — с выключенной отменой.
+   */
+  cancellable: boolean;
 }
 
 /** Открытые и условные ордера одной таблицей — как их видит трейдер. */
@@ -39,6 +49,7 @@ export function useOpenOrderRows(): {
           order.marketId,
         cancel: (id: string) => cancel.mutate(id),
         cancelling: cancel.isPending,
+        cancellable: !isInFlight(order.status),
       })),
     [open, conditional, markets, cancel],
   );

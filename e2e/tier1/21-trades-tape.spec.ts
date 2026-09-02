@@ -124,7 +124,7 @@ test.describe("trades tape", () => {
 
     world.sseFrames = [
       sseTradeFrame("200", { price: "70500", size: "1", side: "BUY" }),
-      sseOrderUpdateFrame("ord-limit-1", "MATCHED"),
+      sseOrderUpdateFrame("ord-limit-1", "SETTLED"),
     ];
     await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 15_000 });
 
@@ -175,7 +175,7 @@ test.describe("trades tape", () => {
 
     world.sseFrames = [
       sseTradeFrame("200", { price: "70500", size: "1", side: "UNKNOWN" }),
-      sseOrderUpdateFrame("ord-limit-1", "MATCHED"),
+      sseOrderUpdateFrame("ord-limit-1", "SETTLED"),
     ];
     await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 15_000 });
 
@@ -225,7 +225,7 @@ test.describe("trades tape", () => {
         side: "SELL",
         timestamp: rest.timestamp - 60_000,
       }),
-      sseOrderUpdateFrame("ord-limit-1", "MATCHED"),
+      sseOrderUpdateFrame("ord-limit-1", "SETTLED"),
     ];
 
     // Барьер: ордер ушёл из открытых ⇒ ответ доставлен и разобран целиком.

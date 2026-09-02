@@ -2,7 +2,7 @@ import {
   acceptablePrice,
   Bps,
   describeRejection,
-  type OrderWarning,
+  describeWarning,
   Price,
   Side,
 } from "@liq/sdk";
@@ -35,18 +35,6 @@ const TABS = ["Market", "Limit", "Stop", "Take Profit"] as const;
 type Tab = (typeof TABS)[number];
 
 const SLIPPAGE_BPS = Bps(50n); // 0.5%
-
-/**
- * Слова к предупреждению вердикта.
- *
- * @remarks SDK отдаёт вердикт числами, а не словами (`describeRejection` —
- * единственное исключение, и парного `describeWarning` в 0.43.0 нет). Пока его
- * нет, текст живёт здесь: это подпись, а не правило — правило считает
- * `validateOrder`.
- */
-const WARNING_TEXT: Record<OrderWarning["kind"], string> = {
-  "exceeds-available-margin": "Exceeds available margin",
-};
 
 /**
  * Знаков после запятой в поле лимитной цены.
@@ -110,7 +98,6 @@ export function TradeForm() {
     available: margins?.available ?? 0n,
     markPrice,
   });
-  const maxLev = market?.maxLeverage ?? 25;
   const attachable = tab === "Market" || tab === "Limit";
 
   const pending = submitOrder.isPending;
@@ -267,7 +254,7 @@ export function TradeForm() {
     >
       <TicketHeader
         leverage={sizing.leverage}
-        maxLeverage={maxLev}
+        maxLeverage={sizing.maxLeverage}
         onLeverage={sizing.setLeverage}
         available={margins ? margins.available : null}
       />
@@ -366,7 +353,7 @@ export function TradeForm() {
 
       {sizing.validation.warn && !insufficientMargin && (
         <p className="text-[10px] text-short/80" data-testid="order-warning">
-          {WARNING_TEXT[sizing.validation.warn.kind]}
+          {describeWarning(sizing.validation.warn)}
         </p>
       )}
       {insufficientMargin && (

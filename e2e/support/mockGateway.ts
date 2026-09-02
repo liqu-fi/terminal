@@ -38,15 +38,16 @@ function marketSummary(world: MockWorld) {
     id: m.id,
     symbol: m.symbol,
     pythFeedId: m.pythFeedId,
-    minSize: m.minSize,
-    maxLeverage: m.maxLeverage,
+    initialMarginBps: m.initialMarginBps,
   }));
 }
 
 // `MarketsService.listFull` maps `BigInt(initialMarginBps)` /
 // `BigInt(maintenanceMarginBps)`, so those fields must be present integer
 // strings (a bare summary made `BigInt(undefined)` throw). 50 bps maintenance
-// drives the terminal's liq-price estimate.
+// drives the terminal's liq-price estimate. Начальная маржа — та же, что в
+// сводке: два маршрута, разошедшихся в ней, дали бы два разных потолка плеча
+// на одном рынке.
 function marketFull(world: MockWorld) {
   return world.markets.map((m) => {
     const dyn = world.marketDynamic[m.id];
@@ -55,7 +56,7 @@ function marketFull(world: MockWorld) {
       symbol: m.symbol,
       pythFeedId: m.pythFeedId,
       isActive: true,
-      initialMarginBps: "200",
+      initialMarginBps: m.initialMarginBps,
       maintenanceMarginBps: "50",
       dynamic: dyn
         ? {
@@ -80,17 +81,31 @@ function marketFull(world: MockWorld) {
   });
 }
 
+/** Статусы, которыми история представляется шлюзу (`TERMINAL_ORDER_STATUSES`). */
+const TERMINAL_STATUSES = new Set([
+  "SETTLED",
+  "FAILED",
+  "CANCELLED",
+  "EXPIRED",
+  "REJECTED",
+  "TRIGGER_DROPPED",
+]);
+
 /**
  * Разводит три запроса, которые ходят на один `/orders`: открытые, условные и
- * история. Признак — статус в query: `TRIGGER_PENDING` у условных, любой
- * терминальный (`SETTLED`, `CANCELLED`, `REJECTED`, `EXPIRED`, `FAILED`) — у
- * истории. Без этого история показывала бы открытые ордера и спека проходила
- * бы на неверных данных.
+ * история. Признак — статус в query: `TRIGGER_PENDING` у условных,
+ * терминальный — у истории.
+ *
+ * @remarks Сравнение поимённое, а не подстрокой. Подстрока развалилась ровно
+ * тогда, когда открытый список 0.46.0 начал спрашивать ордера в полёте:
+ * `FAILED_RETRYABLE` содержит `FAILED`, и весь открытый список молча уезжал
+ * в историю. Статус — слово из словаря, и сравнивать его надо целиком.
  */
 function orderListFor(world: MockWorld, status: string | null): GatewayOrder[] {
-  if (status && status.includes("TRIGGER_PENDING"))
-    return world.conditionalOrders;
-  if (status && /SETTLED|CANCELLED|REJECTED|EXPIRED|FAILED/.test(status))
+  if (!status) return world.openOrders;
+  const wanted = new Set(status.split(","));
+  if (wanted.has("TRIGGER_PENDING")) return world.conditionalOrders;
+  if ([...wanted].some((s) => TERMINAL_STATUSES.has(s)))
     return world.orderHistory;
   return world.openOrders;
 }
@@ -136,10 +151,20 @@ function restSubmittedOrder(
  * либо резать, либо поднимать это число вместе с ней.
  */
 const SSE_LONGPOLL_MS = 20_000;
+/**
+ * Статусы, при которых ордер остаётся на экране открытых.
+ *
+ * @remarks Три в полёте (`MATCHED`, `SETTLEMENT_SUBMITTED`,
+ * `FAILED_RETRYABLE`) — тоже здесь: с 0.46.0 открытый список их спрашивает, и
+ * событие о матчинге больше не убирает ордер с экрана до исхода.
+ */
 const OPEN_STATUSES = new Set([
   "PENDING",
   "PARTIALLY_FILLED",
   "TRIGGER_PENDING",
+  "MATCHED",
+  "SETTLEMENT_SUBMITTED",
+  "FAILED_RETRYABLE",
 ]);
 
 /**

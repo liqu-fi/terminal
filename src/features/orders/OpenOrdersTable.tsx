@@ -89,7 +89,10 @@ const columns = helper.columns([
         <button
           type="button"
           className="text-[11px] text-short disabled:opacity-50"
-          disabled={r.cancelling}
+          disabled={r.cancelling || !r.cancellable}
+          // Причина словами: выключенная кнопка без объяснения читается как
+          // поломка экрана, а не как состояние ордера.
+          title={r.cancellable ? undefined : "Order is settling — too late to cancel"}
           onClick={() => r.cancel(r.order.id)}
           data-testid={`cancel-order-${r.order.id}`}
         >

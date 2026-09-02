@@ -1,5 +1,6 @@
 import {
   Margin,
+  maxLeverageFromBps,
   type OrderVerdict,
   pctToSize,
   Price,
@@ -14,7 +15,7 @@ import {
 import { useMarketsFullRestQuery } from "@liq/react";
 import { useState } from "react";
 
-import { parseWadLoose, wadToFixed } from "../../lib/format";
+import { wadToFixed } from "../../lib/format";
 import type { MarketSummary } from "../market/useSelectedMarket";
 import { ticketSummary, type TicketSummary } from "./ticketSummary";
 
@@ -51,13 +52,10 @@ export type OrderSizing = {
   summary: TicketSummary;
   baseSymbol: string;
   baseDecimals: number;
+  /** Потолок плеча рынка; `null` — рынок его не объявил. */
+  maxLeverage: number | null;
   validation: OrderVerdict;
 };
-
-function fracDigits(s: string): number {
-  const i = s.indexOf(".");
-  return i === -1 ? 0 : s.length - i - 1;
-}
 
 /** Parse the size field (in its active unit) to a magnitude in base units. */
 function parseSizeInput(
@@ -99,16 +97,17 @@ export function useOrderSizing(params: {
   const [leverage, setLeverageRaw] = useState(2);
   const [pct, setPctRaw] = useState(0);
 
-  // `useMarketsQuery` returns the gateway `/markets` payload unmapped, so
-  // `minSize` arrives as a STRING at runtime despite its bigint type — coerce
-  // before any bigint math (mixing throws "Cannot mix BigInt"). `parseWadLoose`
-  // never throws and tolerates the scientific notation the gateway can emit.
-  const minSize =
-    market?.minSize != null ? parseWadLoose(String(market.minSize)) : 0n;
-  const maxLeverage = market?.maxLeverage ?? 25;
+  // Потолок плеча выводится из объявленной начальной маржи, а не берётся
+  // готовым: `maxLeverage` в `MarketSummary` не существует с 0.46.0 — поле
+  // одиннадцать миноров обещало то, чего `/markets` не слал. `null` значит
+  // «рынок не объявил», и таким доходит до лестницы и до вердикта.
+  const maxLeverage = maxLeverageFromBps(market?.initialMarginBps ?? 0n);
   const baseSymbol = market?.symbol?.split(/[-/]/)[0]?.toUpperCase() ?? "";
-  const minSizeDigits = minSize > 0n ? fracDigits(Qty.fmt(Qty(minSize))) : 4;
-  const baseDecimals = Math.min(8, Math.max(2, minSizeDigits || 4));
+  // Минимального шага у рынка нет источника нигде в контуре — ни колонки в
+  // схеме, ни ончейн-чтения (0.46.0 убрала и поле). Знаков после запятой
+  // выводить не из чего, поэтому их четыре — умолчание поля ввода, а не
+  // утверждение о рынке.
+  const baseDecimals = 4;
 
   // Maintenance-margin fraction (WAD) for the liq-price estimate; best-effort.
   // `maintenanceMarginBps` is absent from leaner market payloads — guard so the
@@ -137,9 +136,13 @@ export function useOrderSizing(params: {
   const validation = validateOrder({
     markPrice,
     sizeQty: Qty(sizeQty),
-    minSize: Qty(minSize),
+    // `0n` — «рынок минимума не объявляет»: единственное, что о нём известно.
+    minSize: Qty(0n),
     leverage,
-    maxLeverage,
+    // Неизвестный потолок не отказывает в ордере: клиент не судья допуску,
+    // им остаются шлюз и цепочка. Отказ по выдуманному числу отверг бы
+    // ордера, которые протокол принял бы.
+    maxLeverage: maxLeverage ?? Number.POSITIVE_INFINITY,
     available: Margin(available),
     marginCost: margin,
   });
@@ -210,6 +213,7 @@ export function useOrderSizing(params: {
     summary,
     baseSymbol,
     baseDecimals,
+    maxLeverage,
     validation,
   };
 }

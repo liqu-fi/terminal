@@ -9,7 +9,7 @@ import {
 } from "../support/world";
 
 test.describe("live SSE updates", () => {
-  test("an order_update over SSE refetches and clears the filled order", async ({
+  test("an order_update over SSE refetches and clears the settled order", async ({
     page,
     world,
   }) => {
@@ -20,13 +20,32 @@ test.describe("live SSE updates", () => {
     await userInfo.selectTab("open-orders");
     await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
 
-    // Queue an SSE fill. The mock removes the order from the open set ONLY when
-    // this frame is actually delivered over SSE — so the background poll keeps
-    // returning the order until then, and the order clearing proves the SSE
-    // path drove it (not polling). Causality, not timing, is the assertion.
-    world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "MATCHED")];
+    // Queue an SSE settlement. The mock removes the order from the open set
+    // ONLY when this frame is actually delivered over SSE — so the background
+    // poll keeps returning the order until then, and the order clearing proves
+    // the SSE path drove it (not polling). Causality, not timing.
+    world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "SETTLED")];
 
     await expect(userInfo.ordersEmpty).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("матчинг не убирает ордер с экрана — он ещё в полёте", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({ openOrders: [limitOrderFixture()] }),
+    );
+
+    await userInfo.selectTab("open-orders");
+    await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
+
+    // `MATCHED` — не исход, а середина пути: ордер вышел из книги и ждёт
+    // сеттлмента. До SDK 0.46.0 он в этот момент исчезал с экрана целиком —
+    // ни в открытых, ни в истории, — и трейдер видел пустоту вместо ордера.
+    world.sseFrames = [sseOrderUpdateFrame("ord-limit-1", "MATCHED")];
+    await expect.poll(() => world.sseFrames.length).toBe(0); // кадр доставлен
+    await expect(userInfo.orderRow("ord-limit-1")).toBeVisible();
   });
 
   test("a non-terminal order_update (PARTIALLY_FILLED) keeps the order open", async ({
@@ -82,8 +101,8 @@ test.describe("live SSE updates", () => {
     await expect(userInfo.orderRow("ord-a")).toBeVisible();
     await expect(userInfo.orderRow("ord-b")).toBeVisible();
 
-    // A terminal fill for ord-a must clear only ord-a — channel selectivity.
-    world.sseFrames = [sseOrderUpdateFrame("ord-a", "MATCHED")];
+    // A terminal settlement for ord-a must clear only ord-a — channel selectivity.
+    world.sseFrames = [sseOrderUpdateFrame("ord-a", "SETTLED")];
     await expect(userInfo.orderRow("ord-a")).toBeHidden({ timeout: 15_000 });
     await expect(userInfo.orderRow("ord-b")).toBeVisible(); // sibling untouched
   });

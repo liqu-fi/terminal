@@ -175,20 +175,20 @@ test.describe("trade form gating & controls", () => {
     await expect(trade.orderLiqPrice).toHaveText("— / —");
   });
 
-  test("a below-minimum size blocks submit with a reason", async ({
+  test("лестница плеча кончается там, где кончает рынок", async ({
     page,
     world,
   }) => {
-    const { trade } = await enterTerminal(page, world); // min size 0.001
+    // Потолок выводится из начальной маржи рынка: BTC — 400 bps, то есть 25×.
+    // Здесь стоял тест на отказ «Min 0.001»: его давал `minSize`, который слал
+    // один только мок — у поля нет источника нигде в контуре, и с 0.46.0 нет
+    // и самого поля. Тест был зелёным на выдумке фикстуры; на его месте —
+    // проверка того, что рынок действительно называет свой потолок.
+    const { trade } = await enterTerminal(page, world);
 
-    await trade.setSize("0.0005"); // below the 0.001 minimum
-    await expect(trade.submitButton).toBeDisabled();
-    // Причина отказа живёт строкой под блоком: надписи кнопок постоянны, и
-    // «Min 0.001» на месте призыва к действию читалось бы как его название.
-    await expect(trade.orderRejection).toContainText("Min");
-    await trade.setSize("0.5");
-    await expect(trade.submitButton).toBeEnabled();
-    await expect(trade.orderRejection).toBeHidden();
+    await trade.leverageSelect.click();
+    await expect(page.getByTestId("leverage-option-25")).toBeVisible();
+    await expect(page.getByTestId("leverage-option-50")).toHaveCount(0);
   });
 
   test("a size beyond buying power warns but does not block submit", async ({
