@@ -85,11 +85,29 @@ test.describe("open orders", () => {
     await expect(userInfo.orderRow("ord-limit-1")).toContainText("PENDING");
     await expect(userInfo.orderRow("ord-cond-1")).toContainText("TRIGGER_PENDING");
 
+    // Колонки: Time=0, Market=1, Type=2, Side=3, Size=4, Price=5, Trigger=6,
+    // Status=7, действия=8.
     // P2c: conditional Size renders abs(-1) = 1.
-    await expect(userInfo.orderRow("ord-cond-1").locator("td").nth(3)).toHaveText("1");
+    await expect(
+      userInfo.orderRow("ord-cond-1").locator("td").nth(4),
+    ).toHaveText("1");
 
-    // P2d: a null-price conditional renders an em-dash in the Price cell.
-    await expect(userInfo.orderRow("ord-noprice").locator("td").nth(4)).toHaveText("—");
+    // Лимит и триггер теперь разные колонки: у условного ордера лимитной цены
+    // нет, а триггер есть — прочерк и число обязаны стоять каждый в своей.
+    await expect(
+      userInfo.orderRow("ord-cond-1").locator("td").nth(5),
+    ).toHaveText("—");
+    await expect(
+      userInfo.orderRow("ord-cond-1").locator("td").nth(6),
+    ).toHaveText("80,000");
+
+    // P2d: a null-price conditional renders an em-dash in both price cells.
+    await expect(
+      userInfo.orderRow("ord-noprice").locator("td").nth(5),
+    ).toHaveText("—");
+    await expect(
+      userInfo.orderRow("ord-noprice").locator("td").nth(6),
+    ).toHaveText("—");
   });
 
   test("cancelling a conditional order removes its row", async ({

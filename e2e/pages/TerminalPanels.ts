@@ -294,10 +294,10 @@ export class UserInfoPanel {
     return this.page.getByTestId("orders-table");
   }
   get ordersEmpty(): Locator {
-    return this.page.getByTestId("orders-empty");
+    return this.page.getByTestId("orders-table-empty");
   }
   orderRow(id: string): Locator {
-    return this.page.getByTestId(`order-row-${id}`);
+    return this.page.getByTestId(`orders-table-row-${id}`);
   }
   cancelOrder(id: string): Promise<void> {
     return this.page.getByTestId(`cancel-order-${id}`).click();

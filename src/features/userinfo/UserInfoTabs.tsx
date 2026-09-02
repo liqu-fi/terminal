@@ -7,6 +7,7 @@ import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
 import { HistoryTable } from "../history/HistoryTable";
 import { OpenOrdersTable } from "../orders/OpenOrdersTable";
+import { useOpenOrderRows } from "../orders/useOpenOrderRows";
 import { PositionsTable } from "../positions/PositionsTable";
 import { USER_TABS, type UserTabSlug } from "./tabs";
 import { useLiveOrders } from "./useLiveOrders";
@@ -22,6 +23,10 @@ export function UserInfoTabs() {
   const toggleBottomFullscreen = useTerminalUiStore(
     (s) => s.toggleBottomFullscreen,
   );
+  // Бейдж считает ЗАГРУЖЕННЫЕ строки, а не всё, что есть на шлюзе: `orders.count`
+  // отдельным запросом здесь не зовётся, а полная страница неотличима от
+  // обрезанной. Для нынешнего лимита это одно и то же число.
+  const { rows: openOrderRows } = useOpenOrderRows();
 
   const fullscreenButton = (
     <button
@@ -49,6 +54,14 @@ export function UserInfoTabs() {
             aria-pressed={tab === t.slug}
           >
             {t.label}
+            {t.slug === "open-orders" && openOrderRows.length > 0 && (
+              <span
+                className="ml-1 rounded-sm bg-surface-2 px-1 text-[11px] text-muted"
+                data-testid="userinfo-tab-badge-open-orders"
+              >
+                {openOrderRows.length}
+              </span>
+            )}
           </button>
         ))}
         <div className="flex-1" />
