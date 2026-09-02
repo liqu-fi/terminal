@@ -1,4 +1,11 @@
-import { Price, Side } from "@liq/sdk";
+import {
+  acceptablePrice,
+  Bps,
+  describeRejection,
+  type OrderWarning,
+  Price,
+  Side,
+} from "@liq/sdk";
 import {
   useAccountId,
   useAvailableMarginQuery,
@@ -15,7 +22,6 @@ import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
-import { acceptablePrice } from "./orderMath";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
 import { SizeField } from "./SizeField";
 import { SizePercent } from "./SizePercent";
@@ -26,7 +32,19 @@ import { useOrderSizing } from "./useOrderSizing";
 const TABS = ["Market", "Limit", "Stop", "Take Profit"] as const;
 type Tab = (typeof TABS)[number];
 
-const SLIPPAGE_BPS = 50n; // 0.5%
+const SLIPPAGE_BPS = Bps(50n); // 0.5%
+
+/**
+ * Слова к предупреждению вердикта.
+ *
+ * @remarks SDK отдаёт вердикт числами, а не словами (`describeRejection` —
+ * единственное исключение, и парного `describeWarning` в 0.43.0 нет). Пока его
+ * нет, текст живёт здесь: это подпись, а не правило — правило считает
+ * `validateOrder`.
+ */
+const WARNING_TEXT: Record<OrderWarning["kind"], string> = {
+  "exceeds-available-margin": "Exceeds available margin",
+};
 
 /**
  * Знаков после запятой в поле лимитной цены.
@@ -180,7 +198,11 @@ export function TradeForm() {
           marketId,
           sizeDelta,
           side,
-          acceptablePrice: acceptablePrice(markPrice, side, SLIPPAGE_BPS),
+          acceptablePrice: acceptablePrice(
+            Price(markPrice),
+            side,
+            SLIPPAGE_BPS,
+          ),
         },
         { onSuccess },
       );
@@ -222,13 +244,15 @@ export function TradeForm() {
   }
 
   const long = side === Side.BUY;
+  const fallbackLabel = long ? "Buy / Long" : "Sell / Short";
+  // `not-ready` (нет цены, пустой размер) молчит намеренно: у ордера, который
+  // ещё не дописан, нет вины, и кнопка держит ярлык по умолчанию.
+  const rejection = describeRejection(sizing.validation.reason);
   const submitLabel = !sizing.validation.ok
-    ? (sizing.validation.reason ?? (long ? "Buy / Long" : "Sell / Short"))
+    ? (rejection ?? fallbackLabel)
     : pending
       ? "Submitting…"
-      : long
-        ? "Buy / Long"
-        : "Sell / Short";
+      : fallbackLabel;
 
   return (
     <div
@@ -293,7 +317,7 @@ export function TradeForm() {
         onToggleUnit={sizing.toggleUnit}
         onMax={sizing.setMax}
         baseSymbol={sizing.baseSymbol}
-        invalid={!!sizing.validation.reason}
+        invalid={rejection !== undefined}
         toggleDisabled={markPrice === 0n}
       />
 
@@ -378,7 +402,7 @@ export function TradeForm() {
 
       {sizing.validation.warn && !insufficientMargin && (
         <p className="text-[10px] text-short/80" data-testid="order-warning">
-          {sizing.validation.warn}
+          {WARNING_TEXT[sizing.validation.warn.kind]}
         </p>
       )}
       {insufficientMargin && (

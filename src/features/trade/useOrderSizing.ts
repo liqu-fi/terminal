@@ -2,27 +2,25 @@ import {
   calcRequiredMaintenanceMargin,
   draftLiquidationPrice,
   Margin,
+  marginCost,
+  type OrderVerdict,
+  pctToSize,
   Price,
   Qty,
   Side,
+  sizeDelta as signedSize,
+  sizeFromLeverage,
+  sizeToPct,
+  sizeToUsd,
   Usd,
+  usdToSize,
+  validateOrder,
 } from "@liq/sdk";
 import { useMarketsFullRestQuery } from "@liq/react";
 import { useState } from "react";
 
 import { parseWadLoose, wadToFixed } from "../../lib/format";
 import type { MarketSummary } from "../market/useSelectedMarket";
-import {
-  computeSizeDelta,
-  marginCost,
-  maxSizeQty,
-  pctToSize,
-  sizeToPct,
-  sizeToUsd,
-  usdToSize,
-  validateOrder,
-  type OrderValidation,
-} from "./orderMath";
 
 const WAD = 10n ** 18n;
 const BPS = 10_000n;
@@ -51,7 +49,7 @@ export type OrderSizing = {
   liqPrice: bigint | null; // estimated isolated liquidation price, or null
   baseSymbol: string;
   baseDecimals: number;
-  validation: OrderValidation;
+  validation: OrderVerdict;
 };
 
 function fracDigits(s: string): number {
@@ -68,7 +66,9 @@ function parseSizeInput(
   if (!sizeStr) return 0n;
   try {
     if (unit === "base") return Qty.parse(sizeStr);
-    return markPrice > 0n ? usdToSize(Usd.parse(sizeStr), markPrice) : 0n;
+    return markPrice > 0n
+      ? usdToSize(Usd.parse(sizeStr), Price(markPrice))
+      : 0n;
   } catch {
     return 0n;
   }
@@ -147,18 +147,23 @@ export function useOrderSizing(params: {
       : undefined;
 
   const sizeQty = parseSizeInput(sizeStr, unit, markPrice);
-  const maxSize = maxSizeQty({ availableUsd: available, leverage, markPrice });
-  const notional = markPrice > 0n ? sizeToUsd(sizeQty, markPrice) : 0n;
-  const margin = marginCost(notional, leverage);
-  const sizeDelta = computeSizeDelta(sizeQty, side);
+  const maxSize = sizeFromLeverage({
+    availableUsd: Usd(available),
+    leverage,
+    markPrice: Price(markPrice),
+  });
+  const notional =
+    markPrice > 0n ? sizeToUsd(Qty(sizeQty), Price(markPrice)) : Usd(0n);
+  const margin = marginCost(Usd(notional), leverage);
+  const sizeDelta = signedSize(Qty(sizeQty), side);
   const liqPrice = estimateLiqPrice(markPrice, sizeDelta, margin, mmfWad);
   const validation = validateOrder({
     markPrice,
-    sizeQty,
-    minSize,
+    sizeQty: Qty(sizeQty),
+    minSize: Qty(minSize),
     leverage,
     maxLeverage,
-    available,
+    available: Margin(available),
     marginCost: margin,
   });
 
@@ -167,14 +172,14 @@ export function useOrderSizing(params: {
     return u === "base"
       ? wadToFixed(sizeWad, baseDecimals)
       : markPrice > 0n
-        ? wadToFixed(sizeToUsd(sizeWad, markPrice), 2)
+        ? wadToFixed(sizeToUsd(Qty(sizeWad), Price(markPrice)), 2)
         : "";
   }
 
   // Typed size is authoritative; re-derive the slider position from it.
   function setSizeStr(v: string) {
     setSizeStrRaw(v);
-    setPctRaw(sizeToPct(parseSizeInput(v, unit, markPrice), maxSize));
+    setPctRaw(sizeToPct(Qty(parseSizeInput(v, unit, markPrice)), maxSize));
   }
 
   // Chosen percentage is authoritative; rewrite the size to match.
@@ -189,7 +194,11 @@ export function useOrderSizing(params: {
     // Preserve the requested slice against the new ceiling — but never fill an
     // empty size (decoupled: bumping leverage with no size leaves it empty).
     if (sizeStr) {
-      const nextMax = maxSizeQty({ availableUsd: available, leverage: l, markPrice });
+      const nextMax = sizeFromLeverage({
+        availableUsd: Usd(available),
+        leverage: l,
+        markPrice: Price(markPrice),
+      });
       setSizeStrRaw(fmtForUnit(pctToSize(pct, nextMax), unit));
     }
   }
