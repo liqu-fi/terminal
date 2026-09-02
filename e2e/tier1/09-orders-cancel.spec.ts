@@ -53,6 +53,30 @@ test.describe("open orders", () => {
     await expect(userInfo.orderRow("ord-sci-trig")).toContainText("1,000,000");
   });
 
+  test("ордер в полёте виден, но отменить его уже нельзя", async ({
+    page,
+    world,
+  }) => {
+    // До SDK 0.46.0 такой ордер не попадал ни в открытый список, ни в историю:
+    // он выходил из книги при матчинге и возвращался на экран только после
+    // сеттлмента — а между этими двумя моментами его на экране не было вовсе.
+    const { userInfo } = await enterTerminal(page, world, () =>
+      readyWorld({
+        openOrders: [
+          limitOrderFixture(),
+          limitOrderFixture({ id: "ord-flight-1", status: "MATCHED" }),
+        ],
+      }),
+    );
+
+    await userInfo.selectTab("open-orders");
+    await expect(userInfo.orderRow("ord-flight-1")).toBeVisible();
+    await expect(userInfo.orderRow("ord-flight-1")).toContainText("MATCHED");
+    // Отменять нечего: ордер уже отдан сеттлменту. Отдыхающий рядом — можно.
+    await expect(page.getByTestId("cancel-order-ord-flight-1")).toBeDisabled();
+    await expect(page.getByTestId("cancel-order-ord-limit-1")).toBeEnabled();
+  });
+
   test("cancels a resting order", async ({ page, world }) => {
     const { userInfo } = await enterTerminal(page, world, () =>
       readyWorld({ openOrders: [limitOrderFixture()] }),
