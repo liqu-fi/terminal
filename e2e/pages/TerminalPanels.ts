@@ -278,16 +278,16 @@ export class UserInfoPanel {
   }
 
   get positionsLoading(): Locator {
-    return this.page.getByTestId("positions-loading");
+    return this.page.getByTestId("positions-table-loading");
   }
   get positionsTable(): Locator {
     return this.page.getByTestId("positions-table");
   }
   get positionsEmpty(): Locator {
-    return this.page.getByTestId("positions-empty");
+    return this.page.getByTestId("positions-table-empty");
   }
   positionRow(marketId: string): Locator {
-    return this.page.getByTestId(`position-row-${marketId}`);
+    return this.page.getByTestId(`positions-table-row-${marketId}`);
   }
 
   get ordersTable(): Locator {
