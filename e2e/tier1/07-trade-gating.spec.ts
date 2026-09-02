@@ -107,6 +107,17 @@ test.describe("trade form gating & controls", () => {
     await expect(trade.submitButton).toBeEnabled();
   });
 
+  test("ползунок доли шагает четвертями", async ({ page, world }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    // Шаг 25 действует на ввод: одна стрелка — одна четверть, а не процент.
+    await trade.sizePctThumb.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(trade.sizePctValue).toHaveText("25%");
+    await page.keyboard.press("End");
+    await expect(trade.sizePctValue).toHaveText("100%");
+  });
+
   test("percentage chips set size to a slice of buying power", async ({
     page,
     world,

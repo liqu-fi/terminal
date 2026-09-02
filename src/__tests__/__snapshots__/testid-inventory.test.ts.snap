@@ -87,7 +87,6 @@ exports[`инвентарь data-testid > не теряет идентифика
   "signin-debug",
   "signin-error",
   "size-input",
-  "size-pct-*",
   "size-pct-slider",
   "size-pct-value",
   "size-quote-value",

@@ -24,8 +24,8 @@ import { EntryTpSlFields } from "./EntryTpSlFields";
 import { OrderPriceField } from "./OrderPriceField";
 import { QuantityField } from "./QuantityField";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
+import { SizeSlider } from "./SizeSlider";
 import { TicketHeader } from "./TicketHeader";
-import { SizePercent } from "./SizePercent";
 import { TradePreviewRow } from "./TradePreviewRow";
 import { useBookMid } from "./useBookMid";
 import { useMarkPrice } from "./useMarkPrice";
@@ -332,7 +332,7 @@ export function TradeForm() {
         unitDisabled={markPrice === 0n}
       />
 
-      <SizePercent
+      <SizeSlider
         pct={sizing.pct}
         onPct={sizing.setPct}
         disabled={insufficientMargin || markPrice === 0n}

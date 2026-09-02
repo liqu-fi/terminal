@@ -107,24 +107,34 @@ export class TradePanel {
     await this.sizeUnitSelect.click();
     await this.page.getByTestId(`size-unit-${unit}`).click();
   }
-  /**
-   * 100% покупательной способности.
-   *
-   * @remarks Кнопка `MAX` внутри поля размера исчезла вместе с ним — макет её
-   * не показывает, а то же самое действие уже есть долей `100%`.
-   */
-  clickMax(): Promise<void> {
-    return this.sizePctChip(100).click();
+  /** Ручка ползунка доли — единственный интерактивный узел внутри блока. */
+  get sizePctThumb(): Locator {
+    return this.sizePctSlider.getByRole("slider");
   }
-  sizePctChip(pct: 25 | 50 | 75 | 100): Locator {
-    return this.page.getByTestId(`size-pct-${pct}`);
+  /** 100% покупательной способности: у ползунка это `End`. */
+  async clickMax(): Promise<void> {
+    await this.setSizePct(100);
+  }
+  /**
+   * Доля покупательной способности.
+   *
+   * @remarks Ползунок ведётся клавиатурой, а не установкой `value`: у radix
+   * значение живёт в состоянии React, а не в DOM-узле, и присвоение атрибута
+   * до него не доходит. `Home` уводит в ноль, каждый `ArrowRight` добавляет
+   * ступень в 25% — поэтому метод принимает только кратные 25.
+   */
+  async setSizePct(value: number): Promise<void> {
+    if (value % 25 !== 0) {
+      throw new Error(`ползунок шагает четвертями, а не на ${value}%`);
+    }
+    await this.sizePctThumb.focus();
+    await this.page.keyboard.press("Home");
+    for (let i = 0; i < value / 25; i++) {
+      await this.page.keyboard.press("ArrowRight");
+    }
   }
   clickSizePct(pct: 25 | 50 | 75 | 100): Promise<void> {
-    return this.sizePctChip(pct).click();
-  }
-  /** input[type=range] can't be `.fill()`'d — set the value + fire events. */
-  async setSizePct(value: number): Promise<void> {
-    await setRange(this.sizePctSlider, value);
+    return this.setSizePct(pct);
   }
   setLimitPrice(value: string): Promise<void> {
     return this.limitPriceInput.fill(value);
@@ -149,20 +159,6 @@ export class TradePanel {
   submit(): Promise<void> {
     return this.submitButton.click();
   }
-}
-
-/** Drive a controlled `input[type=range]`: set the value + fire input/change. */
-async function setRange(slider: Locator, value: number): Promise<void> {
-  await slider.evaluate((el, v) => {
-    const input = el as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      "value",
-    )?.set;
-    setter?.call(input, String(v));
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }, value);
 }
 
 export class OrderBookPanel {
