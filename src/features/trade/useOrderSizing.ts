@@ -1,14 +1,10 @@
 import {
-  calcRequiredMaintenanceMargin,
-  draftLiquidationPrice,
   Margin,
-  marginCost,
   type OrderVerdict,
   pctToSize,
   Price,
   Qty,
   Side,
-  sizeDelta as signedSize,
   sizeFromLeverage,
   sizeToPct,
   sizeToUsd,
@@ -21,6 +17,7 @@ import { useState } from "react";
 
 import { parseWadLoose, wadToFixed } from "../../lib/format";
 import type { MarketSummary } from "../market/useSelectedMarket";
+import { ticketSummary, type TicketSummary } from "./ticketSummary";
 
 const WAD = 10n ** 18n;
 const BPS = 10_000n;
@@ -46,7 +43,9 @@ export type OrderSizing = {
   maxSize: bigint; // buying-power ceiling, base units
   notional: bigint; // Usd, 18-dec
   margin: bigint; // margin cost, 18-dec
-  liqPrice: bigint | null; // estimated isolated liquidation price, or null
+  liqPrice: bigint | null; // estimated draft liquidation price, or null
+  /** Обе стороны разом — тикет по макету показывает их рядом. */
+  summary: TicketSummary;
   baseSymbol: string;
   baseDecimals: number;
   validation: OrderVerdict;
@@ -72,33 +71,6 @@ function parseSizeInput(
   } catch {
     return 0n;
   }
-}
-
-/**
- * Where this draft alone would be liquidated, or null.
- *
- * The ticket's question — "how far can this go against me" — not the account's
- * "when do I get liquidated". In cross margin the two are different correct
- * numbers: this one carries neither the account's other exposure nor the
- * liquidator's reward, so it will not agree with the account-level figure and
- * is not meant to.
- */
-function estimateLiqPrice(
-  markPrice: bigint,
-  sizeDelta: bigint,
-  margin: bigint,
-  mmfWad: bigint | undefined,
-): bigint | null {
-  if (mmfWad === undefined || margin <= 0n) return null;
-  const mm = calcRequiredMaintenanceMargin(Qty(sizeDelta), Price(markPrice), mmfWad);
-  return (
-    draftLiquidationPrice({
-      size: Qty(sizeDelta),
-      mark: Price(markPrice),
-      margin: Margin(margin),
-      requirement: mm,
-    }) ?? null
-  );
 }
 
 /**
@@ -152,11 +124,15 @@ export function useOrderSizing(params: {
     leverage,
     markPrice: Price(markPrice),
   });
-  const notional =
-    markPrice > 0n ? sizeToUsd(Qty(sizeQty), Price(markPrice)) : Usd(0n);
-  const margin = marginCost(Usd(notional), leverage);
-  const sizeDelta = signedSize(Qty(sizeQty), side);
-  const liqPrice = estimateLiqPrice(markPrice, sizeDelta, margin, mmfWad);
+  const summary = ticketSummary({
+    sizeQty: Qty(sizeQty),
+    markPrice: Price(markPrice),
+    leverage,
+    mmfWad,
+  });
+  const notional = summary.value;
+  const margin = summary.cost;
+  const taken = side === Side.BUY ? summary.long : summary.short;
   const validation = validateOrder({
     markPrice,
     sizeQty: Qty(sizeQty),
@@ -226,12 +202,13 @@ export function useOrderSizing(params: {
       setPctRaw(0);
     },
     sizeQty,
-    sizeDelta,
+    sizeDelta: taken.sizeDelta,
     pct,
     maxSize,
     notional,
     margin,
-    liqPrice,
+    liqPrice: taken.liqPrice,
+    summary,
     baseSymbol,
     baseDecimals,
     validation,
