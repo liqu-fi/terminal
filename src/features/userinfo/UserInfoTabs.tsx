@@ -5,8 +5,10 @@ import { ToolbarSlotContext } from "@/components/data-table/ToolbarSlotContext";
 import { Card } from "@/components/ui/card";
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
+import { PositionHistoryTable } from "../history/PositionHistoryTable";
 import { TradeHistoryTable } from "../history/TradeHistoryTable";
 import { OpenOrdersTable } from "../orders/OpenOrdersTable";
+import { OrderHistoryTable } from "../orders/OrderHistoryTable";
 import { useOpenOrderRows } from "../orders/useOpenOrderRows";
 import { PositionsTable } from "../positions/PositionsTable";
 import { USER_TABS, type UserTabSlug } from "./tabs";
@@ -75,8 +77,8 @@ export function UserInfoTabs() {
         {tab === "positions" && <PositionsTable />}
         {tab === "open-orders" && <OpenOrdersTable />}
         {tab === "trade-history" && <TradeHistoryTable />}
-        {tab === "order-history" && <Soon slug="order-history" />}
-        {tab === "position-history" && <Soon slug="position-history" />}
+        {tab === "order-history" && <OrderHistoryTable />}
+        {tab === "position-history" && <PositionHistoryTable />}
         {tab === "funding-history" && <Soon slug="funding-history" />}
         {tab === "account-history" && <Soon slug="account-history" />}
       </ToolbarSlotContext.Provider>
