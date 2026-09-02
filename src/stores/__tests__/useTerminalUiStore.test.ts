@@ -39,4 +39,37 @@ describe("стор состояния экрана", () => {
       expect(parsed.state.chartCollapsed).toBe(true);
     });
   });
+
+  it("избранное переключается и не задваивается", () => {
+    const { toggleFavorite } = useTerminalUiStore.getState();
+    toggleFavorite("200");
+    toggleFavorite("201");
+    toggleFavorite("200");
+    expect(useTerminalUiStore.getState().favoriteMarkets).toEqual(["201"]);
+  });
+
+  it("открытая вкладка не открывается второй раз", () => {
+    const { openMarket } = useTerminalUiStore.getState();
+    openMarket("200");
+    openMarket("201");
+    openMarket("200");
+    expect(useTerminalUiStore.getState().openMarkets).toEqual(["200", "201"]);
+  });
+
+  it("последняя вкладка не закрывается", () => {
+    const { openMarket, closeMarket } = useTerminalUiStore.getState();
+    openMarket("200");
+    closeMarket("200");
+    expect(useTerminalUiStore.getState().openMarkets).toEqual(["200"]);
+  });
+
+  it("режимы шкалы взаимно исключают друг друга", () => {
+    const { setChartScaleMode } = useTerminalUiStore.getState();
+    setChartScaleMode("percent");
+    expect(useTerminalUiStore.getState().chartScaleMode).toBe("percent");
+    setChartScaleMode("log");
+    expect(useTerminalUiStore.getState().chartScaleMode).toBe("log");
+    setChartScaleMode("log");
+    expect(useTerminalUiStore.getState().chartScaleMode).toBe("normal");
+  });
 });
