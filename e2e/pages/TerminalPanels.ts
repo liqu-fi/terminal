@@ -318,6 +318,33 @@ export class UserInfoPanel {
   positionRow(marketId: string): Locator {
     return this.page.getByTestId(`positions-table-row-${marketId}`);
   }
+  closePosition(marketId: string): Locator {
+    return this.page.getByTestId(`close-position-${marketId}`);
+  }
+  get closeAll(): Locator {
+    return this.page.getByTestId("close-all-button");
+  }
+  get closeDialog(): Locator {
+    return this.page.getByTestId("close-positions-dialog");
+  }
+  get closeConfirm(): Locator {
+    return this.page.getByTestId("close-positions-confirm");
+  }
+  editTpSl(marketId: string): Locator {
+    return this.page.getByTestId(`edit-tpsl-${marketId}`);
+  }
+  get tpslDialog(): Locator {
+    return this.page.getByTestId("tpsl-dialog");
+  }
+  get tpslTp(): Locator {
+    return this.page.getByTestId("tpsl-tp-input");
+  }
+  get tpslSl(): Locator {
+    return this.page.getByTestId("tpsl-sl-input");
+  }
+  get tpslSave(): Locator {
+    return this.page.getByTestId("tpsl-save");
+  }
 
   get ordersTable(): Locator {
     return this.page.getByTestId("orders-table");
