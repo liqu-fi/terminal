@@ -32,7 +32,8 @@ export function TicketHeader({
   available,
 }: {
   leverage: number;
-  maxLeverage: number;
+  /** Потолок плеча рынка; `null` — рынок его не объявил. */
+  maxLeverage: number | null;
   onLeverage: (l: number) => void;
   /** Доступная маржа, 18 знаков; `null` — ответа ещё нет. */
   available: bigint | null;

@@ -7,8 +7,14 @@ const LADDER = [1, 2, 3, 5, 10, 15, 20, 25];
  * иначе рынок с максимумом 40× не даёт выбрать собственный максимум. Пустая
  * лестница (бессмысленный максимум) вырождается в единицу, а не в пустой
  * список: список без единого значения не даёт выбрать вообще ничего.
+ *
+ * `null` — рынок потолка не объявил (`maxLeverageFromBps` не смог вывести его
+ * из начальной маржи). Тогда показывается лестница целиком: срезать её по
+ * выдуманному числу значило бы выдать умолчание терминала за конфигурацию
+ * рынка.
  */
-export function leverageSteps(maxLeverage: number): number[] {
+export function leverageSteps(maxLeverage: number | null): number[] {
+  if (maxLeverage === null) return [...LADDER];
   const capped = LADDER.filter((l) => l <= maxLeverage);
   if (capped.length === 0) return [1];
   return capped.some((l) => l === maxLeverage)

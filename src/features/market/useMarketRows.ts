@@ -1,4 +1,5 @@
 import type { MarketFullRow } from "@liq/api-client";
+import { maxLeverageFromBps } from "@liq/core";
 import { useMarketsFullRestQuery } from "@liq/react";
 import { useMemo } from "react";
 
@@ -22,17 +23,17 @@ export interface MarketRow {
  * Строка списка рынков из полного ответа шлюза.
  *
  * @remarks
- * Плечо считается из `initialMarginBps`, а не берётся из `maxLeverage`
- * `MarketSummary`: последнего `GET /markets` не отдаёт вовсе (это записано в
- * самом SDK), и любой дефолт на его месте выдаёт выдумку за конфигурацию
- * рынка.
+ * Плечо считается из `initialMarginBps` — тем же `maxLeverageFromBps`, что
+ * читает тикет: два места, считающие одно и то же по-своему, расходятся молча.
+ * `maxLeverage` в `MarketSummary` не существует с 0.46.0: поле обещало то,
+ * чего `GET /markets` не слал, и любой дефолт на его месте выдавал выдумку за
+ * конфигурацию рынка.
  */
 export function marketRow(full: MarketFullRow, favorite: boolean): MarketRow {
-  const bps = full.initialMarginBps;
   return {
     id: full.id,
     symbol: full.symbol,
-    maxLeverage: bps > 0n ? Number(10_000n / bps) : null,
+    maxLeverage: maxLeverageFromBps(full.initialMarginBps),
     openInterest: full.dynamic?.openInterest ?? null,
     // `undefined` (поля нет в ответе) и `null` (шлюз не смог посчитать) для
     // экрана — одно утверждение: неизвестно. Ноль сюда не подставляется.

@@ -32,9 +32,13 @@ const dynamicStub = {
 
 describe("marketRow", () => {
   it("выводит плечо из начальной маржи", () => {
-    // 200 bps = 2 % начальной маржи = 50x. `maxLeverage` из `/markets` не
-    // приходит вовсе, и дефолт на его месте выдавал бы выдумку за конфигурацию.
+    // 200 bps = 2 % начальной маржи = 50x. Считает `maxLeverageFromBps` из
+    // SDK — тот же, что и тикет: два места, считающие одно по-своему,
+    // расходятся молча. `maxLeverage` в `MarketSummary` не существует.
     expect(marketRow(base, false).maxLeverage).toBe(50);
+    expect(marketRow({ ...base, initialMarginBps: 400n }, false).maxLeverage).toBe(
+      25,
+    );
   });
 
   it("нулевая начальная маржа не даёт плеча", () => {

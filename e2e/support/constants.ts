@@ -23,9 +23,15 @@ export interface Market {
   id: string;
   symbol: string;
   pythFeedId: string;
-  /** 18-dec min size */
-  minSize: string;
-  maxLeverage: number;
+  /**
+   * Начальная маржа в bps — то единственное, из чего выводится потолок плеча.
+   *
+   * @remarks Здесь не `maxLeverage` и не `minSize`: `GET /markets` их не слал
+   * никогда, а мок слал — и тест на «размер ниже минимума» был зелёным на
+   * фикстуре, которой в проде не существует. Мок повторяет контракт шлюза
+   * 0.46.0, иначе он проверяет не экран, а сам себя.
+   */
+  initialMarginBps: string;
 }
 
 /** The default market the reference terminal trades. */
@@ -34,9 +40,8 @@ export const MARKET = {
   symbol: "BTC",
   pythFeedId:
     "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
-  /** 18-dec min size = 0.001 */
-  minSize: "1000000000000000",
-  maxLeverage: 25,
+  /** 400 bps = 4 % начальной маржи = потолок 25×. */
+  initialMarginBps: "400",
 } as const satisfies Market;
 
 /** A second market, for multi-market scenarios (seed via `markets` in the world). */
@@ -45,9 +50,8 @@ export const MARKET_ETH = {
   symbol: "ETH",
   pythFeedId:
     "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
-  /** 18-dec min size = 0.001 */
-  minSize: "1000000000000000",
-  maxLeverage: 50,
+  /** 200 bps = 2 % = потолок 50×: два рынка с разными потолками. */
+  initialMarginBps: "200",
 } as const satisfies Market;
 
 /** 10^18 helper for building 18-decimal fixture values. */
