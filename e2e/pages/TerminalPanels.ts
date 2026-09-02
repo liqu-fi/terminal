@@ -58,6 +58,9 @@ export class TradePanel {
   readonly orderSummary: Locator;
   readonly orderMargin: Locator;
   readonly orderLiqPrice: Locator;
+  readonly postOnlyFlag: Locator;
+  readonly iocFlag: Locator;
+  readonly reduceOnlyFlag: Locator;
   readonly tpslToggle: Locator;
   readonly entryTpInput: Locator;
   readonly entrySlInput: Locator;
@@ -88,6 +91,9 @@ export class TradePanel {
     this.orderSummary = page.getByTestId("order-summary");
     this.orderMargin = page.getByTestId("order-margin");
     this.orderLiqPrice = page.getByTestId("order-liq-price");
+    this.postOnlyFlag = page.getByTestId("flag-post-only");
+    this.iocFlag = page.getByTestId("flag-ioc");
+    this.reduceOnlyFlag = page.getByTestId("flag-reduce-only");
     this.tpslToggle = page.getByTestId("tpsl-toggle");
     this.entryTpInput = page.getByTestId("entry-tp-input");
     this.entrySlInput = page.getByTestId("entry-sl-input");

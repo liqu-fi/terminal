@@ -21,6 +21,7 @@ import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
+import { ExecutionFlags } from "./ExecutionFlags";
 import { OrderPriceField } from "./OrderPriceField";
 import { QuantityField } from "./QuantityField";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
@@ -82,6 +83,8 @@ export function TradeForm() {
   const [triggerPrice, setTriggerPrice] = useState("");
   const [triggerAbove, setTriggerAbove] = useState(true);
   const [tpslOn, setTpslOn] = useState(false);
+  const [postOnly, setPostOnly] = useState(false);
+  const [reduceOnly, setReduceOnly] = useState(false);
   const [tp, setTp] = useState("");
   const [sl, setSl] = useState("");
 
@@ -206,6 +209,7 @@ export function TradeForm() {
             side,
             SLIPPAGE_BPS,
           ),
+          reduceOnly,
         },
         { onSuccess },
       );
@@ -226,6 +230,7 @@ export function TradeForm() {
           sizeDelta,
           side,
           limitPrice: price,
+          reduceOnly,
         },
         { onSuccess },
       );
@@ -240,6 +245,7 @@ export function TradeForm() {
           orderType: tab === "Stop" ? "STOP_MARKET" : "TAKE_PROFIT_MARKET",
           triggerPrice: price,
           triggerAbove,
+          reduceOnly,
         },
         { onSuccess },
       );
@@ -347,10 +353,20 @@ export function TradeForm() {
         />
       )}
 
+      <ExecutionFlags
+        postOnly={postOnly}
+        onPostOnly={setPostOnly}
+        postOnlyAvailable={tab === "Limit"}
+        reduceOnly={reduceOnly}
+        onReduceOnly={setReduceOnly}
+        tpsl={tpslOn}
+        onTpsl={setTpslOn}
+        tpslAvailable={attachable}
+      />
+
       {attachable && (
         <EntryTpSlFields
           enabled={tpslOn}
-          onToggle={setTpslOn}
           tp={tp}
           setTp={setTp}
           sl={sl}
