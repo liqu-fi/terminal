@@ -59,7 +59,8 @@ function marketFull(world: MockWorld) {
 }
 
 function orderListFor(world: MockWorld, status: string | null): GatewayOrder[] {
-  if (status && status.includes("TRIGGER_PENDING")) return world.conditionalOrders;
+  if (status && status.includes("TRIGGER_PENDING"))
+    return world.conditionalOrders;
   return world.openOrders;
 }
 
@@ -92,8 +93,23 @@ function restSubmittedOrder(
   else world.conditionalOrders.push(order);
 }
 
+/**
+ * Сколько мок держит SSE-соединение открытым, ожидая кадр.
+ *
+ * @remarks Дедлайн — обрыв без последствий: пустой ответ по нему НЕ заставляет
+ * клиента переподключиться (`pump` в `SseService` просто выходит из цикла по
+ * `done`, а переподключение происходит только при смене набора каналов). Значит
+ * спека, простоявшая до присваивания `world.sseFrames` дольше этого срока,
+ * кадр не получит вовсе и упадёт по таймауту без внятной причины. Нынешние
+ * укладываются с запасом (их собственные таймауты — 15 с); длинную сцену надо
+ * либо резать, либо поднимать это число вместе с ней.
+ */
 const SSE_LONGPOLL_MS = 20_000;
-const OPEN_STATUSES = new Set(["PENDING", "PARTIALLY_FILLED", "TRIGGER_PENDING"]);
+const OPEN_STATUSES = new Set([
+  "PENDING",
+  "PARTIALLY_FILLED",
+  "TRIGGER_PENDING",
+]);
 
 /**
  * Long-poll the SSE stream: hold the connection open until a frame is queued
@@ -102,12 +118,31 @@ const OPEN_STATUSES = new Set(["PENDING", "PARTIALLY_FILLED", "TRIGGER_PENDING"]
  * lost to a stale/aborted connection (the app reconnects when its channel set
  * changes after orders load; that abandoned request must not consume the frame
  * meant for the live one).
+ *
+ * @remarks `generation` is this request's 1-based rank in `world.sseConnections`
+ * at the moment it registered. The client aborts its old connection *before*
+ * opening the new one, but the old connection's route handler keeps running —
+ * `route.fulfill()` on an aborted request does not reliably throw (observed
+ * empirically: it can resolve and clear `world.sseFrames` for a browser-side
+ * request nobody is listening to any more). Comparing the live
+ * `world.sseConnections.length` against the snapshotted `generation` catches
+ * this: once a *newer* connection has registered, this one stops racing for
+ * frames and returns empty, leaving them for the connection that's actually
+ * still attached to the page.
  */
-async function sseLongPoll(world: MockWorld): Promise<string[]> {
+async function sseLongPoll(
+  world: MockWorld,
+  generation: number,
+): Promise<string[]> {
   const deadline = Date.now() + SSE_LONGPOLL_MS;
-  while (Date.now() < deadline && world.sseFrames.length === 0) {
+  while (
+    Date.now() < deadline &&
+    world.sseFrames.length === 0 &&
+    world.sseConnections.length === generation
+  ) {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
+  if (world.sseConnections.length !== generation) return [];
   return [...world.sseFrames];
 }
 
@@ -163,7 +198,8 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       world.sseConnections.push(
         (url.searchParams.get("channels") ?? "").split(","),
       );
-      const frames = await sseLongPoll(world);
+      const generation = world.sseConnections.length;
+      const frames = await sseLongPoll(world, generation);
       try {
         await route.fulfill({
           status: 200,
@@ -265,12 +301,41 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       return;
     }
 
+    // --- orderbook -----------------------------------------------------------
+    // Must precede the generic "/markets" endsWith check below: a more
+    // specific path segment ("/orderbook") has to be matched first, or the
+    // broader match would swallow it.
+    const book = path.match(/\/markets\/([^/]+)\/orderbook$/);
+    if (book) {
+      if (world.faults.orderbookStatus) {
+        // Код зависит от статуса, а не пришит к маршруту: 503 гейтвей отдаёт
+        // с `ORDERBOOK_UNAVAILABLE` («книгу никто не ведёт» — состояние
+        // рынка), любой другой отказ — обычная поломка. С пришитым кодом SDK
+        // считал `unavailable` и на 500, то есть ветка `book-error` была
+        // недостижима из тестов вовсе.
+        await error(
+          route,
+          world.faults.orderbookStatus,
+          world.faults.orderbookStatus === 503
+            ? "ORDERBOOK_UNAVAILABLE"
+            : "internal",
+        );
+        return;
+      }
+      await send(route, world.orderbook);
+      return;
+    }
+
     // --- markets -----------------------------------------------------------
     if (path.endsWith("/markets/full")) {
       await send(route, marketFull(world));
       return;
     }
     if (path.endsWith("/markets")) {
+      // Барьер для сцены «список рынков ещё в полёте»: без него отличить
+      // «рынок пока не выбран» от «рынка не будет» на экране нечем — обе
+      // ветки показывались бы мгновенно и одинаково.
+      await world.holds.marketsRead?.promise;
       if (world.faults.marketsStatus) {
         await error(route, world.faults.marketsStatus);
         return;
@@ -394,11 +459,14 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
 
     // --- trades ------------------------------------------------------------
     if (path.endsWith("/trades")) {
+      // Барьер для сцены загрузки ленты: спека держит ответ и проверяет
+      // `tape-loading`, потом отпускает и проверяет `tape-empty`.
+      await world.holds.tradesRead?.promise;
       if (world.faults.tradesStatus) {
         await error(route, world.faults.tradesStatus);
         return;
       }
-      await send(route, world.trades);
+      await send(route, { rows: world.trades, nextCursor: null });
       return;
     }
 

@@ -16,6 +16,7 @@ import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 import { CandleChart } from "../chart/CandleChart";
 import { MarketHeader } from "../market/MarketHeader";
 import { useSelectedMarket } from "../market/useSelectedMarket";
+import { OrderBookPanel } from "../orderbook/OrderBookPanel";
 import { TradeForm } from "../trade/TradeForm";
 import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 
@@ -56,7 +57,7 @@ export function Terminal() {
               >
                 <ResizablePanel
                   id="chart-column"
-                  defaultSize={chartCollapsed ? CHART_STRIP_PX : "70"}
+                  defaultSize={chartCollapsed ? CHART_STRIP_PX : "56"}
                   minSize={chartCollapsed ? CHART_STRIP_PX : "40"}
                   maxSize={chartCollapsed ? CHART_STRIP_PX : undefined}
                 >
@@ -90,8 +91,16 @@ export function Terminal() {
                     left as a dead affordance. */}
                 <ResizableHandle withHandle disabled={chartCollapsed} />
                 <ResizablePanel
+                  id="book-column"
+                  defaultSize={chartCollapsed ? "35" : "18"}
+                  minSize="14"
+                >
+                  <OrderBookPanel />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel
                   id="trade-column"
-                  defaultSize={chartCollapsed ? "100" : "30"}
+                  defaultSize={chartCollapsed ? "65" : "26"}
                   minSize="20"
                 >
                   <TradeForm />

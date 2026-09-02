@@ -4,7 +4,8 @@ import { fmtPrice, fmtQty } from "../../lib/format";
 
 export function HistoryTable() {
   const accountId = useAccountId();
-  const { data: trades = [] } = useTradesRestQuery({ accountId, limit: 50 });
+  const { data } = useTradesRestQuery({ accountId, limit: 50 });
+  const trades = data?.rows ?? [];
 
   if (trades.length === 0)
     return (

@@ -143,6 +143,62 @@ async function setRange(slider: Locator, value: number): Promise<void> {
   }, value);
 }
 
+export class OrderBookPanel {
+  readonly root: Locator;
+  readonly loading: Locator;
+  readonly unavailable: Locator;
+  readonly empty: Locator;
+  readonly error: Locator;
+  readonly noMarket: Locator;
+  readonly asks: Locator;
+  readonly bids: Locator;
+  readonly spread: Locator;
+  readonly imbalance: Locator;
+  readonly tapeRows: Locator;
+  readonly tapeEmpty: Locator;
+  readonly tapeLoading: Locator;
+  readonly tapeNoMarket: Locator;
+
+  constructor(private readonly page: Page) {
+    this.root = page.getByTestId("orderbook-panel");
+    this.loading = page.getByTestId("book-loading");
+    this.unavailable = page.getByTestId("book-unavailable");
+    this.empty = page.getByTestId("book-empty");
+    this.error = page.getByTestId("book-error");
+    this.noMarket = page.getByTestId("book-no-market");
+    this.asks = page.locator('[data-testid^="book-ask-"]');
+    this.bids = page.locator('[data-testid^="book-bid-"]');
+    this.spread = page.getByTestId("book-spread");
+    this.imbalance = page.getByTestId("book-imbalance");
+    this.tapeRows = page.locator('[data-testid^="tape-row-"]');
+    this.tapeEmpty = page.getByTestId("tape-empty");
+    this.tapeLoading = page.getByTestId("tape-loading");
+    this.tapeNoMarket = page.getByTestId("tape-no-market");
+  }
+
+  tab(name: "book" | "trades"): Locator {
+    return this.page.getByTestId(`orderbook-tab-${name}`);
+  }
+
+  selectTab(name: "book" | "trades"): Promise<void> {
+    return this.tab(name).click();
+  }
+
+  askRow(i: number): Locator {
+    return this.page.getByTestId(`book-ask-${i}`);
+  }
+  bidRow(i: number): Locator {
+    return this.page.getByTestId(`book-bid-${i}`);
+  }
+  setView(v: "both" | "bids" | "asks"): Promise<void> {
+    return this.page.getByTestId(`book-view-${v}`).click();
+  }
+  async selectTick(index: number): Promise<void> {
+    await this.page.getByTestId("book-tick-select").click();
+    await this.page.getByTestId(`book-tick-option-${index}`).click();
+  }
+}
+
 export class LayoutPanel {
   readonly chartPanel: Locator;
   readonly chartCollapseToggle: Locator;

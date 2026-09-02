@@ -9,6 +9,7 @@ import {
   DepositDialog,
   LayoutPanel,
   MarketHeaderPanel,
+  OrderBookPanel,
   TradePanel,
   UserInfoPanel,
   WithdrawDialog,
@@ -22,6 +23,7 @@ export interface Terminal {
   userInfo: UserInfoPanel;
   deposit: DepositDialog;
   withdraw: WithdrawDialog;
+  book: OrderBookPanel;
 }
 
 /**
@@ -45,5 +47,6 @@ export async function enterTerminal(
     userInfo: new UserInfoPanel(page),
     deposit: new DepositDialog(page),
     withdraw: new WithdrawDialog(page),
+    book: new OrderBookPanel(page),
   };
 }

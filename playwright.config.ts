@@ -37,6 +37,10 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
+    // Pins the browser's local clock to UTC so locale-formatted timestamps
+    // (e.g. the trades tape's fmtTapeTime, and Ф3's history tables) assert
+    // exact values without depending on the machine/CI runner's TZ.
+    timezoneId: "UTC",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {

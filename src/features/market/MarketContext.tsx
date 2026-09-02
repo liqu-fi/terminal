@@ -7,7 +7,8 @@ import {
 } from "./useSelectedMarket";
 
 export function MarketProvider({ children }: { children: ReactNode }) {
-  const { data: markets = [] } = useMarketsQuery();
+  const { data: markets = [], isLoading: marketsLoading } =
+    useMarketsQuery();
   const [selected, setSelected] = useState<bigint | undefined>(undefined);
 
   const marketId = selected ?? markets[0]?.id;
@@ -20,6 +21,7 @@ export function MarketProvider({ children }: { children: ReactNode }) {
 
   const value: MarketCtx = {
     markets,
+    marketsLoading,
     marketId,
     market,
     setMarketId: setSelected,

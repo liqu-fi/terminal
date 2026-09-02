@@ -1,9 +1,14 @@
 import { Price, Side } from "@liq/sdk";
-import { useAccountId, useAvailableMarginQuery } from "@liq/react";
-import { useState } from "react";
+import {
+  useAccountId,
+  useAvailableMarginQuery,
+  useTradeStore,
+} from "@liq/react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DecimalInput } from "../../components/ui/DecimalInput";
+import { sanitizeDecimal } from "../../lib/decimal";
 import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
@@ -12,6 +17,7 @@ import { useSubmitConditionalOrder } from "./mutations/useSubmitConditionalOrder
 import { useSubmitLimitOrder } from "./mutations/useSubmitLimitOrder";
 import { useSubmitMarketOrder } from "./mutations/useSubmitMarketOrder";
 import { acceptablePrice } from "./orderMath";
+import { shouldAdoptLevel } from "./shouldAdoptLevel";
 import { SizeField } from "./SizeField";
 import { SizePercent } from "./SizePercent";
 import { TradePreviewRow } from "./TradePreviewRow";
@@ -22,6 +28,15 @@ const TABS = ["Market", "Limit", "Stop", "Take Profit"] as const;
 type Tab = (typeof TABS)[number];
 
 const SLIPPAGE_BPS = 50n; // 0.5%
+
+/**
+ * Знаков после запятой в поле лимитной цены.
+ *
+ * @remarks Одно число на два места: сам `DecimalInput` и мост из книги, который
+ * режет под него `Price.fmt`. Разойдясь, они дадут поле, молча отбрасывающее
+ * то, что мост в него положил, — и ни один тест этого не увидит.
+ */
+const LIMIT_PRICE_DECIMALS = 2;
 
 export function TradeForm() {
   const { marketId, market } = useSelectedMarket();
@@ -41,6 +56,25 @@ export function TradeForm() {
   const [tpslOn, setTpslOn] = useState(false);
   const [tp, setTp] = useState("");
   const [sl, setSl] = useState("");
+
+  // Стор — канал, по которому книга передаёт выбранный уровень. Какие записи
+  // в стор считать «книга выбрала уровень», решает `shouldAdoptLevel` —
+  // чистой функцией, потому что внутри подписки этот предикат нечем
+  // проверить: писать в стор из теста здесь некому, в него ходит только
+  // `BookGrid`. Обоснование обоих отказов — в TSDoc предиката.
+  useEffect(
+    () =>
+      useTradeStore.subscribe((s, prev) => {
+        if (!shouldAdoptLevel(prev.limitPrice, s.limitPrice)) return;
+        setTab("Limit");
+        // `Price.fmt` не режет дробную часть под поле — обрезаем на входе
+        // в поле, а не в сторе (стор хранит цену бренда).
+        setLimitPrice(
+          sanitizeDecimal(Price.fmt(s.limitPrice), LIMIT_PRICE_DECIMALS),
+        );
+      }),
+    [],
+  );
 
   const sizing = useOrderSizing({
     market,
@@ -234,7 +268,7 @@ export function TradeForm() {
           <DecimalInput
             value={limitPrice}
             onValueChange={setLimitPrice}
-            maxDecimals={2}
+            maxDecimals={LIMIT_PRICE_DECIMALS}
             placeholder="0.00"
             data-testid="limit-price-input"
           />

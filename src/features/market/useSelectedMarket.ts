@@ -7,6 +7,16 @@ export type MarketSummary = NonNullable<
 
 export type MarketCtx = {
   markets: MarketSummary[];
+  /**
+   * Список рынков ещё в полёте.
+   *
+   * @remarks Без этого признака `marketId === undefined` неотличимо от «рынка
+   * нет вовсе»: пока `/markets` не ответил, выбирать не из чего, и экран,
+   * утверждающий «рынок не выбран», говорит это ровно в тот момент, когда
+   * рынок выбирается. Отличать выбор, которого ещё нет, от выбора, которого не
+   * будет, — работа этого поля.
+   */
+  marketsLoading: boolean;
   marketId: bigint | undefined;
   market: MarketSummary | undefined;
   setMarketId: (id: bigint) => void;
