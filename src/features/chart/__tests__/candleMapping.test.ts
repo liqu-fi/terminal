@@ -12,8 +12,6 @@ describe("toLwcBar", () => {
       low: 73800n * WAD,
       close: 74250n * WAD,
       volume: 0n,
-      tradeCount: 3,
-      lastTradePrice: null,
     });
     expect(bar).toEqual({
       time: 1_700_000_000,
@@ -22,5 +20,20 @@ describe("toLwcBar", () => {
       low: 73800,
       close: 74250,
     });
+  });
+
+  it("оракульный бар без объёма проходит так же", () => {
+    // `volume: null` — «у этого ряда объёма нет вовсе», и маппер обязан
+    // пропускать такой бар: оракульный маршрут именно такие и отдаёт.
+    expect(
+      toLwcBar({
+        timestamp: 1_700_000_060,
+        open: WAD,
+        high: WAD,
+        low: WAD,
+        close: WAD,
+        volume: null,
+      }).close,
+    ).toBe(1);
   });
 });

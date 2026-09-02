@@ -9,7 +9,7 @@ import {
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
 import { AccountPanel } from "../account/AccountPanel";
-import { CandleChart } from "../chart/CandleChart";
+import { ChartFrame } from "../chart/ChartFrame";
 import { MarketHeader } from "../market/MarketHeader";
 import { MarketTabs } from "../market/MarketTabs";
 import { useSelectedMarket } from "../market/useSelectedMarket";
@@ -76,7 +76,7 @@ export function Terminal() {
                     </div>
                     {!chartCollapsed && (
                       <Card className="flex-1 p-2" data-testid="chart-panel">
-                        <CandleChart marketId={marketId} />
+                        <ChartFrame marketId={marketId} />
                       </Card>
                     )}
                   </div>
