@@ -1,5 +1,7 @@
 import { abs, Side } from "@liq/sdk";
 import { createColumnHelper } from "@tanstack/react-table";
+import { X } from "lucide-react";
+import { useState } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
@@ -14,6 +16,11 @@ import {
   fmtUsd,
 } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
+import { ClosePositionsDialog } from "./ClosePositionsDialog";
+import {
+  PositionActionsContext,
+  usePositionActions,
+} from "./PositionActionsContext";
 import { type PositionRow, usePositionRows } from "./usePositionRows";
 
 const helper = createColumnHelper<typeof features, PositionRow>();
@@ -141,32 +148,113 @@ const columns = helper.columns([
       );
     },
   }),
+  helper.display({
+    id: "actions",
+    header: () => <CloseAllHeader />,
+    enableHiding: false,
+    cell: (info) => <RowActions row={info.row.original} />,
+  }),
 ]);
+
+/** Красный `Close All` в шапке последней колонки — по макету. */
+function CloseAllHeader() {
+  const { rows, requestClose, closing } = usePositionActions();
+
+  return (
+    <button
+      type="button"
+      className="text-[11px] font-semibold text-short disabled:opacity-40"
+      disabled={closing || rows.length === 0}
+      onClick={() => requestClose(rows)}
+      data-testid="close-all-button"
+    >
+      Close All
+    </button>
+  );
+}
+
+function RowActions({ row }: { row: PositionRow }) {
+  const { requestClose, closing } = usePositionActions();
+
+  return (
+    <span className="flex items-center justify-end gap-2">
+      <button
+        type="button"
+        className="text-short disabled:opacity-40"
+        disabled={closing}
+        title="Close position at market"
+        onClick={() => requestClose([row])}
+        data-testid={`close-position-${row.position.marketId}`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </span>
+  );
+}
 
 export function PositionsTable() {
   const { markets } = useSelectedMarket();
-  const { rows, isLoading, isError } = usePositionRows();
+  const { rows, isLoading, isError, close, isClosing } = usePositionRows();
+  const [target, setTarget] = useState<readonly PositionRow[]>(EMPTY_TARGET);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmClose() {
+    setError(null);
+    try {
+      const { failed } = await close(target);
+      // Отказы не исключение: `useClosePositions` считает их и продолжает
+      // проход. Диалог остаётся открытым только когда сказать есть что.
+      if (failed > 0) {
+        setError(`${failed} position${failed > 1 ? "s" : ""} could not be closed.`);
+        return;
+      }
+      setTarget(EMPTY_TARGET);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
 
   return (
-    <DataTable
-      data={rows}
-      columns={columns}
-      testid="positions-table"
-      rowId={(r) => r.position.marketId.toString()}
-      markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
-      loading={isLoading}
-      // Пустой ответ и провалившееся чтение — разные вещи: `useEnrichedPositions`
-      // роняет запрос, когда ERC-7412 отревертил чтение по протухшему оракулу,
-      // и «позиций нет» на этом месте было бы прямой ложью.
-      notice={
-        isError
-          ? {
-              testid: "positions-error",
-              text: "Price feed is stale — positions unavailable.",
-            }
-          : null
-      }
-      emptyText="No open positions."
-    />
+    <PositionActionsContext.Provider
+      value={{
+        rows,
+        requestClose: (next) => {
+          setError(null);
+          setTarget(next);
+        },
+        requestEdit: () => {},
+        closing: isClosing,
+      }}
+    >
+      <DataTable
+        data={rows}
+        columns={columns}
+        testid="positions-table"
+        rowId={(r) => r.position.marketId.toString()}
+        markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
+        loading={isLoading}
+        // Пустой ответ и провалившееся чтение — разные вещи: `useEnrichedPositions`
+        // роняет запрос, когда ERC-7412 отревертил чтение по протухшему оракулу,
+        // и «позиций нет» на этом месте было бы прямой ложью.
+        notice={
+          isError
+            ? {
+                testid: "positions-error",
+                text: "Price feed is stale — positions unavailable.",
+              }
+            : null
+        }
+        emptyText="No open positions."
+      />
+      <ClosePositionsDialog
+        rows={target}
+        pending={isClosing}
+        error={error}
+        onClose={() => setTarget(EMPTY_TARGET)}
+        onConfirm={() => void confirmClose()}
+      />
+    </PositionActionsContext.Provider>
   );
 }
+
+const EMPTY_TARGET: readonly PositionRow[] = [];
