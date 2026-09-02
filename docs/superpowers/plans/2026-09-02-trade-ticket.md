@@ -2178,3 +2178,23 @@ git commit -m "feat(trade): post-only доезжает до тела ордер�
   `side-long-button`, `side-short-button`, `size-unit-toggle`, `size-max-button`,
   `leverage-slider`, `size-pct-25/50/75/100`, `order-margin`, `trade-preview`;
 - draft-PR в `liqu-fi/terminal`, база `main`.
+
+---
+
+## Поправки к плану (внесены при исполнении)
+
+План писался до чтения топологии e2e и назвал файлы наугад. Реальность:
+
+| В плане | На самом деле |
+| --- | --- |
+| `e2e/tier1/04-trade-form.spec.ts` | `e2e/tier1/04-trade-market.spec.ts` (рыночные), `05-trade-limit.spec.ts` (лимитные), `06-trade-conditional.spec.ts` (условные), `07-trade-gating.spec.ts` (гейтинг) |
+| `e2e/tier1/07-order-submit.spec.ts` | `e2e/tier1/04-trade-market.spec.ts` |
+| хелперы `mountTerminal` / `submitMarketOrder` | `enterTerminal(page, world)` из `e2e/pages/flows.ts`; фикстура даёт `{ page, world }` из `e2e/support/fixtures.ts` |
+| локаторы по `page.getByTestId(...)` в спеках | **page object `TradePanel`** в `e2e/pages/TerminalPanels.ts` — единственное место, где живут локаторы тикета |
+
+**Следствие, которое дороже самих имён:** каждое переименование `data-testid`
+правится в `TerminalPanels.ts`, а не россыпью по спекам. Спека, которая ходит
+мимо page object, — это регресс архитектуры тестов, а не «короче написать».
+
+`e2e/tier1/14-trade-preview.spec.ts` проверяет `TradePreviewRow`, который
+удаляет задача 9, — файл удаляется вместе с ним.
