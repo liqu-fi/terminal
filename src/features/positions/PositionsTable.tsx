@@ -1,6 +1,6 @@
 import { abs, Side } from "@liq/sdk";
 import { createColumnHelper } from "@tanstack/react-table";
-import { X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { useState } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
@@ -21,6 +21,7 @@ import {
   PositionActionsContext,
   usePositionActions,
 } from "./PositionActionsContext";
+import { TpSlDialog } from "./TpSlDialog";
 import { type PositionRow, usePositionRows } from "./usePositionRows";
 
 const helper = createColumnHelper<typeof features, PositionRow>();
@@ -134,19 +135,7 @@ const columns = helper.columns([
   helper.display({
     id: "tpsl",
     header: "TP / SL",
-    cell: (info) => {
-      const { takeProfit, stopLoss } = info.row.original.brackets;
-      return (
-        <span className="flex flex-col leading-tight text-[11px]">
-          <span className="text-long">
-            {takeProfit === null ? DASH : fmtPrice(takeProfit.triggerPrice)}
-          </span>
-          <span className="text-short">
-            {stopLoss === null ? DASH : fmtPrice(stopLoss.triggerPrice)}
-          </span>
-        </span>
-      );
-    },
+    cell: (info) => <TpSlCell row={info.row.original} />,
   }),
   helper.display({
     id: "actions",
@@ -155,6 +144,34 @@ const columns = helper.columns([
     cell: (info) => <RowActions row={info.row.original} />,
   }),
 ]);
+
+/** Цены скобок и карандаш рядом — по макету. */
+function TpSlCell({ row }: { row: PositionRow }) {
+  const { requestEdit } = usePositionActions();
+  const { takeProfit, stopLoss } = row.brackets;
+
+  return (
+    <span className="flex items-center gap-2">
+      <span className="flex flex-col leading-tight text-[11px]">
+        <span className="text-long">
+          {takeProfit === null ? DASH : fmtPrice(takeProfit.triggerPrice)}
+        </span>
+        <span className="text-short">
+          {stopLoss === null ? DASH : fmtPrice(stopLoss.triggerPrice)}
+        </span>
+      </span>
+      <button
+        type="button"
+        className="text-muted hover:text-text"
+        title="Edit TP / SL"
+        onClick={() => requestEdit(row)}
+        data-testid={`edit-tpsl-${row.position.marketId}`}
+      >
+        <Pencil className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
 
 /** Красный `Close All` в шапке последней колонки — по макету. */
 function CloseAllHeader() {
@@ -196,7 +213,17 @@ export function PositionsTable() {
   const { markets } = useSelectedMarket();
   const { rows, isLoading, isError, close, isClosing } = usePositionRows();
   const [target, setTarget] = useState<readonly PositionRow[]>(EMPTY_TARGET);
+  const [editing, setEditing] = useState<PositionRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Строка пересобирается на каждом опросе позиций, поэтому открытая правка
+  // держится за рынок и берёт свежую строку — иначе скобки в диалоге застыли
+  // бы на том, чем они были в момент клика.
+  const editingRow =
+    editing === null
+      ? null
+      : (rows.find((r) => r.position.marketId === editing.position.marketId) ??
+        editing);
 
   async function confirmClose() {
     setError(null);
@@ -222,7 +249,7 @@ export function PositionsTable() {
           setError(null);
           setTarget(next);
         },
-        requestEdit: () => {},
+        requestEdit: setEditing,
         closing: isClosing,
       }}
     >
@@ -246,6 +273,13 @@ export function PositionsTable() {
         }
         emptyText="No open positions."
       />
+      {editingRow && (
+        <TpSlDialog
+          key={editingRow.position.marketId.toString()}
+          row={editingRow}
+          onClose={() => setEditing(null)}
+        />
+      )}
       <ClosePositionsDialog
         rows={target}
         pending={isClosing}
