@@ -68,6 +68,44 @@ export interface TradeRow {
   txHash: string;
 }
 
+/** Провод `GET /accounts/:id/position-history` — числа строками, как у шлюза. */
+export interface WirePositionEpisode {
+  marketId: string;
+  symbol: string | null;
+  direction: "long" | "short";
+  /** unix SECONDS */
+  openedAt: number;
+  closedAt: number;
+  avgEntryPrice: string;
+  avgClosePrice: string | null;
+  maxSize: string;
+  realizedPnl: string | null;
+  feesUsd: string | null;
+  closedBy: "trade" | "liquidation";
+  liquidationPrice: null;
+  openInferred: boolean;
+  liquidationTouched: boolean;
+  sizeDiverged: boolean;
+}
+
+/** Провод `GET /accounts/:id/settlement-ledger`. */
+export interface WireLedgerRow {
+  timestampMs: number;
+  txHash: string;
+  logIndex: number;
+  marketId: string;
+  kind: "settlement" | "liquidation";
+  sizeDelta: string | null;
+  newSize: string | null;
+  fillPrice: string | null;
+  pricePnl: string | null;
+  accruedFunding: string | null;
+  interest: string | null;
+  totalFees: string | null;
+  netBalanceDelta: string | null;
+  liquidationTouched: boolean;
+}
+
 export interface RecordedTx {
   hash: string;
   to: string;
@@ -138,6 +176,13 @@ export interface MockWorld {
   openOrders: GatewayOrder[];
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
+  /** Ордера в терминальных статусах — вкладка Order History. */
+  orderHistory: GatewayOrder[];
+  /** Закрытые эпизоды; `available: false` = индексатор молчит про счёт. */
+  positionHistory: { available: boolean; episodes: WirePositionEpisode[] };
+  settlementLedger: WireLedgerRow[];
+  /** `GET /accounts/:id/margin` — офчейн-лок питает строку Equity панели. */
+  accountMargin: { available: string; locked: string; free: string };
   /** Снимок книги для GET /markets/:id/orderbook (WAD-строки). */
   orderbook: {
     bids: Array<{ price: string; size: string }>;
@@ -280,6 +325,10 @@ export interface ScenarioOptions {
   openOrders?: GatewayOrder[];
   conditionalOrders?: GatewayOrder[];
   trades?: TradeRow[];
+  orderHistory?: GatewayOrder[];
+  positionHistory?: MockWorld["positionHistory"];
+  settlementLedger?: WireLedgerRow[];
+  accountMargin?: MockWorld["accountMargin"];
   orderbook?: MockWorld["orderbook"];
   /**
    * Fault overrides active from the world's construction, not just after
@@ -317,6 +366,14 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     openOrders: opts.openOrders ?? [],
     conditionalOrders: opts.conditionalOrders ?? [],
     trades: opts.trades ?? [],
+    orderHistory: opts.orderHistory ?? [],
+    positionHistory: opts.positionHistory ?? { available: true, episodes: [] },
+    settlementLedger: opts.settlementLedger ?? [],
+    accountMargin: opts.accountMargin ?? {
+      available: (5_000n * WAD).toString(),
+      locked: "0",
+      free: (5_000n * WAD).toString(),
+    },
     orderbook: opts.orderbook ?? defaultBook(price),
     faults: opts.faults ?? {},
     submittedOrders: [],
@@ -464,6 +521,65 @@ export function tradeFixture(overrides: Partial<TradeRow> = {}): TradeRow {
     takerOrderId: "ord-a",
     makerOrderId: "ord-b",
     txHash: "0x" + "ab".repeat(32),
+    ...overrides,
+  };
+}
+
+/** Исполненный ордер — строка вкладки Order History. */
+export function settledOrderFixture(
+  overrides: Partial<GatewayOrder> = {},
+): GatewayOrder {
+  return {
+    ...limitOrderFixture(),
+    id: "ord-filled-1",
+    status: "SETTLED",
+    ...overrides,
+  };
+}
+
+/** Закрытый лонг на 1 BTC с прибылью $100. */
+export function positionEpisodeFixture(
+  overrides: Partial<WirePositionEpisode> = {},
+): WirePositionEpisode {
+  return {
+    marketId: MARKET.id,
+    symbol: MARKET.symbol,
+    direction: "long",
+    openedAt: 1_717_200_000,
+    closedAt: 1_717_203_600,
+    avgEntryPrice: (69_900n * WAD).toString(),
+    avgClosePrice: (70_000n * WAD).toString(),
+    maxSize: WAD.toString(),
+    realizedPnl: (100n * WAD).toString(),
+    feesUsd: WAD.toString(),
+    closedBy: "trade",
+    liquidationPrice: null,
+    openInferred: false,
+    liquidationTouched: false,
+    sizeDiverged: false,
+    ...overrides,
+  };
+}
+
+/** Строка леджера с ненулевым фандингом — она же строка Funding History. */
+export function ledgerRowFixture(
+  overrides: Partial<WireLedgerRow> = {},
+): WireLedgerRow {
+  return {
+    timestampMs: 1_717_203_600_000,
+    txHash: "0x" + "cd".repeat(32),
+    logIndex: 3,
+    marketId: MARKET.id,
+    kind: "settlement",
+    sizeDelta: (-WAD).toString(),
+    newSize: "0",
+    fillPrice: (70_000n * WAD).toString(),
+    pricePnl: (100n * WAD).toString(),
+    accruedFunding: (-2n * WAD).toString(),
+    interest: "0",
+    totalFees: WAD.toString(),
+    netBalanceDelta: (99n * WAD).toString(),
+    liquidationTouched: false,
     ...overrides,
   };
 }

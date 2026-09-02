@@ -58,9 +58,18 @@ function marketFull(world: MockWorld) {
   }));
 }
 
+/**
+ * Разводит три запроса, которые ходят на один `/orders`: открытые, условные и
+ * история. Признак — статус в query: `TRIGGER_PENDING` у условных, любой
+ * терминальный (`SETTLED`, `CANCELLED`, `REJECTED`, `EXPIRED`, `FAILED`) — у
+ * истории. Без этого история показывала бы открытые ордера и спека проходила
+ * бы на неверных данных.
+ */
 function orderListFor(world: MockWorld, status: string | null): GatewayOrder[] {
   if (status && status.includes("TRIGGER_PENDING"))
     return world.conditionalOrders;
+  if (status && /SETTLED|CANCELLED|REJECTED|EXPIRED|FAILED/.test(status))
+    return world.orderHistory;
   return world.openOrders;
 }
 
@@ -244,6 +253,43 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
 
     // --- accounts ----------------------------------------------------------
+    const margin = path.match(/\/accounts\/([^/]+)\/margin$/);
+    if (margin) {
+      await send(route, {
+        accountId: margin[1],
+        ...world.accountMargin,
+      });
+      return;
+    }
+    const positionHistory = path.match(
+      /\/accounts\/([^/]+)\/position-history$/,
+    );
+    if (positionHistory) {
+      await send(route, {
+        accountId: positionHistory[1],
+        generatedAt: Math.floor(Date.now() / 1000),
+        available: world.positionHistory.available,
+        episodes: world.positionHistory.episodes,
+        coverage: {
+          oldestEventAt: world.positionHistory.episodes[0]?.openedAt ?? null,
+          eventsComplete: true,
+          indexedFrom: 1_717_000_000,
+        },
+      });
+      return;
+    }
+    const ledger = path.match(/\/accounts\/([^/]+)\/settlement-ledger$/);
+    if (ledger) {
+      // `totals`/`coverage` только на первой странице — мок отдаёт одну
+      // страницу, поэтому они всегда есть, а `nextCursor` всегда null.
+      await send(route, {
+        rows: world.settlementLedger,
+        totals: null,
+        coverage: null,
+        nextCursor: null,
+      });
+      return;
+    }
     const register = path.match(/\/accounts\/([^/]+)\/register$/);
     if (register) {
       world.registeredAccountIds.push(register[1]);
