@@ -33,7 +33,7 @@ test.describe("live: market fill lifecycle", () => {
 
     const trade = new TradePanel(page);
     const userInfo = new UserInfoPanel(page);
-    const positionRow = page.locator('[data-testid^="position-row-"]');
+    const positionRow = page.locator('[data-testid^="positions-table-row-"]');
 
     // Require a flat start — the test cleans up after itself, so reruns begin
     // empty; a leftover position would invalidate the close assertion below.

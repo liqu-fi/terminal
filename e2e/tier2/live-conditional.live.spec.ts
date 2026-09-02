@@ -35,7 +35,7 @@ test.describe("live: conditional orders", () => {
     await trade.submit();
 
     await userInfo.selectTab("open-orders");
-    const rows = page.locator('[data-testid^="order-row-"]');
+    const rows = page.locator('[data-testid^="orders-table-row-"]');
     await expect(rows.first()).toBeVisible({ timeout: liveEnv.fillTimeoutMs });
     const before = await rows.count();
 
