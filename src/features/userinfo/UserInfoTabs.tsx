@@ -5,6 +5,8 @@ import { ToolbarSlotContext } from "@/components/data-table/ToolbarSlotContext";
 import { Card } from "@/components/ui/card";
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
+import { AccountHistoryTable } from "../history/AccountHistoryTable";
+import { FundingHistoryTable } from "../history/FundingHistoryTable";
 import { PositionHistoryTable } from "../history/PositionHistoryTable";
 import { TradeHistoryTable } from "../history/TradeHistoryTable";
 import { OpenOrdersTable } from "../orders/OpenOrdersTable";
@@ -79,21 +81,9 @@ export function UserInfoTabs() {
         {tab === "trade-history" && <TradeHistoryTable />}
         {tab === "order-history" && <OrderHistoryTable />}
         {tab === "position-history" && <PositionHistoryTable />}
-        {tab === "funding-history" && <Soon slug="funding-history" />}
-        {tab === "account-history" && <Soon slug="account-history" />}
+        {tab === "funding-history" && <FundingHistoryTable />}
+        {tab === "account-history" && <AccountHistoryTable />}
       </ToolbarSlotContext.Provider>
     </Card>
-  );
-}
-
-/** Временная заглушка вкладки, чью таблицу приносит одна из задач 8–10. */
-function Soon({ slug }: { slug: string }) {
-  return (
-    <div
-      className="py-6 text-center text-sm text-muted"
-      data-testid={`${slug}-empty`}
-    >
-      —
-    </div>
   );
 }
