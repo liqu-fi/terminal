@@ -3,7 +3,14 @@
 import { type Locator, type Page } from "@playwright/test";
 
 type TradeTab = "market" | "limit" | "stop" | "take-profit";
-type UserTab = "positions" | "open-orders" | "history";
+type UserTab =
+  | "positions"
+  | "open-orders"
+  | "trade-history"
+  | "order-history"
+  | "position-history"
+  | "funding-history"
+  | "account-history";
 
 export class MarketHeaderPanel {
   readonly root: Locator;
@@ -304,6 +311,25 @@ export class UserInfoPanel {
   }
   tradeRow(id: string): Locator {
     return this.page.getByTestId(`trade-row-${id}`);
+  }
+
+  get columnsButton(): Locator {
+    return this.page.getByTestId("table-columns-button");
+  }
+  get columnsMenu(): Locator {
+    return this.page.getByTestId("table-columns-menu");
+  }
+  columnToggle(id: string): Locator {
+    return this.page.getByTestId(`table-column-toggle-${id}`);
+  }
+  get filterButton(): Locator {
+    return this.page.getByTestId("table-filter-button");
+  }
+  filterOption(marketId: string): Locator {
+    return this.page.getByTestId(`table-filter-option-${marketId}`);
+  }
+  header(columnId: string): Locator {
+    return this.page.getByTestId(`table-header-${columnId}`);
   }
 }
 

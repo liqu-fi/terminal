@@ -8,7 +8,7 @@ test.describe("trade history", () => {
       readyWorld({ trades: [tradeFixture()] }),
     );
 
-    await userInfo.selectTab("history");
+    await userInfo.selectTab("trade-history");
     await expect(userInfo.historyTable).toBeVisible();
     await expect(userInfo.tradeRow("fill-1")).toBeVisible();
     await expect(userInfo.tradeRow("fill-1")).toContainText("BUY");
@@ -18,7 +18,7 @@ test.describe("trade history", () => {
 
   test("shows the empty state with no fills", async ({ page, world }) => {
     const { userInfo } = await enterTerminal(page, world);
-    await userInfo.selectTab("history");
+    await userInfo.selectTab("trade-history");
     await expect(userInfo.historyEmpty).toBeVisible();
   });
 
@@ -30,7 +30,7 @@ test.describe("trade history", () => {
     const { userInfo } = await enterTerminal(page, world, () =>
       readyWorld({ trades: [tradeFixture()] }),
     );
-    await userInfo.selectTab("history");
+    await userInfo.selectTab("trade-history");
 
     const url = new URL((await tradesReq).url());
     expect(url.searchParams.get("accountId")).toBe("1");
@@ -42,7 +42,7 @@ test.describe("trade history", () => {
       readyWorld({ trades: [tradeFixture({ id: "fill-sell", side: "SELL" })] }),
     );
 
-    await userInfo.selectTab("history");
+    await userInfo.selectTab("trade-history");
     const row = userInfo.tradeRow("fill-sell");
     await expect(row).toBeVisible();
     await expect(row).toContainText("SELL");

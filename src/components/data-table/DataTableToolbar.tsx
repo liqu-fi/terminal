@@ -1,5 +1,4 @@
 import { Columns3, Filter } from "lucide-react";
-import type { ReactNode } from "react";
 
 import {
   DropdownMenu,
@@ -31,13 +30,11 @@ export function DataTableToolbar({
   markets,
   market,
   onMarketChange,
-  extra,
 }: {
   columns: ToolbarColumn[];
   markets: ToolbarMarket[];
   market: string;
   onMarketChange: (value: string) => void;
-  extra?: ReactNode;
 }) {
   return (
     <div className="flex items-center gap-2" data-testid="table-toolbar">
@@ -97,8 +94,6 @@ export function DataTableToolbar({
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {extra}
     </div>
   );
 }

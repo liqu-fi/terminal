@@ -7,7 +7,6 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { ReactNode } from "react";
 import { useContext, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -38,8 +37,6 @@ export interface DataTableProps<T extends RowData> {
   /** Сообщение вместо таблицы: пусто, ошибка, источник молчит. */
   notice?: { testid: string; text: string } | null;
   emptyText: string;
-  /** Кнопка фуллскрина — её владелец панель, а не таблица. */
-  toolbarExtra?: ReactNode;
 }
 
 /**
@@ -52,7 +49,9 @@ export interface DataTableProps<T extends RowData> {
  *
  * Тулбар уезжает порталом в `ToolbarSlotContext`, когда слот есть: по макету он
  * стоит в строке табов, а принадлежит таблице. Без слота рисуется над таблицей,
- * так что компонент остаётся самодостаточным.
+ * так что компонент остаётся самодостаточным. Кнопка фуллскрина сюда не входит:
+ * она принадлежит панели и рисуется рядом со слотом, чтобы оставаться видимой на
+ * вкладке, чья таблица не смонтирована.
  */
 export function DataTable<T extends RowData>({
   data,
@@ -63,7 +62,6 @@ export function DataTable<T extends RowData>({
   loading = false,
   notice = null,
   emptyText,
-  toolbarExtra,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
@@ -99,7 +97,6 @@ export function DataTable<T extends RowData>({
       onMarketChange={(value) =>
         marketFilter?.setFilterValue(value === ALL_MARKETS ? undefined : value)
       }
-      extra={toolbarExtra}
     />
   );
 
