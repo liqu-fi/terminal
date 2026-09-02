@@ -74,16 +74,8 @@ test.describe("trade form gating & controls", () => {
     await expect(trade.triggerPriceInput).toBeHidden();
   });
 
-  test("side toggle updates state; leverage is decoupled from size", async ({
-    page,
-    world,
-  }) => {
+  test("leverage is decoupled from size", async ({ page, world }) => {
     const { trade } = await enterTerminal(page, world);
-
-    await expect(trade.sideLong).toHaveAttribute("aria-pressed", "true");
-    await trade.sideShort.click();
-    await expect(trade.sideShort).toHaveAttribute("aria-pressed", "true");
-    await expect(trade.sideLong).toHaveAttribute("aria-pressed", "false");
 
     // Leverage now drives margin/liq math + the buying-power ceiling only — it
     // must NOT rewrite the typed size (Binance/OKX model).
@@ -107,6 +99,17 @@ test.describe("trade form gating & controls", () => {
     await expect(trade.submitButton).toBeEnabled();
   });
 
+  test("ползунок доли шагает четвертями", async ({ page, world }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    // Шаг 25 действует на ввод: одна стрелка — одна четверть, а не процент.
+    await trade.sizePctThumb.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(trade.sizePctValue).toHaveText("25%");
+    await page.keyboard.press("End");
+    await expect(trade.sizePctValue).toHaveText("100%");
+  });
+
   test("percentage chips set size to a slice of buying power", async ({
     page,
     world,
@@ -128,17 +131,48 @@ test.describe("trade form gating & controls", () => {
     const { trade } = await enterTerminal(page, world); // mark 70,000
 
     await trade.setSize("0.5");
-    await expect(trade.sizeUnitToggle).toHaveText(/BTC/);
-    await trade.toggleSizeUnit();
+    await expect(trade.sizeUnitSelect).toHaveText(/BTC/);
+    // строка пересчёта считает от МАРКА, а не от цены ордера
+    await expect(trade.sizeQuoteValue).toHaveText(/35,000\.00/);
+    await trade.setSizeUnit("usd");
     // 0.5 BTC * 70,000 = 35,000 USD
     await expect(trade.sizeInput).toHaveValue("35000");
-    await expect(trade.sizeUnitToggle).toHaveText(/USD/);
+    await expect(trade.sizeUnitSelect).toHaveText(/USD/);
     // submit still sends the base-size delta (0.5), not the USD figure
     await trade.submit();
     await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
     expect(world.submittedOrders.at(-1)?.sizeDelta).toBe(
       (5n * 10n ** 17n).toString(), // 0.5 * 1e18
     );
+  });
+
+  test("сводка называет обе стороны, а ликвидации у них разные", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await trade.setSize("1");
+    // Размер 1 BTC при марке $70 000 и плече 2 — стоимость $35 000; поддержка
+    // 0,5% рынка мока даёт требование $350, то есть запас $34 650 в обе
+    // стороны от марка.
+    await expect(trade.orderQty).toContainText("1 / 1 BTC");
+    await expect(trade.orderValue).toContainText("$70,000.00 / $70,000.00 USD");
+    await expect(trade.orderCost).toContainText("$35,000.00 / $35,000.00 USD");
+    await expect(trade.orderLiqPrice).toHaveText("35,350 / 104,650");
+  });
+
+  test("сводка стоит на месте и до размера — пустая, а не спрятанная", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    // Сводка — единственное место, где видно, чем два нажатия различаются;
+    // появляясь только с размером, она прятала бы это до самого решения.
+    await expect(trade.orderSummary).toBeVisible();
+    await expect(trade.orderQty).toContainText("0 / 0");
+    await expect(trade.orderLiqPrice).toHaveText("— / —");
   });
 
   test("a below-minimum size blocks submit with a reason", async ({
@@ -149,9 +183,12 @@ test.describe("trade form gating & controls", () => {
 
     await trade.setSize("0.0005"); // below the 0.001 minimum
     await expect(trade.submitButton).toBeDisabled();
-    await expect(trade.submitButton).toContainText("Min");
+    // Причина отказа живёт строкой под блоком: надписи кнопок постоянны, и
+    // «Min 0.001» на месте призыва к действию читалось бы как его название.
+    await expect(trade.orderRejection).toContainText("Min");
     await trade.setSize("0.5");
     await expect(trade.submitButton).toBeEnabled();
+    await expect(trade.orderRejection).toBeHidden();
   });
 
   test("a size beyond buying power warns but does not block submit", async ({

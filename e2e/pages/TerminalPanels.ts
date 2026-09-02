@@ -34,54 +34,68 @@ export class MarketHeaderPanel {
 
 export class TradePanel {
   readonly root: Locator;
-  readonly sideLong: Locator;
-  readonly sideShort: Locator;
+  readonly submitBuy: Locator;
+  readonly submitSell: Locator;
   readonly sizeInput: Locator;
-  readonly sizeUnitToggle: Locator;
-  readonly sizeMaxButton: Locator;
+  readonly sizeUnitSelect: Locator;
+  readonly sizeQuoteValue: Locator;
+  readonly midPriceButton: Locator;
   readonly sizePctSlider: Locator;
   readonly sizePctValue: Locator;
-  readonly leverageSlider: Locator;
+  readonly leverageSelect: Locator;
+  readonly ticketAvailable: Locator;
+  readonly ticketDepositButton: Locator;
   readonly leverageValue: Locator;
   readonly limitPriceInput: Locator;
   readonly triggerPriceInput: Locator;
   readonly triggerAbove: Locator;
   readonly triggerBelow: Locator;
-  readonly submitButton: Locator;
   readonly insufficientMargin: Locator;
   readonly orderWarning: Locator;
+  readonly orderRejection: Locator;
   readonly tradeError: Locator;
-  readonly preview: Locator;
   readonly orderSummary: Locator;
-  readonly orderMargin: Locator;
+  readonly orderQty: Locator;
+  readonly orderValue: Locator;
+  readonly orderCost: Locator;
   readonly orderLiqPrice: Locator;
+  readonly postOnlyFlag: Locator;
+  readonly iocFlag: Locator;
+  readonly reduceOnlyFlag: Locator;
   readonly tpslToggle: Locator;
   readonly entryTpInput: Locator;
   readonly entrySlInput: Locator;
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("trade-form");
-    this.sideLong = page.getByTestId("side-long-button");
-    this.sideShort = page.getByTestId("side-short-button");
+    this.submitBuy = page.getByTestId("submit-buy-button");
+    this.submitSell = page.getByTestId("submit-sell-button");
     this.sizeInput = page.getByTestId("size-input");
-    this.sizeUnitToggle = page.getByTestId("size-unit-toggle");
-    this.sizeMaxButton = page.getByTestId("size-max-button");
+    this.sizeUnitSelect = page.getByTestId("size-unit-select");
+    this.sizeQuoteValue = page.getByTestId("size-quote-value");
+    this.midPriceButton = page.getByTestId("mid-price-button");
     this.sizePctSlider = page.getByTestId("size-pct-slider");
     this.sizePctValue = page.getByTestId("size-pct-value");
-    this.leverageSlider = page.getByTestId("leverage-slider");
+    this.leverageSelect = page.getByTestId("leverage-select");
+    this.ticketAvailable = page.getByTestId("ticket-available");
+    this.ticketDepositButton = page.getByTestId("ticket-deposit-button");
     this.leverageValue = page.getByTestId("leverage-value");
     this.limitPriceInput = page.getByTestId("limit-price-input");
     this.triggerPriceInput = page.getByTestId("trigger-price-input");
     this.triggerAbove = page.getByTestId("trigger-above-button");
     this.triggerBelow = page.getByTestId("trigger-below-button");
-    this.submitButton = page.getByTestId("submit-order-button");
     this.insufficientMargin = page.getByTestId("insufficient-margin");
     this.orderWarning = page.getByTestId("order-warning");
+    this.orderRejection = page.getByTestId("order-rejection");
     this.tradeError = page.getByTestId("trade-error");
-    this.preview = page.getByTestId("trade-preview");
     this.orderSummary = page.getByTestId("order-summary");
-    this.orderMargin = page.getByTestId("order-margin");
+    this.orderQty = page.getByTestId("order-qty");
+    this.orderValue = page.getByTestId("order-value");
+    this.orderCost = page.getByTestId("order-cost");
     this.orderLiqPrice = page.getByTestId("order-liq-price");
+    this.postOnlyFlag = page.getByTestId("flag-post-only");
+    this.iocFlag = page.getByTestId("flag-ioc");
+    this.reduceOnlyFlag = page.getByTestId("flag-reduce-only");
     this.tpslToggle = page.getByTestId("tpsl-toggle");
     this.entryTpInput = page.getByTestId("entry-tp-input");
     this.entrySlInput = page.getByTestId("entry-sl-input");
@@ -96,21 +110,39 @@ export class TradePanel {
   setSize(value: string): Promise<void> {
     return this.sizeInput.fill(value);
   }
-  toggleSizeUnit(): Promise<void> {
-    return this.sizeUnitToggle.click();
+  /** Единицы выбираются списком: в поле их две, и обе названы. */
+  async setSizeUnit(unit: "base" | "usd"): Promise<void> {
+    await this.sizeUnitSelect.click();
+    await this.page.getByTestId(`size-unit-${unit}`).click();
   }
-  clickMax(): Promise<void> {
-    return this.sizeMaxButton.click();
+  /** Ручка ползунка доли — единственный интерактивный узел внутри блока. */
+  get sizePctThumb(): Locator {
+    return this.sizePctSlider.getByRole("slider");
   }
-  sizePctChip(pct: 25 | 50 | 75 | 100): Locator {
-    return this.page.getByTestId(`size-pct-${pct}`);
+  /** 100% покупательной способности: у ползунка это `End`. */
+  async clickMax(): Promise<void> {
+    await this.setSizePct(100);
+  }
+  /**
+   * Доля покупательной способности.
+   *
+   * @remarks Ползунок ведётся клавиатурой, а не установкой `value`: у radix
+   * значение живёт в состоянии React, а не в DOM-узле, и присвоение атрибута
+   * до него не доходит. `Home` уводит в ноль, каждый `ArrowRight` добавляет
+   * ступень в 25% — поэтому метод принимает только кратные 25.
+   */
+  async setSizePct(value: number): Promise<void> {
+    if (value % 25 !== 0) {
+      throw new Error(`ползунок шагает четвертями, а не на ${value}%`);
+    }
+    await this.sizePctThumb.focus();
+    await this.page.keyboard.press("Home");
+    for (let i = 0; i < value / 25; i++) {
+      await this.page.keyboard.press("ArrowRight");
+    }
   }
   clickSizePct(pct: 25 | 50 | 75 | 100): Promise<void> {
-    return this.sizePctChip(pct).click();
-  }
-  /** input[type=range] can't be `.fill()`'d — set the value + fire events. */
-  async setSizePct(value: number): Promise<void> {
-    await setRange(this.sizePctSlider, value);
+    return this.setSizePct(pct);
   }
   setLimitPrice(value: string): Promise<void> {
     return this.limitPriceInput.fill(value);
@@ -119,28 +151,35 @@ export class TradePanel {
     return this.triggerPriceInput.fill(value);
   }
 
-  /** input[type=range] can't be `.fill()`'d — set the value + fire events. */
+  /**
+   * Плечо выбирается списком, а не ползунком: список принимает только те
+   * значения, которые допускает рынок, — ползунок принимал любое целое.
+   */
   async setLeverage(value: number): Promise<void> {
-    await setRange(this.leverageSlider, value);
+    await this.leverageSelect.click();
+    await this.page.getByTestId(`leverage-option-${value}`).click();
   }
 
-  submit(): Promise<void> {
-    return this.submitButton.click();
+  openDeposit(): Promise<void> {
+    return this.ticketDepositButton.click();
   }
-}
 
-/** Drive a controlled `input[type=range]`: set the value + fire input/change. */
-async function setRange(slider: Locator, value: number): Promise<void> {
-  await slider.evaluate((el, v) => {
-    const input = el as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      "value",
-    )?.set;
-    setter?.call(input, String(v));
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }, value);
+  /**
+   * Кнопка подачи выбранной стороны.
+   *
+   * @remarks Гейт у обеих один — `disabled` считается формой, а не стороной, —
+   * поэтому проверки доступности хватает на одной, и по умолчанию это покупка.
+   */
+  submitButtonFor(side: "buy" | "sell" = "buy"): Locator {
+    return side === "buy" ? this.submitBuy : this.submitSell;
+  }
+  /** Тикет больше не хранит сторону: её называет нажатие. */
+  submit(side: "buy" | "sell" = "buy"): Promise<void> {
+    return this.submitButtonFor(side).click();
+  }
+  get submitButton(): Locator {
+    return this.submitBuy;
+  }
 }
 
 export class OrderBookPanel {

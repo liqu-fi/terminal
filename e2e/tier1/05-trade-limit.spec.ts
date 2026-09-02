@@ -2,8 +2,42 @@ import { Price } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
+import { readyWorld } from "../support/world";
 
 test.describe("limit orders", () => {
+  test("MID подставляет середину книги, а без цены кнопка неактивна", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+    await trade.selectTab("limit");
+    // Книга мира: лучший бид 69 990, лучший аск 70 010 — середина ровно 70 000.
+    await trade.midPriceButton.click();
+    await expect(trade.limitPriceInput).toHaveValue("70000");
+
+    await trade.setSize("1");
+    await trade.submit();
+    await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
+    expect(world.submittedOrders.at(-1)?.limitPrice).toBe(
+      Price.parse("70000").toString(),
+    );
+  });
+
+  test("без книги и без марка MID неактивна, а не ставит ноль", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.price = 0n; // марка нет
+      w.orderbook = { bids: [], asks: [], asOf: Date.now() }; // и книги нет
+      return w;
+    });
+    await trade.selectTab("limit");
+    await expect(trade.midPriceButton).toBeDisabled();
+    await expect(trade.limitPriceInput).toHaveValue("");
+  });
+
   test("a limit order sends acceptablePrice equal to the limit price", async ({
     page,
     world,

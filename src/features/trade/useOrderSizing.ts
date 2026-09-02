@@ -1,28 +1,22 @@
 import {
-  calcRequiredMaintenanceMargin,
-  draftLiquidationPrice,
   Margin,
+  type OrderVerdict,
+  pctToSize,
   Price,
   Qty,
-  Side,
+  sizeFromLeverage,
+  sizeToPct,
+  sizeToUsd,
   Usd,
+  usdToSize,
+  validateOrder,
 } from "@liq/sdk";
 import { useMarketsFullRestQuery } from "@liq/react";
 import { useState } from "react";
 
 import { parseWadLoose, wadToFixed } from "../../lib/format";
 import type { MarketSummary } from "../market/useSelectedMarket";
-import {
-  computeSizeDelta,
-  marginCost,
-  maxSizeQty,
-  pctToSize,
-  sizeToPct,
-  sizeToUsd,
-  usdToSize,
-  validateOrder,
-  type OrderValidation,
-} from "./orderMath";
+import { ticketSummary, type TicketSummary } from "./ticketSummary";
 
 const WAD = 10n ** 18n;
 const BPS = 10_000n;
@@ -33,7 +27,7 @@ export type OrderSizing = {
   sizeStr: string;
   setSizeStr: (v: string) => void;
   unit: SizeUnit;
-  toggleUnit: () => void;
+  setUnit: (u: SizeUnit) => void;
   leverage: number;
   setLeverage: (l: number) => void;
   /** Set size from a 0–100% slice of buying power (slider / chips). */
@@ -43,15 +37,21 @@ export type OrderSizing = {
   reset: () => void;
   // derived
   sizeQty: bigint; // magnitude, 18-dec base units
-  sizeDelta: bigint; // signed by side
   pct: number; // 0–100 slice of buying power (what the control requested)
   maxSize: bigint; // buying-power ceiling, base units
   notional: bigint; // Usd, 18-dec
   margin: bigint; // margin cost, 18-dec
-  liqPrice: bigint | null; // estimated isolated liquidation price, or null
+  /**
+   * Обе стороны разом — тикет по макету показывает их рядом.
+   *
+   * @remarks Знаковый размер и оценка ликвидации живут здесь, а не отдельными
+   * полями: сторона выбирается нажатием кнопки подачи, и до нажатия ни одна
+   * из двух не «та самая».
+   */
+  summary: TicketSummary;
   baseSymbol: string;
   baseDecimals: number;
-  validation: OrderValidation;
+  validation: OrderVerdict;
 };
 
 function fracDigits(s: string): number {
@@ -68,37 +68,12 @@ function parseSizeInput(
   if (!sizeStr) return 0n;
   try {
     if (unit === "base") return Qty.parse(sizeStr);
-    return markPrice > 0n ? usdToSize(Usd.parse(sizeStr), markPrice) : 0n;
+    return markPrice > 0n
+      ? usdToSize(Usd.parse(sizeStr), Price(markPrice))
+      : 0n;
   } catch {
     return 0n;
   }
-}
-
-/**
- * Where this draft alone would be liquidated, or null.
- *
- * The ticket's question — "how far can this go against me" — not the account's
- * "when do I get liquidated". In cross margin the two are different correct
- * numbers: this one carries neither the account's other exposure nor the
- * liquidator's reward, so it will not agree with the account-level figure and
- * is not meant to.
- */
-function estimateLiqPrice(
-  markPrice: bigint,
-  sizeDelta: bigint,
-  margin: bigint,
-  mmfWad: bigint | undefined,
-): bigint | null {
-  if (mmfWad === undefined || margin <= 0n) return null;
-  const mm = calcRequiredMaintenanceMargin(Qty(sizeDelta), Price(markPrice), mmfWad);
-  return (
-    draftLiquidationPrice({
-      size: Qty(sizeDelta),
-      mark: Price(markPrice),
-      margin: Margin(margin),
-      requirement: mm,
-    }) ?? null
-  );
 }
 
 /**
@@ -116,12 +91,11 @@ export function useOrderSizing(params: {
   market: MarketSummary | undefined;
   available: bigint;
   markPrice: bigint;
-  side: Side;
 }): OrderSizing {
-  const { market, available, markPrice, side } = params;
+  const { market, available, markPrice } = params;
 
   const [sizeStr, setSizeStrRaw] = useState("");
-  const [unit, setUnit] = useState<SizeUnit>("base");
+  const [unit, setUnitRaw] = useState<SizeUnit>("base");
   const [leverage, setLeverageRaw] = useState(2);
   const [pct, setPctRaw] = useState(0);
 
@@ -147,18 +121,26 @@ export function useOrderSizing(params: {
       : undefined;
 
   const sizeQty = parseSizeInput(sizeStr, unit, markPrice);
-  const maxSize = maxSizeQty({ availableUsd: available, leverage, markPrice });
-  const notional = markPrice > 0n ? sizeToUsd(sizeQty, markPrice) : 0n;
-  const margin = marginCost(notional, leverage);
-  const sizeDelta = computeSizeDelta(sizeQty, side);
-  const liqPrice = estimateLiqPrice(markPrice, sizeDelta, margin, mmfWad);
+  const maxSize = sizeFromLeverage({
+    availableUsd: Usd(available),
+    leverage,
+    markPrice: Price(markPrice),
+  });
+  const summary = ticketSummary({
+    sizeQty: Qty(sizeQty),
+    markPrice: Price(markPrice),
+    leverage,
+    mmfWad,
+  });
+  const notional = summary.value;
+  const margin = summary.cost;
   const validation = validateOrder({
     markPrice,
-    sizeQty,
-    minSize,
+    sizeQty: Qty(sizeQty),
+    minSize: Qty(minSize),
     leverage,
     maxLeverage,
-    available,
+    available: Margin(available),
     marginCost: margin,
   });
 
@@ -167,14 +149,14 @@ export function useOrderSizing(params: {
     return u === "base"
       ? wadToFixed(sizeWad, baseDecimals)
       : markPrice > 0n
-        ? wadToFixed(sizeToUsd(sizeWad, markPrice), 2)
+        ? wadToFixed(sizeToUsd(Qty(sizeWad), Price(markPrice)), 2)
         : "";
   }
 
   // Typed size is authoritative; re-derive the slider position from it.
   function setSizeStr(v: string) {
     setSizeStrRaw(v);
-    setPctRaw(sizeToPct(parseSizeInput(v, unit, markPrice), maxSize));
+    setPctRaw(sizeToPct(Qty(parseSizeInput(v, unit, markPrice)), maxSize));
   }
 
   // Chosen percentage is authoritative; rewrite the size to match.
@@ -189,25 +171,29 @@ export function useOrderSizing(params: {
     // Preserve the requested slice against the new ceiling — but never fill an
     // empty size (decoupled: bumping leverage with no size leaves it empty).
     if (sizeStr) {
-      const nextMax = maxSizeQty({ availableUsd: available, leverage: l, markPrice });
+      const nextMax = sizeFromLeverage({
+        availableUsd: Usd(available),
+        leverage: l,
+        markPrice: Price(markPrice),
+      });
       setSizeStrRaw(fmtForUnit(pctToSize(pct, nextMax), unit));
     }
   }
 
-  function toggleUnit() {
+  function setUnit(next: SizeUnit) {
+    if (next === unit) return;
     // Without a mark price there is no base⇄USD conversion — switching would
     // format to "" and silently drop the typed size. No-op until price loads.
     if (markPrice <= 0n) return;
-    const next: SizeUnit = unit === "base" ? "usd" : "base";
     setSizeStrRaw(fmtForUnit(sizeQty, next));
-    setUnit(next);
+    setUnitRaw(next);
   }
 
   return {
     sizeStr,
     setSizeStr,
     unit,
-    toggleUnit,
+    setUnit,
     leverage,
     setLeverage,
     setPct,
@@ -217,12 +203,11 @@ export function useOrderSizing(params: {
       setPctRaw(0);
     },
     sizeQty,
-    sizeDelta,
     pct,
     maxSize,
     notional,
     margin,
-    liqPrice,
+    summary,
     baseSymbol,
     baseDecimals,
     validation,

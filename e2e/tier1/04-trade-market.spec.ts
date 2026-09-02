@@ -26,10 +26,8 @@ test.describe("market orders", () => {
   test("submits a market SELL (short)", async ({ page, world }) => {
     const { trade } = await enterTerminal(page, world);
 
-    await trade.sideShort.click();
-    await expect(trade.sideShort).toHaveAttribute("aria-pressed", "true");
     await trade.setSize("0.5");
-    await trade.submit();
+    await trade.submit("sell");
 
     await expect.poll(() => world.submittedOrders.at(-1)?.side).toBe("SELL");
     // SELL ⇒ negative signed sizeDelta
@@ -44,16 +42,15 @@ test.describe("market orders", () => {
   }) => {
     const { trade } = await enterTerminal(page, world);
 
-    await trade.setSize("0.5"); // BUY (default side)
+    await trade.setSize("0.5");
     await trade.submit();
     await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
     expect(world.submittedOrders.at(-1)?.acceptablePrice).toBe(
       ((70_000n * WAD * 10_050n) / 10_000n).toString(), // mark + 0.5%
     );
 
-    await trade.sideShort.click();
     await trade.setSize("0.5");
-    await trade.submit();
+    await trade.submit("sell");
     await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(1);
     expect(world.submittedOrders.at(-1)?.acceptablePrice).toBe(
       ((70_000n * WAD * 9_950n) / 10_000n).toString(), // mark − 0.5%

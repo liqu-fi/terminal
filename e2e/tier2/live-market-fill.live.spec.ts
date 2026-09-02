@@ -44,7 +44,6 @@ test.describe("live: market fill lifecycle", () => {
 
     // ── Open: MARKET long ───────────────────────────────────────────────
     await trade.selectTab("market");
-    await trade.sideLong.click();
     await trade.setSize(SIZE);
     await expect(trade.submitButton).toBeEnabled({
       timeout: liveEnv.fillTimeoutMs,
@@ -60,12 +59,11 @@ test.describe("live: market fill lifecycle", () => {
 
     // ── Close: equal, opposing MARKET short ─────────────────────────────
     await trade.selectTab("market");
-    await trade.sideShort.click();
     await trade.setSize(SIZE);
     await expect(trade.submitButton).toBeEnabled({
       timeout: liveEnv.fillTimeoutMs,
     });
-    await trade.submit();
+    await trade.submit("sell");
 
     // Net size → 0: the gateway drops the size-0 position, clearing the row.
     await userInfo.selectTab("positions");
