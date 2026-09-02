@@ -390,3 +390,20 @@ export class WithdrawDialog {
     await this.submitButton.click();
   }
 }
+
+export class AccountPanelPage {
+  constructor(private readonly page: Page) {}
+
+  get root(): Locator {
+    return this.page.getByTestId("account-panel");
+  }
+  row(name: string): Locator {
+    return this.page.getByTestId(`account-${name}`);
+  }
+  get depositButton(): Locator {
+    return this.page.getByTestId("account-deposit-button");
+  }
+  get withdrawButton(): Locator {
+    return this.page.getByTestId("account-withdraw-button");
+  }
+}
