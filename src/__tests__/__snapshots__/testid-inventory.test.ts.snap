@@ -2,6 +2,9 @@
 
 exports[`инвентарь data-testid > не теряет идентификаторов, на которые ходит e2e 1`] = `
 [
+  "*-empty",
+  "*-loading",
+  "*-row-*",
   "app-brand",
   "app-root",
   "available-margin",
@@ -101,6 +104,15 @@ exports[`инвентарь data-testid > не теряет идентифика
   "submit-sell-button",
   "switch-chain-button",
   "switch-chain-error",
+  "table-column-toggle-*",
+  "table-columns-button",
+  "table-columns-menu",
+  "table-filter-button",
+  "table-filter-menu",
+  "table-filter-option-*",
+  "table-filter-option-all",
+  "table-header-*",
+  "table-toolbar",
   "tape-empty",
   "tape-loading",
   "tape-no-market",
