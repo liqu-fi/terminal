@@ -78,6 +78,50 @@ test.describe("флаги исполнения тикета", () => {
     expect(world.submittedOrders[0].reduceOnly).toBe(false);
   });
 
+  test("Post Only доезжает до тела лимитного ордера", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await trade.selectTab("limit");
+    await trade.postOnlyFlag.click();
+    await trade.limitPriceInput.fill("69000");
+    await trade.setSize("0.5");
+    await trade.submit();
+
+    await expect.poll(() => world.submittedOrders.length).toBe(1);
+    expect(world.submittedOrders[0].postOnly).toBe(true);
+  });
+
+  test("невзведённый Post Only уходит как false, а не молчанием", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    await trade.selectTab("limit");
+    await trade.limitPriceInput.fill("69000");
+    await trade.setSize("0.5");
+    await trade.submit();
+
+    await expect.poll(() => world.submittedOrders.length).toBe(1);
+    expect(world.submittedOrders[0].postOnly).toBe(false);
+  });
+
+  test("рыночный ордер про post-only не заикается", async ({ page, world }) => {
+    const { trade } = await enterTerminal(page, world);
+
+    // Флаг неактивен на этой вкладке, но проверяется не вид кнопки, а тело:
+    // шлюз отвечает отказом на post-only у рыночных видов, и названное здесь
+    // `false` было бы не безобидным умолчанием, а отвергнутым ордером.
+    await trade.setSize("0.5");
+    await trade.submit();
+
+    await expect.poll(() => world.submittedOrders.length).toBe(1);
+    expect(world.submittedOrders[0]).not.toHaveProperty("postOnly");
+  });
+
   test("TP/SL прячется на условной вкладке — прикреплять его не к чему", async ({
     page,
     world,

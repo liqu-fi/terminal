@@ -231,6 +231,10 @@ export function TradeForm() {
           side,
           limitPrice: price,
           reduceOnly,
+          // Post-only принимает только лимитная семья — на рыночных шлюз
+          // отвечает отказом, поэтому у рыночного и условного черновиков поля
+          // нет по типу, а не по забывчивости.
+          postOnly,
         },
         { onSuccess },
       );
