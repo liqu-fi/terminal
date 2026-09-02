@@ -47,6 +47,8 @@ test.describe("trade history", () => {
     await expect(row).toBeVisible();
     await expect(row).toContainText("SELL");
     // the SELL side renders in the short (red) color
-    await expect(row.locator(".text-short")).toBeVisible();
+    // Сторона живёт в третьей ячейке; красным теперь бывает и PnL, поэтому
+    // цвет проверяется на своей колонке, а не где угодно в строке.
+    await expect(row.locator("td").nth(2).locator(".text-short")).toBeVisible();
   });
 });

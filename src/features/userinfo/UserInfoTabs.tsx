@@ -5,7 +5,7 @@ import { ToolbarSlotContext } from "@/components/data-table/ToolbarSlotContext";
 import { Card } from "@/components/ui/card";
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
-import { HistoryTable } from "../history/HistoryTable";
+import { TradeHistoryTable } from "../history/TradeHistoryTable";
 import { OpenOrdersTable } from "../orders/OpenOrdersTable";
 import { useOpenOrderRows } from "../orders/useOpenOrderRows";
 import { PositionsTable } from "../positions/PositionsTable";
@@ -74,7 +74,7 @@ export function UserInfoTabs() {
       <ToolbarSlotContext.Provider value={slot}>
         {tab === "positions" && <PositionsTable />}
         {tab === "open-orders" && <OpenOrdersTable />}
-        {tab === "trade-history" && <HistoryTable />}
+        {tab === "trade-history" && <TradeHistoryTable />}
         {tab === "order-history" && <Soon slug="order-history" />}
         {tab === "position-history" && <Soon slug="position-history" />}
         {tab === "funding-history" && <Soon slug="funding-history" />}

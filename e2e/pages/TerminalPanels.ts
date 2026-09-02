@@ -304,13 +304,13 @@ export class UserInfoPanel {
   }
 
   get historyTable(): Locator {
-    return this.page.getByTestId("history-table");
+    return this.page.getByTestId("trade-history-table");
   }
   get historyEmpty(): Locator {
-    return this.page.getByTestId("history-empty");
+    return this.page.getByTestId("trade-history-table-empty");
   }
   tradeRow(id: string): Locator {
-    return this.page.getByTestId(`trade-row-${id}`);
+    return this.page.getByTestId(`trade-history-table-row-${id}`);
   }
 
   get columnsButton(): Locator {
