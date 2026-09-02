@@ -525,7 +525,22 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
         return;
       }
       if (method === "DELETE") {
-        await send(route, { results: [] });
+        const payload = JSON.parse(req.postData() ?? "{}") as {
+          orderIds?: string[];
+        };
+        // Шлюз режет вход до 50 идентификаторов молча (order.controller.ts).
+        // Мок повторяет усечение: под ним SDK и батчит, и заглушка, которая
+        // отменяла бы всё разом, прятала бы расхождение.
+        const ids = (payload.orderIds ?? []).slice(0, 50);
+        const results = ids.map((id) => {
+          world.cancelledOrderIds.push(id);
+          world.openOrders = world.openOrders.filter((o) => o.id !== id);
+          world.conditionalOrders = world.conditionalOrders.filter(
+            (o) => o.id !== id,
+          );
+          return { orderId: id, status: "CANCELLED" };
+        });
+        await send(route, { results });
         return;
       }
       // GET list
