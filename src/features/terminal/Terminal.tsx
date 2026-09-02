@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/resizable";
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
+import { AccountPanel } from "../account/AccountPanel";
 import { CandleChart } from "../chart/CandleChart";
 import { MarketHeader } from "../market/MarketHeader";
 import { useSelectedMarket } from "../market/useSelectedMarket";
@@ -95,7 +96,12 @@ export function Terminal() {
                   defaultSize={chartCollapsed ? "65" : "26"}
                   minSize="20"
                 >
-                  <TradeForm />
+                  <div className="flex h-full flex-col gap-2">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                      <TradeForm />
+                    </div>
+                    <AccountPanel />
+                  </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
