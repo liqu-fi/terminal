@@ -15,19 +15,18 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { sanitizeDecimal } from "../../lib/decimal";
-import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
 import { ExecutionFlags } from "./ExecutionFlags";
 import { OrderPriceField } from "./OrderPriceField";
+import { OrderSummary } from "./OrderSummary";
 import { QuantityField } from "./QuantityField";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
 import { SizeSlider } from "./SizeSlider";
+import { SubmitButtons } from "./SubmitButtons";
 import { TicketHeader } from "./TicketHeader";
-import { TradePreviewRow } from "./TradePreviewRow";
 import { useBookMid } from "./useBookMid";
 import { useMarkPrice } from "./useMarkPrice";
 import { useOrderSizing } from "./useOrderSizing";
@@ -78,7 +77,6 @@ export function TradeForm() {
   const submitAttached = useMutation({ mutationFn: submitDraft });
 
   const [tab, setTab] = useState<Tab>("Market");
-  const [side, setSide] = useState<Side>(Side.BUY);
   const [limitPrice, setLimitPrice] = useState("");
   const [triggerPrice, setTriggerPrice] = useState("");
   const [triggerAbove, setTriggerAbove] = useState(true);
@@ -111,7 +109,6 @@ export function TradeForm() {
     market,
     available: margins?.available ?? 0n,
     markPrice,
-    side,
   });
   const maxLev = market?.maxLeverage ?? 25;
   const attachable = tab === "Market" || tab === "Limit";
@@ -183,9 +180,12 @@ export function TradeForm() {
   // `mutate` (not `mutateAsync`): a rejected submit surfaces via the mutation's
   // `error` (the trade-error row below), never as an unhandled rejection from
   // the click handler. The form is cleared only after a confirmed submit.
-  function submit() {
+  function submit(side: Side) {
     if (accountId === undefined || marketId === undefined) return;
-    const sizeDelta = sizing.sizeDelta;
+    const sizeDelta =
+      side === Side.BUY
+        ? sizing.summary.long.sizeDelta
+        : sizing.summary.short.sizeDelta;
     const onSuccess = () => {
       sizing.reset();
       // Fire the attached orders from the just-submitted prices, THEN clear the
@@ -252,16 +252,9 @@ export function TradeForm() {
     }
   }
 
-  const long = side === Side.BUY;
-  const fallbackLabel = long ? "Buy / Long" : "Sell / Short";
   // `not-ready` (нет цены, пустой размер) молчит намеренно: у ордера, который
-  // ещё не дописан, нет вины, и кнопка держит ярлык по умолчанию.
+  // ещё не дописан, нет вины, и объяснять нечего.
   const rejection = describeRejection(sizing.validation.reason);
-  const submitLabel = !sizing.validation.ok
-    ? (rejection ?? fallbackLabel)
-    : pending
-      ? "Submitting…"
-      : fallbackLabel;
 
   return (
     <div
@@ -288,27 +281,6 @@ export function TradeForm() {
             {t}
           </button>
         ))}
-      </div>
-
-      <div className="flex gap-2">
-        <Button
-          variant={long ? "long" : "ghost"}
-          className="flex-1"
-          onClick={() => setSide(Side.BUY)}
-          data-testid="side-long-button"
-          aria-pressed={long}
-        >
-          Long
-        </Button>
-        <Button
-          variant={!long ? "short" : "ghost"}
-          className="flex-1"
-          onClick={() => setSide(Side.SELL)}
-          data-testid="side-short-button"
-          aria-pressed={!long}
-        >
-          Short
-        </Button>
       </div>
 
       {tab === "Limit" && (
@@ -374,39 +346,19 @@ export function TradeForm() {
         />
       )}
 
-      {sizing.sizeQty > 0n && (
-        <div
-          className="rounded-[var(--radius-sm)] border border-border bg-surface-2 p-2 text-[11px] text-muted"
-          data-testid="order-summary"
-        >
-          <SummaryRow label="Notional" value={fmtUsd(sizing.notional)} />
-          <SummaryRow
-            label="Margin"
-            value={fmtUsd(sizing.margin)}
-            testid="order-margin"
-          />
-          <SummaryRow
-            label="Est. liq. price"
-            value={sizing.liqPrice !== null ? fmtPrice(sizing.liqPrice) : "—"}
-            testid="order-liq-price"
-          />
-        </div>
-      )}
-
-      <TradePreviewRow
-        marketId={marketId}
-        sizeDelta={sizing.sizeDelta}
-        markPrice={markPrice}
+      <OrderSummary
+        summary={sizing.summary}
+        baseSymbol={sizing.baseSymbol}
+        quoteSymbol="USD"
       />
 
-      <Button
-        variant={long ? "long" : "short"}
-        disabled={disabled}
-        onClick={submit}
-        data-testid="submit-order-button"
-      >
-        {submitLabel}
-      </Button>
+      {rejection && (
+        <p className="text-[10px] text-short" data-testid="order-rejection">
+          {rejection}
+        </p>
+      )}
+
+      <SubmitButtons onSubmit={submit} disabled={disabled} pending={pending} />
 
       {sizing.validation.warn && !insufficientMargin && (
         <p className="text-[10px] text-short/80" data-testid="order-warning">
@@ -423,25 +375,6 @@ export function TradeForm() {
           {error.message}
         </p>
       )}
-    </div>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-  testid,
-}: {
-  label: string;
-  value: string;
-  testid?: string;
-}) {
-  return (
-    <div className="flex justify-between">
-      <span>{label}</span>
-      <span className="text-text" data-testid={testid}>
-        {value}
-      </span>
     </div>
   );
 }

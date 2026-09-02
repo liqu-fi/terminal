@@ -34,8 +34,8 @@ export class MarketHeaderPanel {
 
 export class TradePanel {
   readonly root: Locator;
-  readonly sideLong: Locator;
-  readonly sideShort: Locator;
+  readonly submitBuy: Locator;
+  readonly submitSell: Locator;
   readonly sizeInput: Locator;
   readonly sizeUnitSelect: Locator;
   readonly sizeQuoteValue: Locator;
@@ -50,13 +50,14 @@ export class TradePanel {
   readonly triggerPriceInput: Locator;
   readonly triggerAbove: Locator;
   readonly triggerBelow: Locator;
-  readonly submitButton: Locator;
   readonly insufficientMargin: Locator;
   readonly orderWarning: Locator;
+  readonly orderRejection: Locator;
   readonly tradeError: Locator;
-  readonly preview: Locator;
   readonly orderSummary: Locator;
-  readonly orderMargin: Locator;
+  readonly orderQty: Locator;
+  readonly orderValue: Locator;
+  readonly orderCost: Locator;
   readonly orderLiqPrice: Locator;
   readonly postOnlyFlag: Locator;
   readonly iocFlag: Locator;
@@ -67,8 +68,8 @@ export class TradePanel {
 
   constructor(private readonly page: Page) {
     this.root = page.getByTestId("trade-form");
-    this.sideLong = page.getByTestId("side-long-button");
-    this.sideShort = page.getByTestId("side-short-button");
+    this.submitBuy = page.getByTestId("submit-buy-button");
+    this.submitSell = page.getByTestId("submit-sell-button");
     this.sizeInput = page.getByTestId("size-input");
     this.sizeUnitSelect = page.getByTestId("size-unit-select");
     this.sizeQuoteValue = page.getByTestId("size-quote-value");
@@ -83,13 +84,14 @@ export class TradePanel {
     this.triggerPriceInput = page.getByTestId("trigger-price-input");
     this.triggerAbove = page.getByTestId("trigger-above-button");
     this.triggerBelow = page.getByTestId("trigger-below-button");
-    this.submitButton = page.getByTestId("submit-order-button");
     this.insufficientMargin = page.getByTestId("insufficient-margin");
     this.orderWarning = page.getByTestId("order-warning");
+    this.orderRejection = page.getByTestId("order-rejection");
     this.tradeError = page.getByTestId("trade-error");
-    this.preview = page.getByTestId("trade-preview");
     this.orderSummary = page.getByTestId("order-summary");
-    this.orderMargin = page.getByTestId("order-margin");
+    this.orderQty = page.getByTestId("order-qty");
+    this.orderValue = page.getByTestId("order-value");
+    this.orderCost = page.getByTestId("order-cost");
     this.orderLiqPrice = page.getByTestId("order-liq-price");
     this.postOnlyFlag = page.getByTestId("flag-post-only");
     this.iocFlag = page.getByTestId("flag-ioc");
@@ -162,8 +164,21 @@ export class TradePanel {
     return this.ticketDepositButton.click();
   }
 
-  submit(): Promise<void> {
-    return this.submitButton.click();
+  /**
+   * Кнопка подачи выбранной стороны.
+   *
+   * @remarks Гейт у обеих один — `disabled` считается формой, а не стороной, —
+   * поэтому проверки доступности хватает на одной, и по умолчанию это покупка.
+   */
+  submitButtonFor(side: "buy" | "sell" = "buy"): Locator {
+    return side === "buy" ? this.submitBuy : this.submitSell;
+  }
+  /** Тикет больше не хранит сторону: её называет нажатие. */
+  submit(side: "buy" | "sell" = "buy"): Promise<void> {
+    return this.submitButtonFor(side).click();
+  }
+  get submitButton(): Locator {
+    return this.submitBuy;
   }
 }
 

@@ -4,7 +4,6 @@ import {
   pctToSize,
   Price,
   Qty,
-  Side,
   sizeFromLeverage,
   sizeToPct,
   sizeToUsd,
@@ -38,13 +37,17 @@ export type OrderSizing = {
   reset: () => void;
   // derived
   sizeQty: bigint; // magnitude, 18-dec base units
-  sizeDelta: bigint; // signed by side
   pct: number; // 0–100 slice of buying power (what the control requested)
   maxSize: bigint; // buying-power ceiling, base units
   notional: bigint; // Usd, 18-dec
   margin: bigint; // margin cost, 18-dec
-  liqPrice: bigint | null; // estimated draft liquidation price, or null
-  /** Обе стороны разом — тикет по макету показывает их рядом. */
+  /**
+   * Обе стороны разом — тикет по макету показывает их рядом.
+   *
+   * @remarks Знаковый размер и оценка ликвидации живут здесь, а не отдельными
+   * полями: сторона выбирается нажатием кнопки подачи, и до нажатия ни одна
+   * из двух не «та самая».
+   */
   summary: TicketSummary;
   baseSymbol: string;
   baseDecimals: number;
@@ -88,9 +91,8 @@ export function useOrderSizing(params: {
   market: MarketSummary | undefined;
   available: bigint;
   markPrice: bigint;
-  side: Side;
 }): OrderSizing {
-  const { market, available, markPrice, side } = params;
+  const { market, available, markPrice } = params;
 
   const [sizeStr, setSizeStrRaw] = useState("");
   const [unit, setUnitRaw] = useState<SizeUnit>("base");
@@ -132,7 +134,6 @@ export function useOrderSizing(params: {
   });
   const notional = summary.value;
   const margin = summary.cost;
-  const taken = side === Side.BUY ? summary.long : summary.short;
   const validation = validateOrder({
     markPrice,
     sizeQty: Qty(sizeQty),
@@ -202,12 +203,10 @@ export function useOrderSizing(params: {
       setPctRaw(0);
     },
     sizeQty,
-    sizeDelta: taken.sizeDelta,
     pct,
     maxSize,
     notional,
     margin,
-    liqPrice: taken.liqPrice,
     summary,
     baseSymbol,
     baseDecimals,
