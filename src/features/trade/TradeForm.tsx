@@ -2,8 +2,10 @@ import { Price, Side } from "@liq/sdk";
 import {
   useAccountId,
   useAvailableMarginQuery,
+  useOrderSubmission,
   useTradeStore,
 } from "@liq/react";
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,9 +15,6 @@ import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
-import { useSubmitConditionalOrder } from "./mutations/useSubmitConditionalOrder";
-import { useSubmitLimitOrder } from "./mutations/useSubmitLimitOrder";
-import { useSubmitMarketOrder } from "./mutations/useSubmitMarketOrder";
 import { acceptablePrice } from "./orderMath";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
 import { SizeField } from "./SizeField";
@@ -44,9 +43,17 @@ export function TradeForm() {
   const markPrice = useMarkPrice();
   const { data: margins } = useAvailableMarginQuery();
 
-  const submitMarket = useSubmitMarketOrder();
-  const limit = useSubmitLimitOrder();
-  const conditional = useSubmitConditionalOrder();
+  // Корпус подачи — резерв nonce, подпись активным сессионным ключом или
+  // кошельком, ретрай с переподписью — живёт в SDK; здесь только черновик.
+  // Через `useSubmit*Order` до тела не доходят `reduceOnly` и `postOnly`,
+  // которых требует тикет, а черновик их несёт.
+  const submitDraft = useOrderSubmission();
+  const submitOrder = useMutation({ mutationFn: submitDraft });
+  // Прикреплённые TP/SL идут ОТДЕЛЬНОЙ мутацией, хотя функция подачи та же.
+  // Они отправляются из `onSuccess` входного ордера, а повторный `mutate` на том
+  // же наблюдателе сбрасывает его `mutateOptions` прямо посреди чужого колбэка —
+  // TanStack валится в `Cannot read properties of undefined (reading 'onSettled')`.
+  const submitAttached = useMutation({ mutationFn: submitDraft });
 
   const [tab, setTab] = useState<Tab>("Market");
   const [side, setSide] = useState<Side>(Side.BUY);
@@ -85,9 +92,8 @@ export function TradeForm() {
   const maxLev = market?.maxLeverage ?? 25;
   const attachable = tab === "Market" || tab === "Limit";
 
-  const pending =
-    submitMarket.isPending || limit.isPending || conditional.isPending;
-  const error = submitMarket.error ?? limit.error ?? conditional.error;
+  const pending = submitOrder.isPending;
+  const error = submitOrder.error ?? submitAttached.error;
   const insufficientMargin = !margins || margins.available === 0n;
 
   // The active tab's price field, parsed (0n = blank/unparseable).
@@ -131,7 +137,8 @@ export function TradeForm() {
         return;
       }
       if (triggerPrice <= 0n) return;
-      conditional.mutate({
+      submitAttached.mutate({
+        kind: "conditional",
         accountId,
         marketId,
         sizeDelta: closeDelta,
@@ -166,8 +173,9 @@ export function TradeForm() {
     };
 
     if (tab === "Market") {
-      submitMarket.mutate(
+      submitOrder.mutate(
         {
+          kind: "market",
           accountId,
           marketId,
           sizeDelta,
@@ -183,20 +191,23 @@ export function TradeForm() {
     if (price <= 0n) return;
 
     if (tab === "Limit") {
-      limit.mutate(
+      // `acceptablePrice` у лимитного черновика нет: подписанное сообщение
+      // приравнивает его к лимитной цене — лимитка исполняется по ней или лучше.
+      submitOrder.mutate(
         {
+          kind: "limit",
           accountId,
           marketId,
           sizeDelta,
           side,
           limitPrice: price,
-          acceptablePrice: price,
         },
         { onSuccess },
       );
     } else {
-      conditional.mutate(
+      submitOrder.mutate(
         {
+          kind: "conditional",
           accountId,
           marketId,
           sizeDelta,
