@@ -1,11 +1,5 @@
-import {
-  useConditionalOrders,
-  useEnrichedPositions,
-  usePricesQuery,
-} from "@liq/react";
-import { abs, type GatewayOrder, Side } from "@liq/sdk";
+import { abs, Side } from "@liq/sdk";
 import { createColumnHelper } from "@tanstack/react-table";
-import { useMemo } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
@@ -20,19 +14,7 @@ import {
   fmtUsd,
 } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
-
-type EnrichedPosition = NonNullable<
-  ReturnType<typeof useEnrichedPositions>["data"]
->[number];
-
-/** Строка таблицы: позиция плюс то, что к ней приклеено с других запросов. */
-interface PositionRow {
-  position: EnrichedPosition;
-  symbol: string;
-  markPrice: bigint | undefined;
-  takeProfit: bigint | undefined;
-  stopLoss: bigint | undefined;
-}
+import { type PositionRow, usePositionRows } from "./usePositionRows";
 
 const helper = createColumnHelper<typeof features, PositionRow>();
 
@@ -146,14 +128,14 @@ const columns = helper.columns([
     id: "tpsl",
     header: "TP / SL",
     cell: (info) => {
-      const { takeProfit, stopLoss } = info.row.original;
+      const { takeProfit, stopLoss } = info.row.original.brackets;
       return (
         <span className="flex flex-col leading-tight text-[11px]">
           <span className="text-long">
-            {takeProfit === undefined ? DASH : fmtPrice(takeProfit)}
+            {takeProfit === null ? DASH : fmtPrice(takeProfit.triggerPrice)}
           </span>
           <span className="text-short">
-            {stopLoss === undefined ? DASH : fmtPrice(stopLoss)}
+            {stopLoss === null ? DASH : fmtPrice(stopLoss.triggerPrice)}
           </span>
         </span>
       );
@@ -162,32 +144,8 @@ const columns = helper.columns([
 ]);
 
 export function PositionsTable() {
-  const { markets, allMarketIds } = useSelectedMarket();
-  const {
-    data: positions = EMPTY_POSITIONS,
-    isLoading,
-    isError,
-  } = useEnrichedPositions(allMarketIds);
-  const { data: prices } = usePricesQuery(allMarketIds);
-  const { data: conditional = EMPTY_ORDERS } = useConditionalOrders();
-
-  const rows = useMemo<PositionRow[]>(
-    () =>
-      positions.map((position) => {
-        const key = position.marketId.toString();
-        const triggers = conditional.filter((o) => o.marketId === key);
-        const tp = triggers.find((o) => o.orderType.startsWith("TAKE_PROFIT"));
-        const sl = triggers.find((o) => o.orderType.startsWith("STOP"));
-        return {
-          position,
-          symbol: markets.find((m) => m.id === position.marketId)?.symbol ?? key,
-          markPrice: prices?.[key]?.price,
-          takeProfit: tp?.triggerPrice ? BigInt(tp.triggerPrice) : undefined,
-          stopLoss: sl?.triggerPrice ? BigInt(sl.triggerPrice) : undefined,
-        };
-      }),
-    [positions, conditional, markets, prices],
-  );
+  const { markets } = useSelectedMarket();
+  const { rows, isLoading, isError } = usePositionRows();
 
   return (
     <DataTable
@@ -212,6 +170,3 @@ export function PositionsTable() {
     />
   );
 }
-
-const EMPTY_POSITIONS: EnrichedPosition[] = [];
-const EMPTY_ORDERS: GatewayOrder[] = [];
