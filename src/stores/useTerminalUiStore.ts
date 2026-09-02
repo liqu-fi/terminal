@@ -35,6 +35,15 @@ interface TerminalUiState {
   chartRange: ChartRangeKey;
   chartScaleMode: ChartScaleMode;
   chartAutoScale: boolean;
+  /**
+   * Открыт ли поиск рынка.
+   *
+   * @remarks Живёт в сторе, потому что открыть поиск умеют двое — пилюля
+   * шапки и `+` полосы вкладок, — а экземпляр поиска обязан остаться один:
+   * второй разошёлся бы с первым по избранному и по выбранной области.
+   * Не персистится: см. `partialize`.
+   */
+  searchOpen: boolean;
 }
 
 interface TerminalUiActions {
@@ -48,6 +57,7 @@ interface TerminalUiActions {
   setChartRange: (range: ChartRangeKey) => void;
   setChartScaleMode: (mode: ChartScaleMode) => void;
   toggleAutoScale: () => void;
+  setSearchOpen: (open: boolean) => void;
   reset: () => void;
 }
 
@@ -61,6 +71,7 @@ const INITIAL: TerminalUiState = {
   chartRange: "1D",
   chartScaleMode: "normal",
   chartAutoScale: true,
+  searchOpen: false,
 };
 
 /**
@@ -108,8 +119,16 @@ export const useTerminalUiStore = create<TerminalUiState & TerminalUiActions>()(
           chartScaleMode: s.chartScaleMode === mode ? "normal" : mode,
         })),
       toggleAutoScale: () => set((s) => ({ chartAutoScale: !s.chartAutoScale })),
+      setSearchOpen: (searchOpen) => set({ searchOpen }),
       reset: () => set({ ...INITIAL }),
     }),
-    { name: "terminal-ui", storage: createJSONStorage(() => localStorage) },
+    {
+      name: "terminal-ui",
+      storage: createJSONStorage(() => localStorage),
+      // Открытый поиск — не настройка рабочего места, а состояние момента:
+      // восстановить его при загрузке значит открыть попап тому, кто закрывал
+      // его вкладкой браузера.
+      partialize: (s) => ({ ...s, searchOpen: false }),
+    },
   ),
 );

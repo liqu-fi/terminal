@@ -4,7 +4,7 @@ import { useState } from "react";
 import { fmtPrice, fmtUsd, toNum } from "../../lib/format";
 import { DepositDialog } from "../account/DepositDialog";
 import { WithdrawDialog } from "../account/WithdrawDialog";
-import { MarketSelect } from "./MarketSelect";
+import { MarketSearch } from "./MarketSearch";
 import { useFunding } from "./useFunding";
 import { useSelectedMarket } from "./useSelectedMarket";
 
@@ -27,7 +27,7 @@ export function MarketHeader() {
 
   return (
     <div className="flex items-center gap-4" data-testid="market-header">
-      <MarketSelect />
+      <MarketSearch />
       <span className={`text-sm font-bold ${dirColor}`} data-testid="market-price">
         {info ? `$${fmtPrice(info.price)}` : "—"}
         {info?.change === "up" ? " ▲" : info?.change === "down" ? " ▼" : ""}
