@@ -310,7 +310,10 @@ export interface Hold {
 }
 
 function defaultCandles(price: bigint): MockWorld["candles"] {
-  const base = 1_717_200_000; // fixed; LWC only needs ascending unique seconds
+  // Ряд кончается текущим часом, а не датой из прошлого: последний бар должен
+  // быть формирующимся, иначе живой цене некуда домешиваться и чарт выглядит
+  // застывшим — тем же, чем он был бы на сломанном потоке.
+  const base = Math.floor(Date.now() / 1000 / 3600) * 3600 - 24 * 3600; // fixed; LWC only needs ascending unique seconds
   const p = price.toString();
   return Array.from({ length: 30 }, (_, i) => ({
     timestamp: base + i * 60,
@@ -332,7 +335,10 @@ function defaultCandles(price: bigint): MockWorld["candles"] {
  * только то, что ноль рисуется.
  */
 export function defaultOracleCandles(price: bigint): MockWorld["candles"] {
-  const base = 1_717_200_000;
+  // Ряд кончается текущим часом, а не датой из прошлого: последний бар должен
+  // быть формирующимся, иначе живой цене некуда домешиваться и чарт выглядит
+  // застывшим — тем же, чем он был бы на сломанном потоке.
+  const base = Math.floor(Date.now() / 1000 / 3600) * 3600 - 24 * 3600;
   const from = (price * 100n) / 101n;
   return Array.from({ length: 25 }, (_, i) => {
     const close = from + ((price - from) * BigInt(i)) / 24n;
@@ -696,6 +702,27 @@ export function sseCandleFrame(
     data: bar,
   };
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+/**
+ * Кадр SSE с тиком оракульной цены — `PriceUpdateEvent` из @liq/core,
+ * канал `` `price:${marketId}` ``.
+ *
+ * @remarks `price` — WAD-строка, как на проводе; `timestamp` в СЕКУНДАХ:
+ * шлюз намеренно не шлёт по этому каналу миллисекунды, и `useCandles`
+ * складывает бар именно по секундной метке. Умолчание — «сейчас», чтобы тик
+ * попадал в формирующийся бар, а не в закрытый.
+ */
+export function ssePriceFrame(
+  marketId: string,
+  price: bigint,
+  timestampSec: number = Math.floor(Date.now() / 1000),
+): string {
+  return `data: ${JSON.stringify({
+    type: "price_update",
+    channel: `price:${marketId}`,
+    data: { marketId, price: price.toString(), timestamp: timestampSec },
+  })}\n\n`;
 }
 
 /** Кадр SSE со снимком книги. Форма — `OrderbookSnapshotEvent` из @liq/core. */

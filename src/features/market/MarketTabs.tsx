@@ -1,4 +1,5 @@
 import { Plus, X } from "lucide-react";
+import { useEffect } from "react";
 
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
@@ -28,9 +29,19 @@ export function MarketTabs() {
   const setChangeUnit = useTerminalUiStore((s) => s.setChangeUnit);
   const closeMarket = useTerminalUiStore((s) => s.closeMarket);
   const setSearchOpen = useTerminalUiStore((s) => s.setSearchOpen);
+  const openMarket = useTerminalUiStore((s) => s.openMarket);
 
-  // Первое открытие экрана: вкладок в сторе нет, а рынок уже выбран — он и
-  // становится единственной вкладкой. Иначе полоса пуста при выбранном рынке.
+  // Полоса владеет инвариантом «выбранный рынок всегда открыт вкладкой».
+  // Первое открытие экрана приходит с пустым списком при уже выбранном рынке —
+  // и без этой записи вкладка была бы фантомом отрисовки: выбор второго рынка
+  // клал в стор только его, и первая вкладка молча исчезала.
+  useEffect(() => {
+    if (marketId === undefined) return;
+    openMarket(marketId.toString());
+  }, [marketId, openMarket]);
+
+  // До того как эффект отработает, показать выбранный рынок всё равно нужно —
+  // иначе на первом кадре полоса пуста.
   const ids = openMarkets.length
     ? openMarkets
     : marketId !== undefined

@@ -132,10 +132,9 @@ test.describe("error states", () => {
 
     await expect(app.terminal).toBeVisible();
     await expect(page.getByTestId("market-price")).toContainText("—");
-    // a causal anchor: markets genuinely failed to load ⇒ the selector has zero
-    // options (the "—" price alone also matches the brief initial-load state).
-    await expect(
-      page.getByTestId("market-select").locator("option"),
-    ).toHaveCount(0);
+    // a causal anchor: markets genuinely failed to load ⇒ the search lists zero
+    // rows (the "—" price alone also matches the brief initial-load state).
+    await page.getByTestId("market-pill").click();
+    await expect(page.locator('[data-testid^="market-row-"]')).toHaveCount(0);
   });
 });

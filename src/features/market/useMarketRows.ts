@@ -4,6 +4,8 @@ import { useMemo } from "react";
 
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
+import { useSelectedMarket } from "./useSelectedMarket";
+
 export interface MarketRow {
   id: bigint;
   symbol: string;
@@ -39,15 +41,42 @@ export function marketRow(full: MarketFullRow, favorite: boolean): MarketRow {
   };
 }
 
+/** Рынок, который `/markets` назвал, а `/markets/full` ещё не обогатил. */
+export function bareRow(
+  id: bigint,
+  symbol: string,
+  favorite: boolean,
+): MarketRow {
+  return {
+    id,
+    symbol,
+    maxLeverage: null,
+    openInterest: null,
+    volumeUsd: null,
+    favorite,
+  };
+}
+
+/**
+ * Строки списка рынков.
+ *
+ * @remarks
+ * Вселенную задаёт `/markets` — тот же список, на котором стоит весь экран, —
+ * а `/markets/full` только обогащает её. Иначе поиск предлагал бы рынок,
+ * которого не знают ни книга, ни тикет, ни чарт, и выбор его ломал бы экран.
+ */
 export function useMarketRows(): { rows: MarketRow[]; isLoading: boolean } {
+  const { markets } = useSelectedMarket();
   const { data, isLoading } = useMarketsFullRestQuery();
   const favorites = useTerminalUiStore((s) => s.favoriteMarkets);
   const rows = useMemo(
     () =>
-      (data ?? []).map((full) =>
-        marketRow(full, favorites.includes(full.id.toString())),
-      ),
-    [data, favorites],
+      markets.map((m) => {
+        const favorite = favorites.includes(m.id.toString());
+        const full = data?.find((f) => f.id === m.id);
+        return full ? marketRow(full, favorite) : bareRow(m.id, m.symbol, favorite);
+      }),
+    [markets, data, favorites],
   );
   return { rows, isLoading };
 }

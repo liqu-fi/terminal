@@ -1,7 +1,7 @@
 import type { MarketFullRow } from "@liq/api-client";
 import { describe, expect, it } from "vitest";
 
-import { marketRow } from "../useMarketRows";
+import { bareRow, marketRow } from "../useMarketRows";
 
 const WAD = 10n ** 18n;
 
@@ -78,5 +78,18 @@ describe("marketRow", () => {
       false,
     );
     expect(row.openInterest).toBe(0n);
+  });
+
+  it("необогащённый рынок не выдумывает ни плеча, ни объёма", () => {
+    // `/markets` назвал рынок, `/markets/full` его ещё не отдал: он существует,
+    // но всё, кроме имени, о нём неизвестно.
+    expect(bareRow(201n, "ETH", false)).toEqual({
+      id: 201n,
+      symbol: "ETH",
+      maxLeverage: null,
+      openInterest: null,
+      volumeUsd: null,
+      favorite: false,
+    });
   });
 });

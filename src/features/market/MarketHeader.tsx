@@ -27,6 +27,14 @@ export function MarketHeader() {
   const info =
     marketId !== undefined ? prices?.[marketId.toString()] : undefined;
   const row = rows.find((r) => r.id === marketId);
+  // Направление последнего тика — не то же, что изменение за сутки, и одно
+  // другим не заменяется: макет рисует статичный снимок, а здесь цена живая.
+  const dirColor =
+    info?.change === "up"
+      ? "text-long"
+      : info?.change === "down"
+        ? "text-short"
+        : "text-text";
 
   return (
     <TooltipProvider>
@@ -34,10 +42,11 @@ export function MarketHeader() {
         <MarketSearch />
         <div className="flex flex-col">
           <span
-            className="text-lg font-bold text-text tabular-nums"
+            className={`text-lg font-bold tabular-nums ${dirColor}`}
             data-testid="market-price"
           >
             {info ? `$${fmtPrice(info.price)}` : DASH}
+            {info?.change === "up" ? " ▲" : info?.change === "down" ? " ▼" : ""}
           </span>
           <span
             className={`text-[11px] tabular-nums ${
