@@ -131,6 +131,22 @@ export interface SessionKeyRecord {
   expiresAt: number;
 }
 
+/** Динамическая часть строки `/markets/full`. */
+export interface WireMarketDynamic {
+  openInterest: string | null;
+  currentFundingRate: string | null;
+  indexPrice: string | null;
+}
+
+/** Окно объёма за сутки, как его отдаёт шлюз. */
+export interface WireVolumeWindow {
+  volumeUsd: string;
+  volumeBase: string;
+  trades: number;
+  windowStart: number;
+  windowEnd: number;
+}
+
 export interface MockWorld {
   wallet: string;
   /** Chain the injected wallet reports (eth_chainId / net_version); mutable —
@@ -173,6 +189,25 @@ export interface MockWorld {
   }>;
   /** Per-market candle override; the /candles route falls back to `candles`. */
   candlesByMarket?: Record<string, MockWorld["candles"]>;
+  /**
+   * Оракульные бары по id рынка; маршрут падает на общий рамп из `price`.
+   *
+   * @remarks Отдельно от `candles`, потому что маршруты разные и смысл разный:
+   * оракульный ряд непрерывен по построению, торговый молчит там, где не
+   * торговали.
+   */
+  oracleCandles: Record<string, MockWorld["candles"]>;
+  /**
+   * Динамика рынка — то, что шлюз кладёт в `dynamic` строки `/markets/full`.
+   * Отсутствие ключа даёт `dynamic: null`.
+   */
+  marketDynamic: Record<string, WireMarketDynamic>;
+  /**
+   * Окно объёма по id рынка. Три состояния, и мир обязан выражать каждое:
+   * ключа нет — поля нет в ответе (шлюз старее 0.33.0); `null` — отправлено
+   * пустым; объект — измерено.
+   */
+  marketVolume24h: Record<string, WireVolumeWindow | null>;
   openOrders: GatewayOrder[];
   conditionalOrders: GatewayOrder[];
   trades: TradeRow[];
@@ -289,6 +324,32 @@ function defaultCandles(price: bigint): MockWorld["candles"] {
   }));
 }
 
+/**
+ * Двадцать пять часовых баров ровно на +1 % от края до края.
+ *
+ * @remarks Ровно столько, сколько просит `useDailyChange`, и ровно тот
+ * процент, который спека может утверждать текстом: плоский ряд доказал бы
+ * только то, что ноль рисуется.
+ */
+export function defaultOracleCandles(price: bigint): MockWorld["candles"] {
+  const base = 1_717_200_000;
+  const from = (price * 100n) / 101n;
+  return Array.from({ length: 25 }, (_, i) => {
+    const close = from + ((price - from) * BigInt(i)) / 24n;
+    const c = close.toString();
+    return {
+      timestamp: base + i * 3600,
+      open: c,
+      high: c,
+      low: c,
+      close: c,
+      volume: WAD.toString(),
+      tradeCount: 1,
+      lastTradePrice: c,
+    };
+  });
+}
+
 /** Сколько уровней на сторону отдаёт мок: хватает и на 10+10, и на 20 в одну сторону. */
 const BOOK_LEVELS = 20;
 
@@ -322,6 +383,9 @@ export interface ScenarioOptions {
   accounts?: AccountFixture[];
   price?: bigint;
   markets?: Market[];
+  oracleCandles?: Record<string, MockWorld["candles"]>;
+  marketDynamic?: Record<string, WireMarketDynamic>;
+  marketVolume24h?: Record<string, WireVolumeWindow | null>;
   openOrders?: GatewayOrder[];
   conditionalOrders?: GatewayOrder[];
   trades?: TradeRow[];
@@ -363,6 +427,24 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
       updatedAt: "2026-01-01T00:00:00.000Z",
     },
     candles: defaultCandles(price),
+    oracleCandles: opts.oracleCandles ?? {},
+    marketDynamic: opts.marketDynamic ?? {
+      [MARKET.id]: {
+        openInterest: (211_980n * WAD).toString(),
+        // −0,0009 %/сут, как в макете.
+        currentFundingRate: (-9n * WAD) / 1_000_000n + "",
+        indexPrice: price.toString(),
+      },
+    },
+    marketVolume24h: opts.marketVolume24h ?? {
+      [MARKET.id]: {
+        volumeUsd: (3_350_000n * WAD).toString(),
+        volumeBase: (48n * WAD).toString(),
+        trades: 120,
+        windowStart: 1_717_113_600,
+        windowEnd: 1_717_200_000,
+      },
+    },
     openOrders: opts.openOrders ?? [],
     conditionalOrders: opts.conditionalOrders ?? [],
     trades: opts.trades ?? [],

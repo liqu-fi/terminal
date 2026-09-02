@@ -9,6 +9,7 @@
 import type { Page, Route } from "@playwright/test";
 
 import { TEST_ADDRESS } from "./constants";
+import { defaultOracleCandles } from "./world";
 import type {
   GatewayOrder,
   MockWorld,
@@ -47,15 +48,36 @@ function marketSummary(world: MockWorld) {
 // strings (a bare summary made `BigInt(undefined)` throw). 50 bps maintenance
 // drives the terminal's liq-price estimate.
 function marketFull(world: MockWorld) {
-  return world.markets.map((m) => ({
-    id: m.id,
-    symbol: m.symbol,
-    pythFeedId: m.pythFeedId,
-    isActive: true,
-    initialMarginBps: "200",
-    maintenanceMarginBps: "50",
-    dynamic: null,
-  }));
+  return world.markets.map((m) => {
+    const dyn = world.marketDynamic[m.id];
+    return {
+      id: m.id,
+      symbol: m.symbol,
+      pythFeedId: m.pythFeedId,
+      isActive: true,
+      initialMarginBps: "200",
+      maintenanceMarginBps: "50",
+      dynamic: dyn
+        ? {
+            skew: "0",
+            size: "0",
+            maxFundingVelocity: "0",
+            skewScale: "0",
+            makerFee: "0",
+            takerFee: "0",
+            currentFundingVelocity: null,
+            maxOpenInterest: null,
+            updatedAt: Date.now(),
+            ...dyn,
+          }
+        : null,
+      // Ключа нет — поля нет в ответе вовсе: это «шлюз его не шлёт», третье
+      // состояние рядом с `null` и объектом, и мир умеет выразить все три.
+      ...(m.id in world.marketVolume24h
+        ? { volume24h: world.marketVolume24h[m.id] }
+        : {}),
+    };
+  });
 }
 
 /**
@@ -408,6 +430,16 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
         return;
       }
       await send(route, world.funding);
+      return;
+    }
+    // Раньше торгового: у обоих путей общий префикс, и хотя якорь `$` их
+    // различает, порядок объявлен явно, чтобы правка одного не увела другой.
+    const oracle = path.match(/\/markets\/([^/]+)\/oracle-candles$/);
+    if (oracle) {
+      await send(
+        route,
+        world.oracleCandles[oracle[1]] ?? defaultOracleCandles(world.price),
+      );
       return;
     }
     const candles = path.match(/\/markets\/([^/]+)\/candles$/);
