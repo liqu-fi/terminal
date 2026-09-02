@@ -112,7 +112,7 @@ test.describe("error states", () => {
       readyWorld({ trades: [tradeFixture()] }),
     );
     world.faults.tradesStatus = 500;
-    await userInfo.selectTab("history");
+    await userInfo.selectTab("trade-history");
 
     await expect(app.terminal).toBeVisible();
     await expect(userInfo.tradeRow("fill-1")).toBeHidden();

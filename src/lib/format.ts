@@ -78,3 +78,33 @@ export function fmtQty(v: bigint): string {
 export function fmtPctFromBps(bps: bigint): string {
   return `${(Number(bps) / 100).toFixed(2)}%`;
 }
+
+/** Прочерк — единственное написание «данных нет» на экране. */
+export const DASH = "—";
+
+/** WAD-доля (1e18 = 100%) со знаком: «+1.23%». */
+export function fmtSignedPct(ratio: bigint): string {
+  const pct = toNum(ratio) * 100;
+  return `${pct < 0 ? "" : "+"}${pct.toFixed(2)}%`;
+}
+
+/** WAD-плечо: «10x», «3.5x». Целое печатается без дробной части. */
+export function fmtLeverage(wad: bigint): string {
+  const n = toNum(wad);
+  return `${Number(n.toFixed(1))}x`;
+}
+
+/** Unix-миллисекунды → «02.09 14:35» в локали пользователя. */
+export function fmtTime(ms: number): string {
+  return new Date(ms).toLocaleString(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Хэш транзакции в человеческий вид: «0xabcd…ef01». */
+export function fmtHash(hash: string): string {
+  return hash.length <= 12 ? hash : `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+}

@@ -1,0 +1,49 @@
+import type { GatewayOrder } from "@liq/core";
+import {
+  useAccountId,
+  useCancelOrderMutation,
+  useConditionalOrders,
+  useOpenOrdersQuery,
+} from "@liq/react";
+import { useMemo } from "react";
+
+import { useSelectedMarket } from "../market/useSelectedMarket";
+
+/** Строка таблицы открытых ордеров: ордер плюс подпись рынка и отмена. */
+export interface OrderRow {
+  order: GatewayOrder;
+  symbol: string;
+  cancel: (id: string) => void;
+  cancelling: boolean;
+}
+
+/** Открытые и условные ордера одной таблицей — как их видит трейдер. */
+export function useOpenOrderRows(): {
+  rows: OrderRow[];
+  isLoading: boolean;
+} {
+  const { markets } = useSelectedMarket();
+  const accountId = useAccountId();
+  const { data: open = EMPTY, isLoading } = useOpenOrdersQuery(accountId);
+  const { data: conditional = EMPTY } = useConditionalOrders();
+  // Отмена в SDK инвалидирует оба списка (monorepo#453), поэтому здесь ничего
+  // инвалидировать не надо.
+  const cancel = useCancelOrderMutation(accountId);
+
+  const rows = useMemo<OrderRow[]>(
+    () =>
+      [...open, ...conditional].map((order) => ({
+        order,
+        symbol:
+          markets.find((m) => m.id.toString() === order.marketId)?.symbol ??
+          order.marketId,
+        cancel: (id: string) => cancel.mutate(id),
+        cancelling: cancel.isPending,
+      })),
+    [open, conditional, markets, cancel],
+  );
+
+  return { rows, isLoading };
+}
+
+const EMPTY: GatewayOrder[] = [];

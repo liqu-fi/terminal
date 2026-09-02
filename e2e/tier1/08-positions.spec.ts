@@ -23,13 +23,18 @@ test.describe("positions", () => {
     const row = userInfo.positionRow("200");
     await expect(row).toBeVisible();
     await expect(row).toContainText("BTC");
-    // Columns: Market=0, Size=1, Entry=2, uPnL=3, Liq=4. Scope each assertion to
-    // its cell so the entry figure isn't satisfied by an identical Liq value.
+    // Columns (макет, 11 штук): Market=0, Side=1, Value/Size=2, Entry=3,
+    // Mark=4, Liq=5, Margin=6, Funding=7, uPnL=8, rPnL=9, TP/SL=10. Каждая
+    // проверка привязана к своей ячейке, чтобы цену входа не удовлетворило
+    // совпадающее значение из соседней колонки.
     // entryPrice = indexPrice - (totalPnl - accruedFunding)/size = 70,000 - 100/1
-    await expect(row.locator("td").nth(2)).toHaveText("69,900");
-    // uPnL is positive ⇒ +$100.00 in the long (green) color
-    await expect(row.locator("td").nth(3)).toHaveText("+$100.00");
-    await expect(row.locator("td").nth(3)).toHaveClass(/text-long/);
+    await expect(row.locator("td").nth(3)).toHaveText("69,900");
+    // uPnL is positive ⇒ +$100.00 in the long (green) color. Ячейка несёт две
+    // строки — сумму и процент, — поэтому цвет проверяется на самой сумме.
+    await expect(row.locator("td").nth(8)).toContainText("+$100.00");
+    await expect(row.locator("td").nth(8).locator("span").first()).toHaveClass(
+      /text-long/,
+    );
   });
 
   test("shows the empty state with no positions", async ({ page, world }) => {
@@ -38,7 +43,7 @@ test.describe("positions", () => {
     await expect(userInfo.positionsEmpty).toBeVisible();
   });
 
-  test("renders a short position with the short glyph and color", async ({
+  test("renders a short position with the short badge and color", async ({
     page,
     world,
   }) => {
@@ -55,12 +60,14 @@ test.describe("positions", () => {
     const row = userInfo.positionRow("200");
     await expect(row).toBeVisible();
     await expect(row).toContainText("BTC");
-    await expect(row).toContainText("↓"); // short side glyph (long renders ↑)
-    // the market cell color is purely side-driven (long ⇒ text-long)
-    await expect(row.locator("td").first()).toHaveClass(/text-short/);
-    // Size is magnitude-only: the short glyph + red color already say
-    // "short", so a signed size would double the negation ("↓ −1").
-    await expect(row.locator("td").nth(1)).toHaveText("1");
+    // Сторону называет бейдж в своей колонке, а не глиф рядом с тикером.
+    await expect(row.locator("td").nth(1)).toContainText("Short");
+    await expect(
+      row.locator("td").nth(1).locator("span span").first(),
+    ).toHaveClass(/text-short/);
+    // Размер по-прежнему без знака: бейдж и цвет уже сказали «шорт», знак
+    // удвоил бы отрицание.
+    await expect(row.locator("td").nth(2)).toContainText("≈ 1");
   });
 
   test("renders positions across multiple markets", async ({ page, world }) => {

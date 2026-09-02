@@ -1,9 +1,4 @@
-import {
-  Maximize2,
-  Minimize2,
-  PanelBottomClose,
-  PanelBottomOpen,
-} from "lucide-react";
+import { PanelBottomClose, PanelBottomOpen } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import {
@@ -13,6 +8,7 @@ import {
 } from "@/components/ui/resizable";
 import { useTerminalUiStore } from "@/stores/useTerminalUiStore";
 
+import { AccountPanel } from "../account/AccountPanel";
 import { CandleChart } from "../chart/CandleChart";
 import { MarketHeader } from "../market/MarketHeader";
 import { useSelectedMarket } from "../market/useSelectedMarket";
@@ -31,9 +27,6 @@ export function Terminal() {
   const chartCollapsed = useTerminalUiStore((s) => s.chartCollapsed);
   const bottomFullscreen = useTerminalUiStore((s) => s.bottomFullscreen);
   const toggleChart = useTerminalUiStore((s) => s.toggleChart);
-  const toggleBottomFullscreen = useTerminalUiStore(
-    (s) => s.toggleBottomFullscreen,
-  );
 
   return (
     <div className="flex flex-1 flex-col gap-3" data-testid="terminal-root">
@@ -103,7 +96,12 @@ export function Terminal() {
                   defaultSize={chartCollapsed ? "65" : "26"}
                   minSize="20"
                 >
-                  <TradeForm />
+                  <div className="flex h-full flex-col gap-2">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                      <TradeForm />
+                    </div>
+                    <AccountPanel />
+                  </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
@@ -116,23 +114,6 @@ export function Terminal() {
           minSize="20"
         >
           <div className="flex h-full flex-col" data-testid="bottom-panel">
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={toggleBottomFullscreen}
-                data-testid="bottom-fullscreen-toggle"
-                aria-label={
-                  bottomFullscreen ? "Свернуть панель" : "Развернуть панель"
-                }
-                className="text-muted hover:text-text"
-              >
-                {bottomFullscreen ? (
-                  <Minimize2 size={16} />
-                ) : (
-                  <Maximize2 size={16} />
-                )}
-              </button>
-            </div>
             <UserInfoTabs />
           </div>
         </ResizablePanel>

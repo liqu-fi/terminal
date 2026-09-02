@@ -3,7 +3,14 @@
 import { type Locator, type Page } from "@playwright/test";
 
 type TradeTab = "market" | "limit" | "stop" | "take-profit";
-type UserTab = "positions" | "open-orders" | "history";
+type UserTab =
+  | "positions"
+  | "open-orders"
+  | "trade-history"
+  | "order-history"
+  | "position-history"
+  | "funding-history"
+  | "account-history";
 
 export class MarketHeaderPanel {
   readonly root: Locator;
@@ -271,39 +278,58 @@ export class UserInfoPanel {
   }
 
   get positionsLoading(): Locator {
-    return this.page.getByTestId("positions-loading");
+    return this.page.getByTestId("positions-table-loading");
   }
   get positionsTable(): Locator {
     return this.page.getByTestId("positions-table");
   }
   get positionsEmpty(): Locator {
-    return this.page.getByTestId("positions-empty");
+    return this.page.getByTestId("positions-table-empty");
   }
   positionRow(marketId: string): Locator {
-    return this.page.getByTestId(`position-row-${marketId}`);
+    return this.page.getByTestId(`positions-table-row-${marketId}`);
   }
 
   get ordersTable(): Locator {
     return this.page.getByTestId("orders-table");
   }
   get ordersEmpty(): Locator {
-    return this.page.getByTestId("orders-empty");
+    return this.page.getByTestId("orders-table-empty");
   }
   orderRow(id: string): Locator {
-    return this.page.getByTestId(`order-row-${id}`);
+    return this.page.getByTestId(`orders-table-row-${id}`);
   }
   cancelOrder(id: string): Promise<void> {
     return this.page.getByTestId(`cancel-order-${id}`).click();
   }
 
   get historyTable(): Locator {
-    return this.page.getByTestId("history-table");
+    return this.page.getByTestId("trade-history-table");
   }
   get historyEmpty(): Locator {
-    return this.page.getByTestId("history-empty");
+    return this.page.getByTestId("trade-history-table-empty");
   }
   tradeRow(id: string): Locator {
-    return this.page.getByTestId(`trade-row-${id}`);
+    return this.page.getByTestId(`trade-history-table-row-${id}`);
+  }
+
+  get columnsButton(): Locator {
+    return this.page.getByTestId("table-columns-button");
+  }
+  get columnsMenu(): Locator {
+    return this.page.getByTestId("table-columns-menu");
+  }
+  columnToggle(id: string): Locator {
+    return this.page.getByTestId(`table-column-toggle-${id}`);
+  }
+  get filterButton(): Locator {
+    return this.page.getByTestId("table-filter-button");
+  }
+  filterOption(marketId: string): Locator {
+    return this.page.getByTestId(`table-filter-option-${marketId}`);
+  }
+  header(columnId: string): Locator {
+    return this.page.getByTestId(`table-header-${columnId}`);
   }
 }
 
@@ -362,5 +388,22 @@ export class WithdrawDialog {
   async withdraw(amount: string): Promise<void> {
     await this.amountInput.fill(amount);
     await this.submitButton.click();
+  }
+}
+
+export class AccountPanelPage {
+  constructor(private readonly page: Page) {}
+
+  get root(): Locator {
+    return this.page.getByTestId("account-panel");
+  }
+  row(name: string): Locator {
+    return this.page.getByTestId(`account-${name}`);
+  }
+  get depositButton(): Locator {
+    return this.page.getByTestId("account-deposit-button");
+  }
+  get withdrawButton(): Locator {
+    return this.page.getByTestId("account-withdraw-button");
   }
 }

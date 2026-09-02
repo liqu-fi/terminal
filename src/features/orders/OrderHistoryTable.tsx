@@ -1,5 +1,8 @@
+import type { GatewayOrder } from "@liq/core";
+import { useAccountId, useOrderHistoryQuery } from "@liq/react";
 import { Side } from "@liq/sdk";
 import { createColumnHelper } from "@tanstack/react-table";
+import { useMemo } from "react";
 
 import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
 import { features, marketFilterFn } from "@/components/data-table/features";
@@ -12,9 +15,13 @@ import {
   parseWadLoose,
 } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
-import { type OrderRow, useOpenOrderRows } from "./useOpenOrderRows";
 
-const helper = createColumnHelper<typeof features, OrderRow>();
+interface Row {
+  order: GatewayOrder;
+  symbol: string;
+}
+
+const helper = createColumnHelper<typeof features, Row>();
 
 const columns = helper.columns([
   helper.accessor((r) => Date.parse(r.order.createdAt), {
@@ -59,18 +66,8 @@ const columns = helper.columns([
   helper.accessor((r) => Number(parseWadLoose(r.order.limitPrice ?? "0")), {
     id: "price",
     header: "Price",
-    // Шлюз отдаёт крупные цены в научной нотации («1e+21»); parseWadLoose её
-    // терпит там, где голый BigInt() уронил бы рендер без error boundary.
     cell: (info) => {
       const px = info.row.original.order.limitPrice;
-      return px && px !== "0" ? fmtPrice(parseWadLoose(px)) : DASH;
-    },
-  }),
-  helper.accessor((r) => Number(parseWadLoose(r.order.triggerPrice ?? "0")), {
-    id: "trigger",
-    header: "Trigger",
-    cell: (info) => {
-      const px = info.row.original.order.triggerPrice;
       return px && px !== "0" ? fmtPrice(parseWadLoose(px)) : DASH;
     },
   }),
@@ -79,40 +76,45 @@ const columns = helper.columns([
     header: "Status",
     cell: (info) => <span className="text-muted">{info.getValue()}</span>,
   }),
-  helper.display({
-    id: "actions",
-    header: "",
-    enableHiding: false,
-    cell: (info) => {
-      const r = info.row.original;
-      return (
-        <button
-          type="button"
-          className="text-[11px] text-short disabled:opacity-50"
-          disabled={r.cancelling}
-          onClick={() => r.cancel(r.order.id)}
-          data-testid={`cancel-order-${r.order.id}`}
-        >
-          Cancel
-        </button>
-      );
-    },
-  }),
 ]);
 
-export function OpenOrdersTable() {
+/**
+ * Ордера, вышедшие из конвейера матчинга.
+ *
+ * @remarks Хук спрашивает `TERMINAL_ORDER_STATUSES`. Вместе с
+ * `OPEN_ORDER_STATUSES`, которыми живёт вкладка Open Orders, это НЕ все статусы:
+ * `MATCHED`, `SETTLEMENT_SUBMITTED` и `FAILED_RETRYABLE` не видны ни там, ни
+ * здесь — ордер в этих состояниях исчезает с экрана и возвращается уже
+ * исполненным. Закрывается расширением `useOpenOrdersQuery` в SDK; здесь
+ * замалчивать это нечем.
+ */
+export function OrderHistoryTable() {
   const { markets } = useSelectedMarket();
-  const { rows, isLoading } = useOpenOrderRows();
+  const accountId = useAccountId();
+  const { data = EMPTY, isLoading } = useOrderHistoryQuery(accountId);
+
+  const rows = useMemo<Row[]>(
+    () =>
+      data.map((order) => ({
+        order,
+        symbol:
+          markets.find((m) => m.id.toString() === order.marketId)?.symbol ??
+          order.marketId,
+      })),
+    [data, markets],
+  );
 
   return (
     <DataTable
       data={rows}
       columns={columns}
-      testid="orders-table"
+      testid="order-history-table"
       rowId={(r) => r.order.id}
       markets={markets.map((m) => ({ id: m.id.toString(), symbol: m.symbol }))}
       loading={isLoading}
-      emptyText="No open orders."
+      emptyText="No past orders."
     />
   );
 }
+
+const EMPTY: GatewayOrder[] = [];
