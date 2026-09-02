@@ -23,6 +23,7 @@ import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
+import { TicketHeader } from "./TicketHeader";
 import { SizeField } from "./SizeField";
 import { SizePercent } from "./SizePercent";
 import { TradePreviewRow } from "./TradePreviewRow";
@@ -259,6 +260,13 @@ export function TradeForm() {
       className="flex w-full flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
       data-testid="trade-form"
     >
+      <TicketHeader
+        leverage={sizing.leverage}
+        maxLeverage={maxLev}
+        onLeverage={sizing.setLeverage}
+        available={margins ? margins.available : null}
+      />
+
       <div className="flex gap-1 text-[11px]">
         {TABS.map((t) => (
           <button
@@ -326,25 +334,6 @@ export function TradeForm() {
         onPct={sizing.setPct}
         disabled={insufficientMargin || markPrice === 0n}
       />
-
-      <div>
-        <div className="mb-1 flex justify-between text-[10px] uppercase text-muted">
-          <span>Leverage</span>
-          <span className="text-text" data-testid="leverage-value">
-            {sizing.leverage}×
-          </span>
-        </div>
-        <input
-          type="range"
-          min={1}
-          max={maxLev}
-          step={1}
-          value={sizing.leverage}
-          data-testid="leverage-slider"
-          onChange={(e) => sizing.setLeverage(Number(e.target.value))}
-          className="w-full accent-accent"
-        />
-      </div>
 
       {(tab === "Stop" || tab === "Take Profit") && (
         <ConditionalFields

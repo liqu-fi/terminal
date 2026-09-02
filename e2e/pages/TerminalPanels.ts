@@ -41,7 +41,9 @@ export class TradePanel {
   readonly sizeMaxButton: Locator;
   readonly sizePctSlider: Locator;
   readonly sizePctValue: Locator;
-  readonly leverageSlider: Locator;
+  readonly leverageSelect: Locator;
+  readonly ticketAvailable: Locator;
+  readonly ticketDepositButton: Locator;
   readonly leverageValue: Locator;
   readonly limitPriceInput: Locator;
   readonly triggerPriceInput: Locator;
@@ -68,7 +70,9 @@ export class TradePanel {
     this.sizeMaxButton = page.getByTestId("size-max-button");
     this.sizePctSlider = page.getByTestId("size-pct-slider");
     this.sizePctValue = page.getByTestId("size-pct-value");
-    this.leverageSlider = page.getByTestId("leverage-slider");
+    this.leverageSelect = page.getByTestId("leverage-select");
+    this.ticketAvailable = page.getByTestId("ticket-available");
+    this.ticketDepositButton = page.getByTestId("ticket-deposit-button");
     this.leverageValue = page.getByTestId("leverage-value");
     this.limitPriceInput = page.getByTestId("limit-price-input");
     this.triggerPriceInput = page.getByTestId("trigger-price-input");
@@ -119,9 +123,17 @@ export class TradePanel {
     return this.triggerPriceInput.fill(value);
   }
 
-  /** input[type=range] can't be `.fill()`'d — set the value + fire events. */
+  /**
+   * Плечо выбирается списком, а не ползунком: список принимает только те
+   * значения, которые допускает рынок, — ползунок принимал любое целое.
+   */
   async setLeverage(value: number): Promise<void> {
-    await setRange(this.leverageSlider, value);
+    await this.leverageSelect.click();
+    await this.page.getByTestId(`leverage-option-${value}`).click();
+  }
+
+  openDeposit(): Promise<void> {
+    return this.ticketDepositButton.click();
   }
 
   submit(): Promise<void> {
