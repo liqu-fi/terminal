@@ -37,8 +37,9 @@ export class TradePanel {
   readonly sideLong: Locator;
   readonly sideShort: Locator;
   readonly sizeInput: Locator;
-  readonly sizeUnitToggle: Locator;
-  readonly sizeMaxButton: Locator;
+  readonly sizeUnitSelect: Locator;
+  readonly sizeQuoteValue: Locator;
+  readonly midPriceButton: Locator;
   readonly sizePctSlider: Locator;
   readonly sizePctValue: Locator;
   readonly leverageSelect: Locator;
@@ -66,8 +67,9 @@ export class TradePanel {
     this.sideLong = page.getByTestId("side-long-button");
     this.sideShort = page.getByTestId("side-short-button");
     this.sizeInput = page.getByTestId("size-input");
-    this.sizeUnitToggle = page.getByTestId("size-unit-toggle");
-    this.sizeMaxButton = page.getByTestId("size-max-button");
+    this.sizeUnitSelect = page.getByTestId("size-unit-select");
+    this.sizeQuoteValue = page.getByTestId("size-quote-value");
+    this.midPriceButton = page.getByTestId("mid-price-button");
     this.sizePctSlider = page.getByTestId("size-pct-slider");
     this.sizePctValue = page.getByTestId("size-pct-value");
     this.leverageSelect = page.getByTestId("leverage-select");
@@ -100,11 +102,19 @@ export class TradePanel {
   setSize(value: string): Promise<void> {
     return this.sizeInput.fill(value);
   }
-  toggleSizeUnit(): Promise<void> {
-    return this.sizeUnitToggle.click();
+  /** Единицы выбираются списком: в поле их две, и обе названы. */
+  async setSizeUnit(unit: "base" | "usd"): Promise<void> {
+    await this.sizeUnitSelect.click();
+    await this.page.getByTestId(`size-unit-${unit}`).click();
   }
+  /**
+   * 100% покупательной способности.
+   *
+   * @remarks Кнопка `MAX` внутри поля размера исчезла вместе с ним — макет её
+   * не показывает, а то же самое действие уже есть долей `100%`.
+   */
   clickMax(): Promise<void> {
-    return this.sizeMaxButton.click();
+    return this.sizePctChip(100).click();
   }
   sizePctChip(pct: 25 | 50 | 75 | 100): Locator {
     return this.page.getByTestId(`size-pct-${pct}`);

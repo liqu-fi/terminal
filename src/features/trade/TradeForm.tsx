@@ -16,17 +16,18 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { DecimalInput } from "../../components/ui/DecimalInput";
 import { sanitizeDecimal } from "../../lib/decimal";
 import { fmtPrice, fmtUsd } from "../../lib/format";
 import { useSelectedMarket } from "../market/useSelectedMarket";
 import { ConditionalFields } from "./ConditionalFields";
 import { EntryTpSlFields } from "./EntryTpSlFields";
+import { OrderPriceField } from "./OrderPriceField";
+import { QuantityField } from "./QuantityField";
 import { shouldAdoptLevel } from "./shouldAdoptLevel";
 import { TicketHeader } from "./TicketHeader";
-import { SizeField } from "./SizeField";
 import { SizePercent } from "./SizePercent";
 import { TradePreviewRow } from "./TradePreviewRow";
+import { useBookMid } from "./useBookMid";
 import { useMarkPrice } from "./useMarkPrice";
 import { useOrderSizing } from "./useOrderSizing";
 
@@ -60,6 +61,7 @@ export function TradeForm() {
   const { marketId, market } = useSelectedMarket();
   const accountId = useAccountId();
   const markPrice = useMarkPrice();
+  const mid = useBookMid();
   const { data: margins } = useAvailableMarginQuery();
 
   // Корпус подачи — резерв nonce, подпись активным сессионным ключом или
@@ -304,29 +306,30 @@ export function TradeForm() {
       </div>
 
       {tab === "Limit" && (
-        <div>
-          <label className="mb-1 block text-[10px] uppercase text-muted">
-            Limit price
-          </label>
-          <DecimalInput
-            value={limitPrice}
-            onValueChange={setLimitPrice}
-            maxDecimals={LIMIT_PRICE_DECIMALS}
-            placeholder="0.00"
-            data-testid="limit-price-input"
-          />
-        </div>
+        <OrderPriceField
+          value={limitPrice}
+          onChange={setLimitPrice}
+          onMid={() => {
+            if (mid === null) return;
+            setLimitPrice(
+              sanitizeDecimal(Price.fmt(Price(mid)), LIMIT_PRICE_DECIMALS),
+            );
+          }}
+          midDisabled={mid === null}
+          maxDecimals={LIMIT_PRICE_DECIMALS}
+        />
       )}
 
-      <SizeField
+      <QuantityField
         value={sizing.sizeStr}
         onChange={sizing.setSizeStr}
         unit={sizing.unit}
-        onToggleUnit={sizing.toggleUnit}
-        onMax={sizing.setMax}
+        onUnit={sizing.setUnit}
         baseSymbol={sizing.baseSymbol}
+        quoteSymbol="USD"
+        notional={sizing.notional}
         invalid={rejection !== undefined}
-        toggleDisabled={markPrice === 0n}
+        unitDisabled={markPrice === 0n}
       />
 
       <SizePercent

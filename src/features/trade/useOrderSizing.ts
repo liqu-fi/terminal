@@ -28,7 +28,7 @@ export type OrderSizing = {
   sizeStr: string;
   setSizeStr: (v: string) => void;
   unit: SizeUnit;
-  toggleUnit: () => void;
+  setUnit: (u: SizeUnit) => void;
   leverage: number;
   setLeverage: (l: number) => void;
   /** Set size from a 0–100% slice of buying power (slider / chips). */
@@ -93,7 +93,7 @@ export function useOrderSizing(params: {
   const { market, available, markPrice, side } = params;
 
   const [sizeStr, setSizeStrRaw] = useState("");
-  const [unit, setUnit] = useState<SizeUnit>("base");
+  const [unit, setUnitRaw] = useState<SizeUnit>("base");
   const [leverage, setLeverageRaw] = useState(2);
   const [pct, setPctRaw] = useState(0);
 
@@ -179,20 +179,20 @@ export function useOrderSizing(params: {
     }
   }
 
-  function toggleUnit() {
+  function setUnit(next: SizeUnit) {
+    if (next === unit) return;
     // Without a mark price there is no base⇄USD conversion — switching would
     // format to "" and silently drop the typed size. No-op until price loads.
     if (markPrice <= 0n) return;
-    const next: SizeUnit = unit === "base" ? "usd" : "base";
     setSizeStrRaw(fmtForUnit(sizeQty, next));
-    setUnit(next);
+    setUnitRaw(next);
   }
 
   return {
     sizeStr,
     setSizeStr,
     unit,
-    toggleUnit,
+    setUnit,
     leverage,
     setLeverage,
     setPct,

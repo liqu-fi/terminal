@@ -128,11 +128,13 @@ test.describe("trade form gating & controls", () => {
     const { trade } = await enterTerminal(page, world); // mark 70,000
 
     await trade.setSize("0.5");
-    await expect(trade.sizeUnitToggle).toHaveText(/BTC/);
-    await trade.toggleSizeUnit();
+    await expect(trade.sizeUnitSelect).toHaveText(/BTC/);
+    // строка пересчёта считает от МАРКА, а не от цены ордера
+    await expect(trade.sizeQuoteValue).toHaveText(/35,000\.00/);
+    await trade.setSizeUnit("usd");
     // 0.5 BTC * 70,000 = 35,000 USD
     await expect(trade.sizeInput).toHaveValue("35000");
-    await expect(trade.sizeUnitToggle).toHaveText(/USD/);
+    await expect(trade.sizeUnitSelect).toHaveText(/USD/);
     // submit still sends the base-size delta (0.5), not the USD figure
     await trade.submit();
     await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(0);
