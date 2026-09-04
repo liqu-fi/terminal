@@ -12,6 +12,7 @@ import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 import { env } from "../../config/env";
 import { Button } from "@/components/ui/button";
 import { ConnectButton } from "../wallet/ConnectButton";
+import { useIdentityDoor } from "./IdentityDoorProvider";
 import { sessionStage } from "./sessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
@@ -70,6 +71,7 @@ function WalletDebug() {
 }
 
 function SessionGateInner({ children }: { children: ReactNode }) {
+  const { booting } = useIdentityDoor();
   const wallet = useWallet();
   // Pull the query's loading flag, not just `useAccountId()`: the latter
   // collapses "still loading" and "no account" into a single `undefined`,
@@ -118,6 +120,17 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     accountsLoading,
     isAuthenticated,
   });
+
+  // Пока идёт восстановление, wagmi отвечает `disconnected`, и без этой ветки
+  // гейт показывал бы экран входа кадром на каждой перезагрузке. Раньше ту же
+  // роль играл `isReconnecting` внутри штатного восстановления wagmi.
+  if (booting) {
+    return (
+      <Centered testid="session-loading">
+        <p className="text-muted">Loading account…</p>
+      </Centered>
+    );
+  }
 
   if (stage === "disconnected") {
     return (
