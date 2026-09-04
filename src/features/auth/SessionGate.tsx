@@ -8,8 +8,8 @@ import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env } from "../../config/env";
 import { Button } from "@/components/ui/button";
-import { ConnectButton } from "../wallet/ConnectButton";
 import { useIdentityDoor } from "./IdentityDoorProvider";
+import { SignInPanel } from "./SignInPanel";
 import { useSessionStageLocal } from "./useSessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
@@ -122,7 +122,7 @@ function SessionGateInner({ children }: { children: ReactNode }) {
   if (stage === "disconnected") {
     return (
       <Centered testid="session-disconnected">
-        <ConnectButton />
+        <SignInPanel />
       </Centered>
     );
   }

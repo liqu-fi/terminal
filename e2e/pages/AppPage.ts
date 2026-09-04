@@ -30,6 +30,8 @@ export class AppPage {
   readonly wrongChainGate: Locator;
   readonly switchChainButton: Locator;
   readonly switchChainError: Locator;
+  readonly turnkeyLoginButton: Locator;
+  readonly authConfigError: Locator;
 
   constructor(private readonly page: Page) {
     this.brand = page.getByTestId("app-brand");
@@ -49,6 +51,8 @@ export class AppPage {
     this.wrongChainGate = page.getByTestId("session-wrong-chain");
     this.switchChainButton = page.getByTestId("switch-chain-button");
     this.switchChainError = page.getByTestId("switch-chain-error");
+    this.turnkeyLoginButton = page.getByTestId("turnkey-login-button");
+    this.authConfigError = page.getByTestId("auth-config-error");
   }
 
   goto(): Promise<unknown> {
