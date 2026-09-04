@@ -6,20 +6,55 @@ import {
 import { type ReactNode, useEffect } from "react";
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
-import { env } from "../../config/env";
+import { env, turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
 import { useIdentityDoor } from "./IdentityDoorProvider";
 import { SignInPanel } from "./SignInPanel";
+import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
 import { useSessionStageLocal } from "./useSessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
+  // Ветка стоит на константе времени сборки, а не на условии: `useTurnkeyIdentity()`
+  // внутри `TurnkeyBootGate` бросает вне своего провайдера, и правило хуков требует,
+  // чтобы выбор компонента, который его зовёт, не менялся за время монтирования
+  // (тот же приём в `SignInPanel`, `ConnectButton`).
+  const inner = <SessionGateInner>{children}</SessionGateInner>;
   return (
     <>
       {env.debugWallet && <WalletDebug />}
-      <SessionGateInner>{children}</SessionGateInner>
+      {turnkeyLoginEnabled ? <TurnkeyBootGate>{inner}</TurnkeyBootGate> : inner}
     </>
   );
+}
+
+/**
+ * Перехватывает гейт на то время, пока сессия Turnkey восстановлена, а
+ * встроенный кошелёк ещё не разрешён.
+ *
+ * @remarks
+ * `booting` в `IdentityDoorProvider` гаснет, как только `isAuthorized()`
+ * коннектора Turnkey ответит — а он отвечает `false` немедленно, потому что
+ * зовёт `getProvider()` по пустому в этот тик реестру провайдеров: лестнице
+ * ещё только предстоит начать круг к auth-proxy и `resolve-signer`. Без этой
+ * ступени `SessionGateInner` в этом окне рисует `session-disconnected` с
+ * обеими живыми кнопками, и клик по Connect Wallet сажает пользователя под
+ * EOA, пока в реестре ещё висит TEE-провайдер прошлой попытки — спека §2
+ * обещает, что именно это окно закрывает `booting`, и для двери Turnkey оно
+ * оставалось открытым.
+ */
+function TurnkeyBootGate({ children }: { children: ReactNode }) {
+  const { door } = useIdentityDoor();
+  const { subOrgId, embedded } = useTurnkeyIdentity();
+  const stillResolving = embedded.kind === "idle" || embedded.kind === "resolving";
+  if (door === "turnkey" && subOrgId !== null && stillResolving) {
+    return (
+      <Centered testid="session-loading">
+        <p className="text-muted">Loading account…</p>
+      </Centered>
+    );
+  }
+  return <>{children}</>;
 }
 
 /**
