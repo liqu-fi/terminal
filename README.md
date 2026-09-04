@@ -27,6 +27,14 @@ deposit → sign & submit orders → watch live updates**. Single-market, neutra
    # version path — e.g. https://gateway.example.com/v1 (the SDK appends bare
    # routes like /markets, so the /v1 prefix must be part of this URL).
    ```
+
+> **Вход через Turnkey (необязательно).** По умолчанию единственная дверь — расширение браузера.
+> Чтобы пустить пользователей без кошелька, задайте `VITE_TURNKEY_LOGIN=true` вместе с
+> `VITE_TURNKEY_ORG_ID` и `VITE_TURNKEY_AUTH_PROXY_CONFIG_ID` из дашборда Turnkey (раздел Wallet
+> Kit). Вход по коду на почту создаёт пользователю кошелёк в TEE; шлюз доливает ему газа на первую
+> транзакцию через `POST /auth/gas` — на деплое без этой ручки вход работает, но ETH придётся
+> прислать самому.
+
 3. **Install & run:**
    ```bash
    pnpm install
@@ -51,7 +59,8 @@ Every step maps to a hook from `@liq/react` (or a class from `@liq/sdk`):
 
 | Step                     | What happens                                      | SDK                                            | Code                                        |
 | ------------------------ | ------------------------------------------------- | ---------------------------------------------- | ------------------------------------------- |
-| Connect                  | wagmi wallet connect                              | wagmi `useConnect`                             | `features/wallet/ConnectButton.tsx`         |
+| Sign in (Turnkey)        | код на почту / подпись кошелька → встроенный кошелёк в TEE | `TurnkeyProviderWrapper`, `createEmbeddedWallet` | `features/auth/TurnkeyLoginButton.tsx`      |
+| Connect (wallet)         | wagmi wallet connect                              | wagmi `useConnect`                             | `features/wallet/ConnectButton.tsx`         |
 | Create account           | mint SNX account NFT                              | `useCreateAccountMutation`                     | `features/auth/SessionGate.tsx`             |
 | Sign in                  | SIWE personal_sign → JWT (+ book mode + register) | `useGatewayAuthMutation`                       | `features/auth/SessionGate.tsx`             |
 | Deposit                  | USDC→sUSDC→modifyCollateral multicall             | `useDepositMutation`                           | `features/account/DepositDialog.tsx`        |

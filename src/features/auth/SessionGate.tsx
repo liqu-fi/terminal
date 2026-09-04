@@ -1,27 +1,61 @@
 import {
-  selectIsAuthenticated,
   useAccountQuery,
   useCreateAccountMutation,
   useGatewayAuthMutation,
-  useGatewayStore,
-  useWallet,
 } from "@liq/react";
+import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
 import { type ReactNode, useEffect } from "react";
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
-import { env } from "../../config/env";
+import { env, turnkeyLoginEnabled } from "../../config/env";
 import { Button } from "@/components/ui/button";
-import { ConnectButton } from "../wallet/ConnectButton";
-import { sessionStage } from "./sessionStage";
+import { useIdentityDoor } from "./IdentityDoorProvider";
+import { SignInPanel } from "./SignInPanel";
+import { useTurnkeyIdentity } from "./TurnkeyIdentityProvider";
+import { useSessionStageLocal } from "./useSessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
+  // Ветка стоит на константе времени сборки, а не на условии: `useTurnkeyIdentity()`
+  // внутри `TurnkeyBootGate` бросает вне своего провайдера, и правило хуков требует,
+  // чтобы выбор компонента, который его зовёт, не менялся за время монтирования
+  // (тот же приём в `SignInPanel`, `ConnectButton`).
+  const inner = <SessionGateInner>{children}</SessionGateInner>;
   return (
     <>
       {env.debugWallet && <WalletDebug />}
-      <SessionGateInner>{children}</SessionGateInner>
+      {turnkeyLoginEnabled ? <TurnkeyBootGate>{inner}</TurnkeyBootGate> : inner}
     </>
   );
+}
+
+/**
+ * Перехватывает гейт на то время, пока сессия Turnkey восстановлена, а
+ * встроенный кошелёк ещё не разрешён.
+ *
+ * @remarks
+ * `booting` в `IdentityDoorProvider` гаснет, как только `isAuthorized()`
+ * коннектора Turnkey ответит — а он отвечает `false` немедленно, потому что
+ * зовёт `getProvider()` по пустому в этот тик реестру провайдеров: лестнице
+ * ещё только предстоит начать круг к auth-proxy и `resolve-signer`. Без этой
+ * ступени `SessionGateInner` в этом окне рисует `session-disconnected` с
+ * обеими живыми кнопками, и клик по Connect Wallet сажает пользователя под
+ * EOA, пока в реестре ещё висит TEE-провайдер прошлой попытки — спека §2
+ * обещает, что именно это окно закрывает `booting`, и для двери Turnkey оно
+ * оставалось открытым.
+ */
+function TurnkeyBootGate({ children }: { children: ReactNode }) {
+  const { door } = useIdentityDoor();
+  const { subOrgId, embedded } = useTurnkeyIdentity();
+  const stillResolving = embedded.kind === "idle" || embedded.kind === "resolving";
+  if (door === "turnkey" && subOrgId !== null && stillResolving) {
+    return (
+      <Centered testid="session-loading">
+        <p className="text-muted">Loading account…</p>
+      </Centered>
+    );
+  }
+  return <>{children}</>;
 }
 
 /**
@@ -70,14 +104,11 @@ function WalletDebug() {
 }
 
 function SessionGateInner({ children }: { children: ReactNode }) {
-  const wallet = useWallet();
-  // Pull the query's loading flag, not just `useAccountId()`: the latter
-  // collapses "still loading" and "no account" into a single `undefined`,
-  // which would flash the create-account CTA before the on-chain lookup
-  // resolves (see sessionStage).
-  const { data: accountIds, isLoading: accountsLoading } = useAccountQuery();
+  const { booting } = useIdentityDoor();
+  // Саму ступень вычисляет useSessionStageLocal(); здесь accountId остаётся
+  // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
+  const { data: accountIds } = useAccountQuery();
   const accountId = accountIds?.[0];
-  const isAuthenticated = useGatewayStore(selectIsAuthenticated);
 
   // Detect a wallet on the wrong network via the CONNECTOR's chain
   // (`useAccount().chainId`), NOT `useChainId()`: the latter returns the wagmi
@@ -111,18 +142,23 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     }
   }, [wrongChain, walletClientErrored, refetchWalletClient]);
 
-  const stage = sessionStage({
-    wallet,
-    wrongChain,
-    accountId,
-    accountsLoading,
-    isAuthenticated,
-  });
+  const stage = useSessionStageLocal();
+
+  // Пока идёт восстановление, wagmi отвечает `disconnected`, и без этой ветки
+  // гейт показывал бы экран входа кадром на каждой перезагрузке. Раньше ту же
+  // роль играл `isReconnecting` внутри штатного восстановления wagmi.
+  if (booting) {
+    return (
+      <Centered testid="session-loading">
+        <p className="text-muted">Loading account…</p>
+      </Centered>
+    );
+  }
 
   if (stage === "disconnected") {
     return (
       <Centered testid="session-disconnected">
-        <ConnectButton />
+        <SignInPanel />
       </Centered>
     );
   }
@@ -161,7 +197,11 @@ function SessionGateInner({ children }: { children: ReactNode }) {
         >
           {createAccount.isPending ? "Creating…" : "Create Account"}
         </Button>
-        <ErrorLine error={createAccount.error} testid="create-account-error" />
+        <ErrorLine
+          error={createAccount.error}
+          testid="create-account-error"
+          formatMessage={(error) => createAccountErrorMessage(error, account.address)}
+        />
       </Centered>
     );
   }
@@ -223,12 +263,37 @@ function Centered({
   );
 }
 
+/**
+ * Что показать вместо сырого `error.message` при отказе создания аккаунта.
+ *
+ * @remarks
+ * Спека §5 и таблица краевых случаев называют это единственным местом, ради
+ * которого вообще делался долив газа: на деплое без его ручек (задокументи-
+ * рованный 404) кошелёк без ETH иначе объясняется сырым текстом реверта
+ * viem — пользователь смотрит на "execution reverted" и не понимает, что ему
+ * нужно прислать ETH. Остальные отказы (не про газ) показываются как есть —
+ * `isInsufficientGas` целится только в нехватку средств на комиссию.
+ */
+function createAccountErrorMessage(error: Error, address: string | undefined): string {
+  if (!isInsufficientGas(error)) return error.message;
+  return `${INSUFFICIENT_GAS_MESSAGE} Send ETH to ${address ?? "your wallet"} and try again.`;
+}
+
 /** Surfaces a mutation error inline so a failed CTA isn't a silent dead-end. */
-function ErrorLine({ error, testid }: { error: Error | null; testid: string }) {
+function ErrorLine({
+  error,
+  testid,
+  formatMessage,
+}: {
+  error: Error | null;
+  testid: string;
+  /** Переопределяет `error.message` — например, чтобы humanize'ить конкретную причину. */
+  formatMessage?: (error: Error) => string;
+}) {
   if (!error) return null;
   return (
     <p className="text-sm text-short" role="alert" data-testid={testid}>
-      {error.message}
+      {formatMessage ? formatMessage(error) : error.message}
     </p>
   );
 }

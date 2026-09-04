@@ -14,8 +14,10 @@ test.describe("session persistence", () => {
 
     await page.reload();
 
-    // wagmi auto-reconnects the injected wallet; the JWT comes back from
-    // localStorage('liq-gateway') — so the terminal returns with zero clicks…
+    // wagmi's own auto-reconnect is OFF (reconnectOnMount={false}); it's
+    // IdentityDoorProvider that reconnects the remembered door explicitly, and
+    // the JWT comes back from localStorage('liq-gateway') — so the terminal
+    // returns with zero clicks…
     await expect(app.terminal).toBeVisible({ timeout: 25_000 });
     // …and crucially with no re-authentication of any kind:
     expect(world.authVerifyRequests).toHaveLength(1);
