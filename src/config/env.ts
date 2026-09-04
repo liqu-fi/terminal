@@ -20,23 +20,46 @@ function requireGatewayUrl(): string {
 }
 
 /**
- * Turnkey session-key (1-click trading) config, injected into the SDK's
- * `useSessionKeyManager({ config })`.
+ * Конфигурация Turnkey. Два независимых флага на один конфиг:
  *
- * Vite exposes env via `import.meta.env.VITE_*`, which the SDK's default
- * `process.env`/`NEXT_PUBLIC_*` resolver cannot see — so the terminal MUST pass
- * this object explicitly. Default OFF: when `enabled` is false (or the config is
- * incomplete) the SDK returns a null manager and order signing falls back to the
- * wagmi wallet popup, byte-identical to today.
+ * - `enabled` (`VITE_TURNKEY_SESSION`) — бэкенд **сессионных ключей**: он
+ *   выбирает ИСТОЧНИК ключа (анклав против ключа в localStorage), а не наличие
+ *   сессии. Выключен — SDK возвращает кошельковый менеджер, 1-click работает
+ *   без анклава.
+ * - `login` (`VITE_TURNKEY_LOGIN`) — **дверь входа**: модалка Turnkey и
+ *   встроенный кошелёк в TEE как подписант.
+ *
+ * Разведены, потому что это разные решения: вход через Turnkey полезен и без
+ * сессионных ключей, а сессионные ключи работали до появления входа. Один флаг
+ * на двоих означал бы, что включить одно нельзя, не включив другое.
  */
 const turnkey = {
   enabled: import.meta.env.VITE_TURNKEY_SESSION === "true",
+  login: import.meta.env.VITE_TURNKEY_LOGIN === "true",
   orgId: import.meta.env.VITE_TURNKEY_ORG_ID ?? "",
   authProxyUrl:
     import.meta.env.VITE_TURNKEY_AUTH_PROXY_URL ??
     "https://authproxy.turnkey.com",
   authProxyConfigId: import.meta.env.VITE_TURNKEY_AUTH_PROXY_CONFIG_ID ?? "",
 };
+
+/**
+ * Чего не хватает включённой двери входа — или `null`, если всё на месте.
+ *
+ * @remarks Константа времени сборки, и это несущее свойство, а не деталь:
+ * `useTurnkey()` бросает вне своего провайдера, поэтому компонент, который его
+ * зовёт, обязан выйти ДО первого хука. Ветка, стоящая на константе, не меняется
+ * за время монтирования — правило хуков соблюдено в обеих ветках.
+ */
+function readTurnkeyConfigError(): string | null {
+  if (!turnkey.login) return null;
+  const missing = [
+    turnkey.orgId ? null : "VITE_TURNKEY_ORG_ID",
+    turnkey.authProxyConfigId ? null : "VITE_TURNKEY_AUTH_PROXY_CONFIG_ID",
+  ].filter((name): name is string => name !== null);
+  if (missing.length === 0) return null;
+  return `VITE_TURNKEY_LOGIN=true, но не задано: ${missing.join(", ")}. Вход через Turnkey выключен.`;
+}
 
 export const env = {
   deployEnv: (import.meta.env.VITE_DEPLOY_ENV ?? "staging") as
@@ -55,4 +78,12 @@ export const env = {
    */
   debugWallet: import.meta.env.VITE_DEBUG_WALLET === "true",
   turnkey,
+  turnkeyConfigError: readTurnkeyConfigError(),
 };
+
+/**
+ * Показывать ли дверь Turnkey. Одно имя вместо повторения условия в четырёх
+ * местах: разъехавшиеся копии этого условия — это экран, на котором кнопка
+ * входа есть, а провайдера под ней нет.
+ */
+export const turnkeyLoginEnabled = env.turnkey.login && !env.turnkeyConfigError;
