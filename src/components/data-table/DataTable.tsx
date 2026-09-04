@@ -127,53 +127,51 @@ export function DataTable<T extends RowData>({
           {emptyText}
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <Table data-testid={testid}>
-            <TableHeader>
-              {table.getHeaderGroups().map((group) => (
-                <TableRow key={group.id}>
-                  {group.headers.map((header) => {
-                    const sorted = header.column.getIsSorted();
-                    return (
-                      <TableHead
-                        key={header.id}
-                        onClick={header.column.getToggleSortingHandler()}
-                        className={
-                          header.column.getCanSort()
-                            ? "cursor-pointer select-none hover:text-text"
-                            : undefined
-                        }
-                        data-testid={`table-header-${header.column.id}`}
-                      >
-                        {header.isPlaceholder ? null : (
-                          <span className="inline-flex items-center gap-1">
-                            <table.FlexRender header={header} />
-                            {sorted === "asc" ? (
-                              <ChevronUp size={12} />
-                            ) : sorted === "desc" ? (
-                              <ChevronDown size={12} />
-                            ) : null}
-                          </span>
-                        )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id} data-testid={`${testid}-row-${row.id}`}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Table data-testid={testid} containerClassName="scroll-thin min-h-0 flex-1">
+          <TableHeader>
+            {table.getHeaderGroups().map((group) => (
+              <TableRow key={group.id}>
+                {group.headers.map((header) => {
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <TableHead
+                      key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      className={
+                        header.column.getCanSort()
+                          ? "cursor-pointer select-none hover:text-text"
+                          : undefined
+                      }
+                      data-testid={`table-header-${header.column.id}`}
+                    >
+                      {header.isPlaceholder ? null : (
+                        <span className="inline-flex items-center gap-1">
+                          <table.FlexRender header={header} />
+                          {sorted === "asc" ? (
+                            <ChevronUp size={12} />
+                          ) : sorted === "desc" ? (
+                            <ChevronDown size={12} />
+                          ) : null}
+                        </span>
+                      )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id} data-testid={`${testid}-row-${row.id}`}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    <table.FlexRender cell={cell} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

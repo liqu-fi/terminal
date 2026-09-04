@@ -11,7 +11,6 @@ import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
 import { env } from "../../config/env";
 import { Button } from "@/components/ui/button";
-import { SessionKeyButton } from "../session-keys/SessionKeyButton";
 import { ConnectButton } from "../wallet/ConnectButton";
 import { sessionStage } from "./sessionStage";
 
@@ -19,16 +18,22 @@ import { sessionStage } from "./sessionStage";
 export function SessionGate({ children }: { children: ReactNode }) {
   return (
     <>
-      <WalletDebug />
+      {env.debugWallet && <WalletDebug />}
       <SessionGateInner>{children}</SessionGateInner>
     </>
   );
 }
 
-// Integrator-facing diagnostic overlay: live wagmi wallet state (status, chain,
-// walletClient) so a misconfigured wallet/chain is visible at a glance during
-// onboarding. Read-only, so `pointer-events-none` keeps it from intercepting
-// clicks on the app underneath.
+/**
+ * Integrator-facing diagnostic overlay: live wagmi wallet state (status, chain,
+ * walletClient) so a misconfigured wallet/chain is visible at a glance during
+ * onboarding.
+ *
+ * @remarks За флагом `VITE_DEBUG_WALLET`, по умолчанию выключен. Это `fixed`-слой
+ * в левом нижнем углу: на 1024×768 он закрывал половину таблицы позиций, а
+ * `pointer-events-none` спасает только от перехвата кликов, но не от того, что
+ * данных под ним не видно. Кому оверлей нужен — включает флагом.
+ */
 function WalletDebug() {
   const account = useAccount();
   const chainId = useChainId();
@@ -195,18 +200,10 @@ function SessionGateInner({ children }: { children: ReactNode }) {
       </Centered>
     );
   }
-  // Authenticated/ready: render the app, with the session-key (1-click) pill
-  // as a non-blocking enhancement above it. SessionKeyButton self-hides when no
-  // session manager can be built (no wallet, or Turnkey enabled but misconfigured),
-  // so mounting it unconditionally here is safe.
-  return (
-    <>
-      <div className="flex justify-end px-3 pt-2" data-testid="session-toolbar">
-        <SessionKeyButton />
-      </div>
-      {children}
-    </>
-  );
+  // Authenticated/ready: render the app. Пилюля 1-click живёт в шапке
+  // приложения (`SessionToolbar`) — своя строка над терминалом стоила 36px
+  // высоты ради одной кнопки; гейт по аутентификации переехал туда вместе с ней.
+  return <>{children}</>;
 }
 
 function Centered({

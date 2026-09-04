@@ -167,6 +167,7 @@ exports[`инвентарь data-testid > не теряет идентифика
   "tpsl-sl-input",
   "tpsl-toggle",
   "tpsl-tp-input",
+  "trade-column",
   "trade-error",
   "trade-form",
   "trade-history-table",

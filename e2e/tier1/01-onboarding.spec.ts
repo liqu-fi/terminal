@@ -204,10 +204,10 @@ test.describe("boot + onboarding", () => {
     seed(world, readyWorld());
     const app = new AppPage(page);
     await app.goto();
-    // The wallet overlay is up from boot and is click-transparent by CSS —
-    // that property is exactly what keeps it from blocking the app's CTAs.
-    await expect(app.walletDebug).toBeVisible();
-    await expect(app.walletDebug).toHaveCSS("pointer-events", "none");
+    // Оверлей состояния кошелька — за флагом `VITE_DEBUG_WALLET`, и e2e его не
+    // ставит: это `fixed`-слой в левом нижнем углу, который на ноутбучном экране
+    // закрывал часть нижней таблицы. По умолчанию его нет вовсе.
+    await expect(app.walletDebug).toHaveCount(0);
 
     await app.connect();
     // The sign-in stage shows the auth-state JSON dump.

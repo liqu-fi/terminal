@@ -12,21 +12,10 @@ import { BookGrid } from "./BookGrid";
 import { baseSymbolOf } from "./bookView";
 import { TickSelect } from "./TickSelect";
 import { TradesTape } from "./TradesTape";
+import { useBookSlots } from "./useBookSlots";
 import { useBookTick } from "./useBookTick";
 
 type BookViewMode = "both" | "bids" | "asks";
-
-/** Сколько строк на сторону в режиме «обе стороны». */
-const SLOTS_BOTH = 10;
-/**
- * Сколько строк на сторону в одностороннем режиме.
- *
- * @remarks Один список занимает место, которое в режиме «обе стороны» делят
- * два — вдвое больше строк на ту же высоту панели. Это же число уходит в
- * `depth` вызова `useOrderbook`: несовпадение оставило бы половину сетки
- * пустой (запрошено 10 строк, а показывать нужно 20).
- */
-const SLOTS_ONE_SIDE = 20;
 
 export function OrderBookPanel() {
   const { marketId, market, marketsLoading } = useSelectedMarket();
@@ -34,7 +23,11 @@ export function OrderBookPanel() {
   const [view, setView] = useState<BookViewMode>("both");
   const { tick, setTick, options } = useBookTick(markPrice);
 
-  const slots = view === "both" ? SLOTS_BOTH : SLOTS_ONE_SIDE;
+  // Число строк на сторону считается от фактической высоты области сетки, а не
+  // берётся константой с макета: в одностороннем режиме место, которое делили
+  // две стороны, достаётся одной — отсюда делитель. Это же число уходит в
+  // `depth` запроса: несовпадение оставило бы половину сетки пустой.
+  const { ref: gridRef, slots } = useBookSlots(view === "both" ? 2 : 1);
 
   const { book, asOf, isLoading, unavailable, error } = useOrderbook(
     marketId ?? null,
@@ -69,11 +62,11 @@ export function OrderBookPanel() {
 
   return (
     <Card
-      className="flex h-full flex-col gap-2 p-2"
+      className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-2"
       data-testid="orderbook-panel"
     >
-      <Tabs defaultValue="book" className="flex flex-1 flex-col gap-2">
-        <TabsList>
+      <Tabs defaultValue="book" className="flex min-h-0 flex-1 flex-col gap-2">
+        <TabsList className="shrink-0">
           <TabsTrigger value="book" data-testid="orderbook-tab-book">
             Order Book
           </TabsTrigger>
@@ -82,8 +75,11 @@ export function OrderBookPanel() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="book" className="flex flex-1 flex-col gap-2">
-          <div className="flex items-center justify-between px-1">
+        <TabsContent
+          value="book"
+          className="flex min-h-0 flex-1 flex-col gap-2"
+        >
+          <div className="flex shrink-0 items-center justify-between px-1">
             <ToggleGroup
               type="single"
               value={view}
@@ -107,54 +103,60 @@ export function OrderBookPanel() {
             <TickSelect tick={tick} options={options} onSelect={setTick} />
           </div>
 
-          {isWaiting ? (
-            <p
-              className="py-6 text-center text-sm text-muted"
-              data-testid="book-loading"
-            >
-              Loading order book…
-            </p>
-          ) : nothingToShow && unavailable ? (
-            <p
-              className="py-6 text-center text-sm text-muted"
-              data-testid="book-unavailable"
-            >
-              No matching engine is maintaining this book right now.
-            </p>
-          ) : nothingToShow && error ? (
-            <p
-              className="py-6 text-center text-sm text-short"
-              data-testid="book-error"
-            >
-              Order book failed to load.
-            </p>
-          ) : marketId == null ? (
-            <p
-              className="py-6 text-center text-sm text-muted"
-              data-testid="book-no-market"
-            >
-              No market selected — no book to show.
-            </p>
-          ) : isEmpty ? (
-            <p
-              className="py-6 text-center text-sm text-muted"
-              data-testid="book-empty"
-            >
-              Book is empty — orders execute against the liquidity pool.
-            </p>
-          ) : (
-            <BookGrid
-              book={book}
-              view={view}
-              slots={slots}
-              tick={tick}
-              markPrice={markPrice}
-              baseSymbol={baseSymbolOf(market?.symbol)}
-            />
-          )}
+          {/* Область сетки существует при ЛЮБОМ состоянии — по её высоте
+              считается `slots`. Меряя саму сетку, мы получали бы ноль на
+              экране загрузки и лишний запрос с минимальной глубиной сразу
+              после того, как книга приедет. */}
+          <div className="min-h-0 flex-1" ref={gridRef}>
+            {isWaiting ? (
+              <p
+                className="py-6 text-center text-sm text-muted"
+                data-testid="book-loading"
+              >
+                Loading order book…
+              </p>
+            ) : nothingToShow && unavailable ? (
+              <p
+                className="py-6 text-center text-sm text-muted"
+                data-testid="book-unavailable"
+              >
+                No matching engine is maintaining this book right now.
+              </p>
+            ) : nothingToShow && error ? (
+              <p
+                className="py-6 text-center text-sm text-short"
+                data-testid="book-error"
+              >
+                Order book failed to load.
+              </p>
+            ) : marketId == null ? (
+              <p
+                className="py-6 text-center text-sm text-muted"
+                data-testid="book-no-market"
+              >
+                No market selected — no book to show.
+              </p>
+            ) : isEmpty ? (
+              <p
+                className="py-6 text-center text-sm text-muted"
+                data-testid="book-empty"
+              >
+                Book is empty — orders execute against the liquidity pool.
+              </p>
+            ) : (
+              <BookGrid
+                book={book}
+                view={view}
+                slots={slots}
+                tick={tick}
+                markPrice={markPrice}
+                baseSymbol={baseSymbolOf(market?.symbol)}
+              />
+            )}
+          </div>
         </TabsContent>
 
-        <TabsContent value="trades" className="flex-1">
+        <TabsContent value="trades" className="min-h-0 flex-1">
           {/* Keyed on the market: a switch remounts the tape so its live
               buffer starts empty rather than briefly mixing in ticks that
               belonged to the previous market. */}

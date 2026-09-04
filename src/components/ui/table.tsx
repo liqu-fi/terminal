@@ -10,11 +10,25 @@ import { cn } from "@/lib/utils";
 //   border-b/border-t у строк оставлены голыми: базовый слой в index.css
 //     красит любую границу в var(--border), поэтому цвет называть не нужно.
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /**
+   * Классы прокручиваемой обёртки таблицы.
+   *
+   * @remarks Скроллить обязана именно она, а не внешний div: липкая шапка
+   * прилипает к ближайшему прокручиваемому предку, и пока вертикальный скролл
+   * жил снаружи, `sticky` в `thead` был бы пустым обещанием — шапка уезжала бы
+   * вместе со строками.
+   */
+  containerClassName?: string;
+}) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full overflow-auto", containerClassName)}
     >
       <table
         data-slot="table"
@@ -29,7 +43,11 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn(
+        // Подложка обязательна: под липкой шапкой проезжают строки.
+        "sticky top-0 z-10 bg-surface [&_tr]:border-b",
+        className,
+      )}
       {...props}
     />
   );

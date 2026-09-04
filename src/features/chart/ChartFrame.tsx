@@ -40,7 +40,14 @@ function Control({
  * Кнопки `1s` нет — минимальный интервал обоих маршрутов минута, и кнопка,
  * которая не может показать секунды, обещала бы их.
  */
-export function ChartFrame({ marketId }: { marketId: bigint | undefined }) {
+export function ChartFrame({
+  marketId,
+  actions,
+}: {
+  marketId: bigint | undefined;
+  /** Управление рамкой от владельца — сейчас кнопка свёртки колонки. */
+  actions?: React.ReactNode;
+}) {
   const interval = useTerminalUiStore((s) => s.chartInterval);
   const range = useTerminalUiStore((s) => s.chartRange);
   const scaleMode = useTerminalUiStore((s) => s.chartScaleMode);
@@ -56,7 +63,7 @@ export function ChartFrame({ marketId }: { marketId: bigint | undefined }) {
   const effective = fitInterval(range, interval);
 
   return (
-    <div className="flex h-full flex-col gap-1" data-testid="chart-frame">
+    <div className="flex h-full min-h-0 flex-col gap-1" data-testid="chart-frame">
       <div className="flex items-center gap-1">
         {ORACLE_INTERVALS.map((iv) => (
           <Control
@@ -68,6 +75,7 @@ export function ChartFrame({ marketId }: { marketId: bigint | undefined }) {
             {iv}
           </Control>
         ))}
+        {actions ? <div className="ml-auto flex items-center">{actions}</div> : null}
       </div>
       <div className="min-h-0 flex-1">
         <CandleChart

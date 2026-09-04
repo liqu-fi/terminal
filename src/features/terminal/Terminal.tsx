@@ -21,7 +21,19 @@ import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 // as PIXELS (see the library's `PanelProps` doc comment) — a bare string is
 // what means percent-of-group. Every size below is a string on purpose; only
 // the collapsed chart-column strip is intentionally pixel-fixed ("Npx").
-const CHART_STRIP_PX = "44px";
+const CHART_STRIP_PX = "32px";
+
+/**
+ * Нижние границы колонок в пикселях, а не в процентах.
+ *
+ * @remarks Процент от группы на узком экране даёт колонку, в которую контент не
+ * влезает по ширине: 14% от 1280px — это 179px на стакан из трёх числовых
+ * колонок, а 20% — 256px на тикет, чьи кнопки Buy/Sell перестают помещаться
+ * рядом. Пиксели держат нижнюю границу одинаковой на любом экране; выше неё
+ * пользователь волен тянуть ручку как хочет.
+ */
+const BOOK_MIN_PX = "200px";
+const TICKET_MIN_PX = "300px";
 
 export function Terminal() {
   const { marketId } = useSelectedMarket();
@@ -29,14 +41,33 @@ export function Terminal() {
   const bottomFullscreen = useTerminalUiStore((s) => s.bottomFullscreen);
   const toggleChart = useTerminalUiStore((s) => s.toggleChart);
 
+  const chartToggle = (
+    <button
+      type="button"
+      onClick={toggleChart}
+      data-testid="chart-collapse-toggle"
+      aria-label={chartCollapsed ? "Развернуть чарт" : "Свернуть чарт"}
+      className="text-muted hover:text-text"
+    >
+      {chartCollapsed ? (
+        <PanelBottomOpen size={16} />
+      ) : (
+        <PanelBottomClose size={16} />
+      )}
+    </button>
+  );
+
   return (
-    <div className="flex flex-1 flex-col gap-3" data-testid="terminal-root">
+    <div
+      className="flex min-h-0 flex-1 flex-col gap-2"
+      data-testid="terminal-root"
+    >
       {!bottomFullscreen && <MarketTabs />}
       {!bottomFullscreen && <MarketHeader />}
-      <ResizablePanelGroup orientation="vertical" className="flex-1">
+      <ResizablePanelGroup orientation="vertical" className="min-h-0 flex-1">
         {!bottomFullscreen && (
           <>
-            <ResizablePanel id="chart-row" defaultSize="55" minSize="25">
+            <ResizablePanel id="chart-row" defaultSize="64" minSize="25">
               {/* Keyed by collapse state: `defaultSize`/`minSize`/`maxSize`
                   are only consulted when a panel first registers with the
                   group, so freeing the chart column's width on collapse
@@ -53,33 +84,25 @@ export function Terminal() {
                 <ResizablePanel
                   id="chart-column"
                   defaultSize={chartCollapsed ? CHART_STRIP_PX : "56"}
-                  minSize={chartCollapsed ? CHART_STRIP_PX : "40"}
+                  minSize={chartCollapsed ? CHART_STRIP_PX : "320px"}
                   maxSize={chartCollapsed ? CHART_STRIP_PX : undefined}
                 >
-                  <div className="flex h-full flex-col gap-2">
-                    <div className="flex items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={toggleChart}
-                        data-testid="chart-collapse-toggle"
-                        aria-label={
-                          chartCollapsed ? "Развернуть чарт" : "Свернуть чарт"
-                        }
-                        className="text-muted hover:text-text"
-                      >
-                        {chartCollapsed ? (
-                          <PanelBottomOpen size={16} />
-                        ) : (
-                          <PanelBottomClose size={16} />
-                        )}
-                      </button>
+                  {chartCollapsed ? (
+                    <div className="flex h-full justify-center pt-1">
+                      {chartToggle}
                     </div>
-                    {!chartCollapsed && (
-                      <Card className="flex-1 p-2" data-testid="chart-panel">
-                        <ChartFrame marketId={marketId} />
-                      </Card>
-                    )}
-                  </div>
+                  ) : (
+                    <Card
+                      className="flex min-h-0 flex-1 flex-col overflow-hidden p-2"
+                      data-testid="chart-panel"
+                    >
+                      {/* Кнопка свёртки живёт в строке интервалов чарта, а не
+                          отдельным рядом над карточкой: своя строка съедала
+                          ~28px высоты у самого высокого блока экрана ради
+                          одной иконки. */}
+                      <ChartFrame marketId={marketId} actions={chartToggle} />
+                    </Card>
+                  )}
                 </ResizablePanel>
                 {/* Locked to CHART_STRIP_PX on both sides while collapsed —
                     nothing to drag, so the handle is disabled rather than
@@ -88,7 +111,7 @@ export function Terminal() {
                 <ResizablePanel
                   id="book-column"
                   defaultSize={chartCollapsed ? "35" : "18"}
-                  minSize="14"
+                  minSize={BOOK_MIN_PX}
                 >
                   <OrderBookPanel />
                 </ResizablePanel>
@@ -96,10 +119,17 @@ export function Terminal() {
                 <ResizablePanel
                   id="trade-column"
                   defaultSize={chartCollapsed ? "65" : "26"}
-                  minSize="20"
+                  minSize={TICKET_MIN_PX}
                 >
-                  <div className="flex h-full flex-col gap-2">
-                    <div className="min-h-0 flex-1 overflow-y-auto">
+                  <div
+                    className="flex h-full min-h-0 flex-col gap-2"
+                    data-testid="trade-column"
+                  >
+                    {/* Тикет забирает всю свободную высоту и прокручивает
+                        поля внутри себя, оставляя кнопки подачи на виду.
+                        Карточка счёта под ним не сжимается: колонка отдаёт
+                        высоту тикету, а не подвалу. */}
+                    <div className="min-h-0 flex-1">
                       <TradeForm />
                     </div>
                     <AccountPanel />
@@ -112,10 +142,13 @@ export function Terminal() {
         )}
         <ResizablePanel
           id="bottom-row"
-          defaultSize={bottomFullscreen ? "100" : "45"}
+          defaultSize={bottomFullscreen ? "100" : "36"}
           minSize="20"
         >
-          <div className="flex h-full flex-col" data-testid="bottom-panel">
+          <div
+            className="flex h-full min-h-0 flex-col"
+            data-testid="bottom-panel"
+          >
             <UserInfoTabs />
           </div>
         </ResizablePanel>
