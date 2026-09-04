@@ -1,6 +1,12 @@
 import { TURNKEY_CONNECTOR_ID } from "@liq/turnkey";
 
-/** Идентификатор injected-коннектора wagmi. */
+/**
+ * Захардкожен, а не импортирован: `@wagmi/core` экспортирует саму фабрику
+ * `injected()`, но не константу её `id` — в публичном экспорте
+ * (`@wagmi/core/dist/esm/exports/index.js`) её нет. Значение проверено там,
+ * где оно единственный раз объявлено — `@wagmi/core/dist/esm/connectors/
+ * injected.js` (`id: 'injected'`).
+ */
 export const INJECTED_CONNECTOR_ID = "injected";
 
 export const DOOR_STORAGE_KEY = "liq-terminal-door";
