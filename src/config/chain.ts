@@ -1,8 +1,9 @@
+import { turnkeyConnector } from "@liq/turnkey";
 import { defineChain } from "viem";
 import { createConfig, http, type Config } from "wagmi";
 import { injected } from "wagmi/connectors";
 
-import { env } from "./env";
+import { env, turnkeyLoginEnabled } from "./env";
 
 export const megaethTestnet = defineChain({
   id: 6343,
@@ -23,19 +24,33 @@ export const megaethTestnet = defineChain({
 
 /**
  * @remarks
- * Deliberately `injected()` only — no `walletConnect()` connector here.
- * `TurnkeyProviderWrapper` (see `providers/LiqSetup.tsx`) already owns a
- * WalletConnect stack on the same `VITE_WALLETCONNECT_PROJECT_ID`, and two Cores
- * in one page share a clientId via localStorage, so they fight over the single
- * relay connection each is allowed. wagmi's WalletConnect connector also defines
- * `setup()`, which eagerly runs `EthereumProvider.init()` at `createConfig()`
- * time — that opened a relay socket on every page load even for visitors who
- * never touched a wallet. Turnkey is the one WalletConnect owner.
+ * Две двери — два коннектора, и порядок в списке значения не имеет: и
+ * `ConnectButton`, и восстановление сессии ищут коннектор ПО ID
+ * (`reconnectPlan`), а не по индексу. Раньше кнопка брала `connectors[0]` и
+ * работала лишь потому, что коннектор был ровно один.
+ *
+ * `multiInjectedProviderDiscovery: false` — не оптимизация. По умолчанию wagmi
+ * добавляет коннектор на КАЖДЫЙ кошелёк, объявившийся по EIP-6963 (MetaMask,
+ * Rabby, Phantom, TronLink…), и «первый авторизованный» в `reconnect()`
+ * становится лотереей, в которой встроенный кошелёк Turnkey заведомо
+ * проигрывает — его провайдер на старте ещё пуст. Выключенным флагом wagmi
+ * заодно перестаёт опрашивать `eth_accounts` у каждого расширения на загрузке.
+ *
+ * Коннектора `walletConnect()` здесь по-прежнему нет: стек WalletConnect
+ * принадлежит `TurnkeyProviderWrapper` на том же project id, а две Core на
+ * странице делят clientId через localStorage и дерутся за единственное
+ * разрешённое каждой соединение с релеем. Коннектор wagmi к тому же определяет
+ * `setup()`, который жадно поднимает `EthereumProvider.init()` во время
+ * `createConfig()` — сокет к релею открывался на каждой загрузке страницы даже
+ * тем, кто кошелька не касался.
  */
 export function getConfig(): Config {
   return createConfig({
     chains: [megaethTestnet],
-    connectors: [injected()],
+    connectors: turnkeyLoginEnabled
+      ? [injected(), turnkeyConnector()]
+      : [injected()],
+    multiInjectedProviderDiscovery: false,
     transports: { [megaethTestnet.id]: http(env.rpcUrl) },
   });
 }

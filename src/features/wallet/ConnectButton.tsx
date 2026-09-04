@@ -2,6 +2,8 @@ import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 import { Button } from "@/components/ui/button";
 
+import { INJECTED_CONNECTOR_ID } from "../auth/identityDoor";
+
 function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
@@ -24,10 +26,9 @@ export function ConnectButton() {
     );
   }
 
-  // Lightweight flavor: pick the first connector. `getConfig()` registers
-  // exactly one — `injected()` — since WalletConnect is owned by Turnkey, not
-  // by wagmi (see `config/chain.ts`), so this is the injected wallet.
-  const connector = connectors[0];
+  // По id, а не по индексу: с появлением двери Turnkey в конфиге два
+  // коннектора, и `connectors[0]` подключал бы то, что раньше стоит в списке.
+  const connector = connectors.find((c) => c.id === INJECTED_CONNECTOR_ID);
   return (
     <Button
       disabled={isPending || !connector}
