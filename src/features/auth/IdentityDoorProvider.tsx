@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useConfig, useReconnect } from "wagmi";
 
+import { turnkeyLoginEnabled } from "../../config/env";
 import {
   clearDoor,
   readDoor,
@@ -61,6 +62,12 @@ export function IdentityDoorProvider({ children }: { children: ReactNode }) {
   const [door, setDoorState] = useState<IdentityDoor | null>(() =>
     readDoor(window.localStorage),
   );
+  // Дверь, записанной которой ещё нет, значит одно из двух: пользователь пришёл
+  // впервые либо сессия открыта сборкой, где двери ещё не запоминались. Во втором
+  // случае восстановить надо ровно то, что восстанавливалось всегда, — иначе
+  // первая загрузка после деплоя выкинет на экран входа каждого, кто уже вошёл.
+  // Там, где дверей две, гадать нельзя: остаёмся детерминированными.
+  const effectiveDoor = door ?? (turnkeyLoginEnabled ? null : "injected");
   // Коннектор для восстановления решается сразу, вместе с чтением двери, а не
   // в эффекте: план не меняется за жизнь вкладки (дверь трогают только явные
   // `setDoor`/`forgetDoor`, а они восстановление повторно не запускают), а
@@ -68,7 +75,7 @@ export function IdentityDoorProvider({ children }: { children: ReactNode }) {
   // `react-hooks/set-state-in-effect` — оно бережёт от лишнего кадра рендера
   // со старым значением (тот же приём в useBookTick.ts/useTradesTape.ts).
   const [reconnectConnector] = useState(() => {
-    const plan = reconnectPlan(door, config.connectors.map((c) => c.id));
+    const plan = reconnectPlan(effectiveDoor, config.connectors.map((c) => c.id));
     return plan ? (config.connectors.find((c) => c.id === plan) ?? null) : null;
   });
   // Дверь есть и коннектор для неё нашёлся — значит восстанавливать что-то
