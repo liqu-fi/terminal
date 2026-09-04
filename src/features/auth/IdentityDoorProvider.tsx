@@ -78,20 +78,28 @@ export function IdentityDoorProvider({ children }: { children: ReactNode }) {
   const started = useRef(false);
 
   useEffect(() => {
-    // Ровно один запуск на монтирование: StrictMode прогоняет setup дважды, а
-    // повторный вызов reconnect был бы лишней попыткой подключения поверх уже
-    // идущей.
+    // Ровно один запуск на монтирование: `@wagmi/core`'s reconnect() держит
+    // МОДУЛЬНЫЙ (не per-config) флаг `isReconnecting` — повторный вызов, пока
+    // первый ещё не отработал, мгновенно резолвится пустым массивом. Без
+    // этого гварда `.finally` второго вызова погасил бы `booting` раньше
+    // срока, и StrictMode, прогоняющий setup дважды, подсунул бы именно
+    // такой второй вызов — гейт мигнул бы экраном входа посреди
+    // восстановления.
     if (started.current) return;
     started.current = true;
     if (!reconnectConnector) return;
     // `reconnectAsync` (mutateAsync), а не `reconnect` (mutate) с колбэком
-    // `onSettled`: `useReconnect()` пересобирает `mutationOptions` без
-    // мемоизации на каждый рендер, а компонент успевает перерендериться, пока
-    // подключение ещё в процессе (сам wagmi обновляет account-стейт раньше,
-    // чем резолвится промис). Колбэк `mutate`, привязанный к наблюдателю
-    // `useMutation`, в этой гонке терялся — `onSettled` не вызывался никогда,
-    // и `booting` оставался `true` навсегда. Промис `mutateAsync` от пересборки
-    // наблюдателя не зависит.
+    // `onSettled`: колбэки `mutate` живут на MutationObserver и переживают
+    // только его подписку. `useSyncExternalStore` внутри `useMutation`
+    // подписывается на монтировании — а `<StrictMode>` (src/main.tsx) на
+    // монтировании же прогоняет чистовой teardown пассивных эффектов, и
+    // `MutationObserver.onUnsubscribe()` тут же отвязывает наблюдателя от
+    // ЛЕТЯЩЕЙ мутации (`removeObserver`). Назад, к уже начатой мутации,
+    // `onSubscribe` не привязывает — `Subscribable.onSubscribe` пуст. Мутация
+    // потом реально резолвится, но `#notify` проверяет `hasListeners()` и уже
+    // не находит слушателя — `onSettled` не звонит никогда, `booting`
+    // остаётся `true` навсегда. У промиса `mutateAsync` такой привязки к
+    // подписке нет — он резолвится независимо от неё.
     reconnectAsync({ connectors: [reconnectConnector] })
       .catch(() => {
         // Восстановление не обязано увенчаться успехом — коннектор мог

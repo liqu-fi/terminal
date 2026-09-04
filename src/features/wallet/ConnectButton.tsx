@@ -11,7 +11,7 @@ function short(addr: string) {
 
 export function ConnectButton() {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connectAsync, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { setDoor, forgetDoor } = useIdentityDoor();
 
@@ -37,16 +37,24 @@ export function ConnectButton() {
   return (
     <Button
       disabled={isPending || !connector}
-      onClick={() =>
-        connector &&
-        connect(
-          { connector },
-          // Дверь пишется по факту подключения, а не по клику: отменённый в
-          // расширении коннект не должен оставлять после себя дверь, которую
-          // следующая загрузка попробует восстановить.
-          { onSuccess: () => setDoor("injected") },
-        )
-      }
+      onClick={() => {
+        if (!connector) return;
+        // `connectAsync`, а не `connect` с колбэком `onSuccess`: этот же
+        // компонент рендерится ещё раз в `SessionGate` (ветка
+        // `disconnected`), и именно тот экземпляр обычно жмут при онбординге.
+        // Успешный `connect()` переводит wagmi в `connected` → ветка гейта
+        // уходит из дерева → экземпляр с колбэком размонтируется, пока
+        // мутация ещё не отрезолвилась. `onSuccess`, привязанный к
+        // конкретному вызову `mutate`, тогда не позовётся, дверь не
+        // запишется, и следующая загрузка не восстановит сессию. У промиса
+        // `mutateAsync` такой привязки к экземпляру компонента нет.
+        void connectAsync({ connector })
+          .then(() => setDoor("injected"))
+          .catch(() => {
+            // Отменённый в расширении коннект — обычное дело, не ошибка
+            // приложения; дверь в этом случае просто не пишется.
+          });
+      }}
       data-testid="connect-wallet-button"
     >
       {isPending ? "Connecting…" : "Connect Wallet"}
