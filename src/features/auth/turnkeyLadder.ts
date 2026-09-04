@@ -1,5 +1,6 @@
 // src/features/auth/turnkeyLadder.ts
 import type { GasGrantOutcome } from "../wallet/gasGrant";
+import type { IdentityDoor } from "./identityDoor";
 import type { SessionStage } from "./sessionStage";
 
 /**
@@ -61,6 +62,17 @@ export type LadderCtx = {
   /** Адрес внутри сохранённого токена шлюза, в нижнем регистре, либо null. */
   tokenAddress: string | null;
   silentSigner: boolean;
+  /**
+   * Дверь, которой вошли в этой вкладке.
+   *
+   * @remarks
+   * Лестница ведёт к встроенному кошельку и газу для него, а это осмысленно
+   * только за дверью `turnkey`: `VITE_TURNKEY_SESSION` может поднять сессионные
+   * ключи и без двери входа, и тогда пользователь, вошедший расширением,
+   * не должен получить ни `connect` на TEE-коннектор, ни запрос газа на
+   * адрес, которым никогда не воспользуется.
+   */
+  door: IdentityDoor | null;
 };
 
 export type LadderEffect =
@@ -246,11 +258,17 @@ export function ladderNext(
     return { state: current, effect: NONE };
   }
 
-  // 6. Отдаём подписанта в wagmi. Под защёлкой, потому что неудавшийся
-  //    `connect()` переключает статус wagmi, статус лежит в зависимостях
-  //    гоняющего эффекта, и эффект срабатывает снова — в `liqu` это намеряли
-  //    как ~200 попыток за несколько секунд при вкладке на 100% CPU.
+  // 6. Отдаём подписанта в wagmi. Только за дверью `turnkey`: сессионные ключи
+  //    (`VITE_TURNKEY_SESSION`) могут разрешать встроенный кошелёк и тому, кто
+  //    вошёл расширением, и без этой проверки такой пользователь оказался бы
+  //    молча переключён под TEE-кошелёк, о существовании которого не знает —
+  //    ровно та загрузка под чужой личностью, ради которой писался §2.
+  //    Под защёлкой, потому что неудавшийся `connect()` переключает статус
+  //    wagmi, статус лежит в зависимостях гоняющего эффекта, и эффект
+  //    срабатывает снова — в `liqu` это намеряли как ~200 попыток за несколько
+  //    секунд при вкладке на 100% CPU.
   if (
+    ctx.door === "turnkey" &&
     !ctx.wagmi.isConnected &&
     !ctx.wagmi.isConnecting &&
     !ctx.wagmi.isReconnecting &&
@@ -260,11 +278,19 @@ export function ladderNext(
     return { state: next, effect: { kind: "connect", seq } };
   }
 
-  // 7. Газ от шлюза. Идёт до первой ончейн-записи, потому что встроенный
+  // 7. Газ от шлюза. Тоже только за дверью `turnkey` — у внешнего кошелька свой
+  //    газ, и просить долив на адрес, которым пользователь никогда не
+  //    воспользуется, значит тратить настоящий ETH фаусета и ячейку
+  //    рейт-лимита впустую. Идёт до первой ончейн-записи, потому что встроенный
   //    кошелёк создаётся пустым. `address` — разрешённого подписанта, а не
   //    wagmi: сегодня они совпадают, но получить газ должен именно тот, за кого
   //    подписан запрос.
-  if (ctx.silentSigner && ctx.stage === "no-account" && !current.attempts.gas) {
+  if (
+    ctx.door === "turnkey" &&
+    ctx.silentSigner &&
+    ctx.stage === "no-account" &&
+    !current.attempts.gas
+  ) {
     const { state: next, seq } = begin(current, "gas");
     return { state: next, effect: { kind: "gas", seq, address: current.address } };
   }

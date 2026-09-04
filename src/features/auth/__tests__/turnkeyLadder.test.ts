@@ -27,6 +27,10 @@ function ctx(over: Partial<LadderCtx> = {}): LadderCtx {
     },
     tokenAddress: null,
     silentSigner: false,
+    // По умолчанию — как будто вошли через Turnkey: большинство сценариев
+    // в этом файле проверяют саму лестницу, а не гейт по двери, и без этого
+    // значения пришлось бы дописывать `door: "turnkey"` в каждый вызов.
+    door: "turnkey",
     ...over,
   };
 }
@@ -195,6 +199,30 @@ describe("ladderNext", () => {
     });
     expect(settled.attempts.gas?.status).toBe("ok");
     expect(settled.gasOutcome).toEqual({ funded: false, reason: "ALREADY_FUNDED" });
+  });
+
+  it("за дверью injected не подключает встроенный кошелёк в wagmi", () => {
+    const started = step(initialLadderState, ctx({ door: "injected" })).state;
+    const resolved = ladderSettle(started, {
+      step: "resolve", ok: true, seq: 1, address: ADDR,
+    });
+    const r = step(resolved, ctx({ door: "injected" }));
+    expect(r.effect.kind).toBe("none");
+  });
+
+  it("за дверью injected не просит газ на TEE-адрес", () => {
+    const started = step(initialLadderState, ctx({ door: "injected" })).state;
+    const resolved = ladderSettle(started, {
+      step: "resolve", ok: true, seq: 1, address: ADDR,
+    });
+    const c = ctx({
+      door: "injected",
+      stage: "no-account",
+      silentSigner: true,
+      wagmi: { ...ctx().wagmi, isConnected: true, address: ADDR.toLowerCase() },
+    });
+    const r = step(resolved, c);
+    expect(r.effect.kind).toBe("none");
   });
 });
 

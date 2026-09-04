@@ -27,6 +27,7 @@ import { useAccount, useConnect, useReconnect } from "wagmi";
 
 import { megaethTestnet } from "../../config/chain";
 import { env } from "../../config/env";
+import { useIdentityDoor } from "./IdentityDoorProvider";
 import { useSessionStageLocal } from "./useSessionStage";
 import {
   embeddedWalletView,
@@ -110,7 +111,13 @@ function machineReduce(machine: Machine, action: Action): Machine {
  *
  * @remarks
  * Монтируется внутри `<TurnkeyProviderWrapper>` (нужен `useTurnkey`) и внутри
- * `<LiqProvider>` / `<WagmiProvider>` (нужны ступень сессии и `useConnect`).
+ * `<LiqProvider>` / `<WagmiProvider>` (нужны ступень сессии и `useConnect`), а
+ * значит и внутри `<IdentityDoorProvider>` — он стоит выше `LiqSetup`
+ * безусловно (см. `AppProviders.tsx`), так что `useIdentityDoor()` здесь
+ * никогда не бросает. Дверь нужна правилам 6 и 7 лестницы: сессионные ключи
+ * могут разрешить встроенный кошелёк и тому, кто вошёл расширением, и без
+ * двери лестница молча подключила бы его к TEE-кошельку и попросила бы газ
+ * на адрес, которым он не пользуется.
  *
  * `ranSeq` — ref, а не состояние: это высшая отметка реально начатых
  * эффектов для `claim()`, и ей ничего не стоит быть на один тик позади —
@@ -130,6 +137,7 @@ function machineReduce(machine: Machine, action: Action): Machine {
 export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
   const { authState, session } = useTurnkey();
   const stage = useSessionStageLocal();
+  const { door } = useIdentityDoor();
   const wagmiAccount = useAccount();
   const token = useGatewayStore((s) => s.token);
   const queryClient = useQueryClient();
@@ -167,6 +175,7 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
       },
       tokenAddress: tokenAddress(token),
       silentSigner,
+      door,
     }),
     [
       subOrgId,
@@ -177,6 +186,7 @@ export function TurnkeyIdentityProvider({ children }: { children: ReactNode }) {
       wagmiAddress,
       token,
       silentSigner,
+      door,
     ],
   );
 
