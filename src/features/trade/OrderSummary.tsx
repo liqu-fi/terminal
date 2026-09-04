@@ -27,7 +27,7 @@ export function OrderSummary({
   const liq = (v: bigint | null) => (v === null ? dash : fmtPrice(v));
   return (
     <div
-      className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-surface-2 p-2 text-[11px]"
+      className="flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-surface-2 p-1.5 text-[10px]"
       data-testid="order-summary"
     >
       <Paired

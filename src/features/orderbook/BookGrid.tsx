@@ -50,61 +50,66 @@ export function BookGrid({
   const bidPct = ratioPct(book.bidShare);
 
   return (
-    <div className="flex h-full flex-col text-xs">
-      <div className="grid grid-cols-3 px-1 py-1 text-[10px] text-muted">
+    <div className="flex h-full min-h-0 flex-col text-xs">
+      <div className="grid h-[22px] shrink-0 grid-cols-3 items-center px-1 text-[10px] text-muted">
         <span>Price (USD)</span>
         <span className="text-right">Size ({baseSymbol})</span>
         <span className="text-right">Total ({baseSymbol})</span>
       </div>
 
-      {showAsks && (
-        <div>
-          {asks.map((slot, i) => (
-            <BookRow
-              key={i}
-              slot={slot}
-              side="ask"
-              tick={tick}
-              maxTotal={book.maxTotal}
-              testid={`book-ask-${i}`}
-              onPick={pick}
-            />
-          ))}
-        </div>
-      )}
+      {/* Строки прижаты к своей середине: шапка колонок сверху и полоса
+          дисбаланса снизу имеют фиксированную высоту, из которой
+          `useBookSlots` и вычитает `GRID_CHROME_PX`. */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {showAsks && (
+          <div>
+            {asks.map((slot, i) => (
+              <BookRow
+                key={i}
+                slot={slot}
+                side="ask"
+                tick={tick}
+                maxTotal={book.maxTotal}
+                testid={`book-ask-${i}`}
+                onPick={pick}
+              />
+            ))}
+          </div>
+        )}
 
-      <div
-        className="flex items-center justify-between px-1 py-1 text-xs"
-        data-testid="book-spread"
-      >
-        <span className="text-sm text-text">
-          {markPrice > 0n ? fmtPrice(markPrice) : "—"}
-        </span>
-        <span className="text-muted">
-          {book.spread === null || book.spreadRatio === null
-            ? "Spread —"
-            : `Spread ${fmtBookPrice(book.spread, tick)} (${formatRatio(book.spreadRatio, { maxDecimals: 3 })})`}
-        </span>
+        <div
+          className="flex h-7 shrink-0 items-center justify-between px-1 text-xs"
+          data-testid="book-spread"
+        >
+          <span className="text-sm text-text">
+            {markPrice > 0n ? fmtPrice(markPrice) : "—"}
+          </span>
+          <span className="text-muted">
+            {book.spread === null || book.spreadRatio === null
+              ? "Spread —"
+              : `Spread ${fmtBookPrice(book.spread, tick)} (${formatRatio(book.spreadRatio, { maxDecimals: 3 })})`}
+          </span>
+        </div>
+
+        {showBids && (
+          <div>
+            {bids.map((slot, i) => (
+              <BookRow
+                key={i}
+                slot={slot}
+                side="bid"
+                tick={tick}
+                maxTotal={book.maxTotal}
+                testid={`book-bid-${i}`}
+                onPick={pick}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {showBids && (
-        <div>
-          {bids.map((slot, i) => (
-            <BookRow
-              key={i}
-              slot={slot}
-              side="bid"
-              tick={tick}
-              maxTotal={book.maxTotal}
-              testid={`book-bid-${i}`}
-              onPick={pick}
-            />
-          ))}
-        </div>
-      )}
-
       <div
-        className="mt-1 flex h-4 items-center gap-1 text-[10px]"
+        className="mt-1 flex h-4 shrink-0 items-center gap-1 text-[10px]"
         data-testid="book-imbalance"
         title="Share of resting size on each side of the whole received book"
       >

@@ -133,12 +133,20 @@ test.describe("order book panel", () => {
     world,
   }) => {
     const { book } = await enterTerminal(page, world);
-    await expect(book.asks).toHaveCount(10);
-    await expect(book.bids).toHaveCount(10);
+    // Числа строк тут нет намеренно: с Ф7 книга считает слоты от высоты панели
+    // (`useBookSlots`), и прибитая к макету десятка проверяла бы размер окна
+    // Playwright, а не книгу. Инвариант — стороны симметричны и непусты.
+    // `count()` — мгновенный снимок без автоожидания: сперва дождаться, что
+    // книга вообще нарисовалась, иначе счёт снимется с пустого DOM.
+    await expect(book.asks.first()).toBeVisible();
+    const asks = await book.asks.count();
+    expect(asks).toBeGreaterThan(0);
+    await expect(book.bids).toHaveCount(asks);
     // мир отдаёт 20 уровней на сторону шагом $10 вокруг $70 000; шаг группировки
     // по умолчанию — тоже 10, поэтому уровни видны как есть
     await expect(book.bidRow(0)).toContainText("69,990");
-    await expect(book.askRow(9)).toContainText("70,010");
+    // Аски идут сверху вниз к спреду: лучший — последний в списке.
+    await expect(book.askRow(asks - 1)).toContainText("70,010");
   });
 
   test("строка спреда показывает величину и долю", async ({ page, world }) => {
@@ -161,9 +169,18 @@ test.describe("order book panel", () => {
     world,
   }) => {
     const { book } = await enterTerminal(page, world);
+    await expect(book.bids.first()).toBeVisible();
+    const both = await book.bids.count();
     await book.setView("bids");
     await expect(book.asks).toHaveCount(0);
-    await expect(book.bids).toHaveCount(20);
+    // Место, которое делили две стороны, целиком достаётся одной. Не «ровно
+    // вдвое»: слоты считаются от высоты панели делением НАЦЕЛО, и остаток,
+    // которого не хватало на пару строк, в одностороннем режиме даёт ещё одну
+    // (4 и 4 против 9, а не 8).
+    await expect
+      .poll(() => book.bids.count())
+      .toBeGreaterThanOrEqual(both * 2);
+    expect(await book.bids.count()).toBeLessThanOrEqual(both * 2 + 1);
   });
 
   test("смена шага перегруппировывает книгу", async ({ page, world }) => {

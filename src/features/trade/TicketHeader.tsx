@@ -40,51 +40,50 @@ export function TicketHeader({
 }) {
   const [depositOpen, setDepositOpen] = useState(false);
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-end">
-        <Select
-          value={String(leverage)}
-          onValueChange={(v) => onLeverage(Number(v))}
-        >
-          <SelectTrigger
-            className="h-7 w-auto gap-1 rounded-full bg-surface-2 px-3 text-[11px]"
-            data-testid="leverage-select"
-          >
-            <SelectValue data-testid="leverage-value">{leverage}×</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {leverageSteps(maxLeverage).map((l) => (
-              <SelectItem
-                key={l}
-                value={String(l)}
-                data-testid={`leverage-option-${l}`}
-              >
-                {l}×
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex items-center justify-between text-[11px]">
+    // Одна строка вместо двух: доступная маржа слева, плечо справа. Столбиком
+    // шапка стоила ~60px высоты колонки тикета — на ноутбучном экране на эти
+    // пиксели уезжало под скролл поле количества, без которого ордер не подать.
+    <div className="flex items-center justify-between gap-2 text-[11px]">
+      <span className="flex items-center gap-2">
         <span className="text-muted">Available</span>
-        <span className="flex items-center gap-2">
-          <span className="text-text" data-testid="ticket-available">
-            {/* Прочерк, пока ответа о марже нет: ноль читался бы как
-                измеренный пустой счёт. */}
-            {available === null ? "—" : fmtUsd(available)}
-          </span>
-          <button
-            type="button"
-            aria-label="Deposit"
-            onClick={() => setDepositOpen(true)}
-            className="text-long hover:opacity-80"
-            data-testid="ticket-deposit-button"
-          >
-            <PlusCircle size={14} />
-          </button>
+        <span className="text-text" data-testid="ticket-available">
+          {/* Прочерк, пока ответа о марже нет: ноль читался бы как
+              измеренный пустой счёт. */}
+          {available === null ? "—" : fmtUsd(available)}
         </span>
-      </div>
+        <button
+          type="button"
+          aria-label="Deposit"
+          onClick={() => setDepositOpen(true)}
+          className="text-long hover:opacity-80"
+          data-testid="ticket-deposit-button"
+        >
+          <PlusCircle size={14} />
+        </button>
+      </span>
+
+      <Select
+        value={String(leverage)}
+        onValueChange={(v) => onLeverage(Number(v))}
+      >
+        <SelectTrigger
+          className="h-7 w-auto shrink-0 gap-1 rounded-full bg-surface-2 px-3 text-[11px]"
+          data-testid="leverage-select"
+        >
+          <SelectValue data-testid="leverage-value">{leverage}×</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {leverageSteps(maxLeverage).map((l) => (
+            <SelectItem
+              key={l}
+              value={String(l)}
+              data-testid={`leverage-option-${l}`}
+            >
+              {l}×
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <DepositDialog open={depositOpen} onClose={() => setDepositOpen(false)} />
     </div>

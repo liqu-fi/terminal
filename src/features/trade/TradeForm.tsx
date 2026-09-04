@@ -248,124 +248,145 @@ export function TradeForm() {
   const rejection = describeRejection(sizing.validation.reason);
 
   return (
+    /*
+     * Тикет — карточка во всю высоту колонки, а не свиток: поля прокручиваются
+     * в середине, а кнопки Buy/Sell прибиты подвалом. Пока скроллилась вся
+     * форма целиком, на ноутбучном экране (1280×800 и ниже) кнопок подачи не
+     * было видно вообще — самое важное действие экрана пряталось ниже сгиба.
+     */
     <div
-      className="flex w-full flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3"
+      className="flex h-full min-h-0 w-full flex-col rounded-[var(--radius-card)] border border-border bg-surface"
       data-testid="trade-form"
     >
-      <TicketHeader
-        leverage={sizing.leverage}
-        maxLeverage={sizing.maxLeverage}
-        onLeverage={sizing.setLeverage}
-        available={margins ? margins.available : null}
-      />
+      <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-2.5">
+        <TicketHeader
+          leverage={sizing.leverage}
+          maxLeverage={sizing.maxLeverage}
+          onLeverage={sizing.setLeverage}
+          available={margins ? margins.available : null}
+        />
 
-      <div className="flex gap-1 text-[11px]">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-[var(--radius-sm)] py-1 ${tab === t ? "bg-surface-2 text-text" : "text-muted"}`}
-            data-testid={`trade-tab-${tabSlug(t)}`}
-            aria-pressed={tab === t}
-          >
-            {t}
-          </button>
-        ))}
+        <div className="flex gap-1 text-[11px]">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`flex-1 rounded-[var(--radius-sm)] py-1 ${tab === t ? "bg-surface-2 text-text" : "text-muted"}`}
+              data-testid={`trade-tab-${tabSlug(t)}`}
+              aria-pressed={tab === t}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {tab === "Limit" && (
+          <OrderPriceField
+            value={limitPrice}
+            onChange={setLimitPrice}
+            onMid={() => {
+              if (mid === null) return;
+              setLimitPrice(
+                sanitizeDecimal(Price.fmt(Price(mid)), LIMIT_PRICE_DECIMALS),
+              );
+            }}
+            midDisabled={mid === null}
+            maxDecimals={LIMIT_PRICE_DECIMALS}
+          />
+        )}
+
+        <QuantityField
+          value={sizing.sizeStr}
+          onChange={sizing.setSizeStr}
+          unit={sizing.unit}
+          onUnit={sizing.setUnit}
+          baseSymbol={sizing.baseSymbol}
+          quoteSymbol="USD"
+          notional={sizing.notional}
+          invalid={rejection !== undefined}
+          unitDisabled={markPrice === 0n}
+        />
+
+        <SizeSlider
+          pct={sizing.pct}
+          onPct={sizing.setPct}
+          disabled={insufficientMargin || markPrice === 0n}
+        />
+
+        {(tab === "Stop" || tab === "Take Profit") && (
+          <ConditionalFields
+            triggerPrice={triggerPrice}
+            setTriggerPrice={setTriggerPrice}
+            triggerAbove={triggerAbove}
+            setTriggerAbove={setTriggerAbove}
+          />
+        )}
+
+        <ExecutionFlags
+          postOnly={postOnly}
+          onPostOnly={setPostOnly}
+          postOnlyAvailable={tab === "Limit"}
+          reduceOnly={reduceOnly}
+          onReduceOnly={setReduceOnly}
+          tpsl={tpslOn}
+          onTpsl={setTpslOn}
+          tpslAvailable={attachable}
+        />
+
+        {attachable && (
+          <EntryTpSlFields
+            enabled={tpslOn}
+            tp={tp}
+            setTp={setTp}
+            sl={sl}
+            setSl={setSl}
+          />
+        )}
       </div>
 
-      {tab === "Limit" && (
-        <OrderPriceField
-          value={limitPrice}
-          onChange={setLimitPrice}
-          onMid={() => {
-            if (mid === null) return;
-            setLimitPrice(
-              sanitizeDecimal(Price.fmt(Price(mid)), LIMIT_PRICE_DECIMALS),
-            );
-          }}
-          midDisabled={mid === null}
-          maxDecimals={LIMIT_PRICE_DECIMALS}
+      {/* Подвал: сводка, кнопки подачи и всё, что объясняет их состояние. Не
+          прокручивается и не сжимается — сводка описывает ровно то, что отправит
+          кнопка, а отказ, предупреждение и ошибка обязаны быть видны рядом с
+          кнопкой, которую они запрещают. */}
+      <div className="flex shrink-0 flex-col gap-1.5 border-t border-border p-2.5">
+        <OrderSummary
+          summary={sizing.summary}
+          baseSymbol={sizing.baseSymbol}
+          quoteSymbol="USD"
         />
-      )}
 
-      <QuantityField
-        value={sizing.sizeStr}
-        onChange={sizing.setSizeStr}
-        unit={sizing.unit}
-        onUnit={sizing.setUnit}
-        baseSymbol={sizing.baseSymbol}
-        quoteSymbol="USD"
-        notional={sizing.notional}
-        invalid={rejection !== undefined}
-        unitDisabled={markPrice === 0n}
-      />
+        {rejection && (
+          <p className="text-[10px] text-short" data-testid="order-rejection">
+            {rejection}
+          </p>
+        )}
 
-      <SizeSlider
-        pct={sizing.pct}
-        onPct={sizing.setPct}
-        disabled={insufficientMargin || markPrice === 0n}
-      />
-
-      {(tab === "Stop" || tab === "Take Profit") && (
-        <ConditionalFields
-          triggerPrice={triggerPrice}
-          setTriggerPrice={setTriggerPrice}
-          triggerAbove={triggerAbove}
-          setTriggerAbove={setTriggerAbove}
+        <SubmitButtons
+          onSubmit={submit}
+          disabled={disabled}
+          pending={pending}
         />
-      )}
 
-      <ExecutionFlags
-        postOnly={postOnly}
-        onPostOnly={setPostOnly}
-        postOnlyAvailable={tab === "Limit"}
-        reduceOnly={reduceOnly}
-        onReduceOnly={setReduceOnly}
-        tpsl={tpslOn}
-        onTpsl={setTpslOn}
-        tpslAvailable={attachable}
-      />
-
-      {attachable && (
-        <EntryTpSlFields
-          enabled={tpslOn}
-          tp={tp}
-          setTp={setTp}
-          sl={sl}
-          setSl={setSl}
-        />
-      )}
-
-      <OrderSummary
-        summary={sizing.summary}
-        baseSymbol={sizing.baseSymbol}
-        quoteSymbol="USD"
-      />
-
-      {rejection && (
-        <p className="text-[10px] text-short" data-testid="order-rejection">
-          {rejection}
-        </p>
-      )}
-
-      <SubmitButtons onSubmit={submit} disabled={disabled} pending={pending} />
-
-      {sizing.validation.warn && !insufficientMargin && (
-        <p className="text-[10px] text-short/80" data-testid="order-warning">
-          {describeWarning(sizing.validation.warn)}
-        </p>
-      )}
-      {insufficientMargin && (
-        <p className="text-[10px] text-muted" data-testid="insufficient-margin">
-          No available margin — deposit to trade.
-        </p>
-      )}
-      {error && (
-        <p className="text-[10px] text-short" data-testid="trade-error">
-          {error.message}
-        </p>
-      )}
+        {sizing.validation.warn && !insufficientMargin && (
+          <p className="text-[10px] text-short/80" data-testid="order-warning">
+            {describeWarning(sizing.validation.warn)}
+          </p>
+        )}
+        {insufficientMargin && (
+          <p
+            className="text-[10px] text-muted"
+            data-testid="insufficient-margin"
+          >
+            No available margin — deposit to trade.
+          </p>
+        )}
+        {error && (
+          <p className="text-[10px] text-short" data-testid="trade-error">
+            {error.message}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
