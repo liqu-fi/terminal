@@ -8,8 +8,22 @@ import { type ReactNode, useEffect, useMemo } from "react";
 import { createPublicClient, http } from "viem";
 import { useChainId, useWalletClient } from "wagmi";
 
+// Единственный прямой импорт `@turnkey/*` в приложении, и только ради таблицы стилей:
+// без неё модалка входа рендерится голой — в dev кит подменяет её экраном «стили не
+// найдены», в prod она просто выглядит сломанной. Пакет объявлен в package.json тем же
+// диапазоном, что и в `@liq/turnkey`, чтобы обе ссылки указывали на одну версию.
+//
+// Импортировать отсюда ЧТО-ЛИБО КРОМЕ стилей нельзя: таблица стилей не инстанцирует
+// ничего, а второй экземпляр JS-кита поделит с первым ключи `@turnkey/session/v3` в
+// localStorage, и две копии испортят сессии друг другу.
+import "@turnkey/react-wallet-kit/styles.css";
+
 import { megaethTestnet } from "../config/chain";
-import { env } from "../config/env";
+import { env, turnkeyLoginEnabled } from "../config/env";
+import { EmbeddedWalletRunner } from "../features/auth/EmbeddedWalletRunner";
+import { GasGrantRunner } from "../features/auth/GasGrantRunner";
+import { TurnkeyIdentityProvider } from "../features/auth/TurnkeyIdentityProvider";
+import { turnkeyAuthMethods } from "../features/auth/turnkeyAuthMethods";
 
 const DEFAULT_CHAIN_ID = 6343;
 
@@ -61,13 +75,29 @@ export function LiqSetup({ children }: { children: ReactNode }) {
   // Обёртка Turnkey — снаружи: `LiqProvider` с этим пропсом зовёт
   // `useSessionKeyManager`, которому нужен её контекст сверху.
   const { enabled, orgId, authProxyUrl, authProxyConfigId } = env.turnkey;
+  const { methods, methodOrder } = turnkeyAuthMethods();
+  // Обёртка нужна и сессионным ключам, и двери входа — поднимаем её, если хоть
+  // одно из двух включено и конфиг на месте. Прежнее условие смотрело только на
+  // флаг сессионных ключей, то есть вход без них был бы невозможен.
+  const mounted = Boolean(orgId) && (enabled || turnkeyLoginEnabled);
+
+  const inner = mounted ? (
+    <TurnkeyIdentityProvider>
+      <EmbeddedWalletRunner />
+      <GasGrantRunner />
+      {children}
+    </TurnkeyIdentityProvider>
+  ) : (
+    children
+  );
+
   const provider = (
     <LiqProvider client={liqClient} onchain={liqOnchain} sessionKey={env.turnkey}>
-      {children}
+      {inner}
     </LiqProvider>
   );
 
-  if (!enabled || !orgId) return provider;
+  if (!mounted) return provider;
 
   return (
     <TurnkeyProviderWrapper
@@ -76,12 +106,15 @@ export function LiqSetup({ children }: { children: ReactNode }) {
       authProxyConfigId={authProxyConfigId}
       walletConnectProjectId={env.walletConnectId || undefined}
       chainIds={[String(env.chainId)]}
+      authMethods={methods}
+      methodOrder={methodOrder}
+      provisionEmbeddedWallet
       appName="Liq"
-      // Must be the ORIGIN THIS BUILD IS SERVED FROM, not a fixed liq.cx:
-      // it becomes WalletConnect's `appMetadata.url`, which the wallet shows
-      // in its approval sheet. Hardcoding liq.cx made every preview/staging
-      // deploy claim to be liq.cx — WalletConnect warns about the mismatch,
-      // and to a user it reads like a phishing page.
+      // Обязан быть ORIGIN'ом ЭТОЙ сборки, а не постоянным доменом: он
+      // становится `appMetadata.url` у WalletConnect, и кошелёк показывает его
+      // в листе подтверждения. Прибитый домен заставлял каждый preview-деплой
+      // называться продакшеном — WalletConnect предупреждает о расхождении, а
+      // пользователю это читается как фишинг.
       appUrl={window.location.origin}
     >
       {provider}

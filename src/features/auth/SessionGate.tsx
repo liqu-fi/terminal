@@ -1,10 +1,7 @@
 import {
-  selectIsAuthenticated,
   useAccountQuery,
   useCreateAccountMutation,
   useGatewayAuthMutation,
-  useGatewayStore,
-  useWallet,
 } from "@liq/react";
 import { type ReactNode, useEffect } from "react";
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
@@ -13,7 +10,7 @@ import { env } from "../../config/env";
 import { Button } from "@/components/ui/button";
 import { ConnectButton } from "../wallet/ConnectButton";
 import { useIdentityDoor } from "./IdentityDoorProvider";
-import { sessionStage } from "./sessionStage";
+import { useSessionStageLocal } from "./useSessionStage";
 
 /** Renders children only when the session is `ready`; otherwise shows the next CTA. */
 export function SessionGate({ children }: { children: ReactNode }) {
@@ -72,14 +69,10 @@ function WalletDebug() {
 
 function SessionGateInner({ children }: { children: ReactNode }) {
   const { booting } = useIdentityDoor();
-  const wallet = useWallet();
-  // Pull the query's loading flag, not just `useAccountId()`: the latter
-  // collapses "still loading" and "no account" into a single `undefined`,
-  // which would flash the create-account CTA before the on-chain lookup
-  // resolves (see sessionStage).
-  const { data: accountIds, isLoading: accountsLoading } = useAccountQuery();
+  // Саму ступень вычисляет useSessionStageLocal(); здесь accountId остаётся
+  // отдельно — он нужен кнопкам ниже (createAccount/signIn), а не гейту.
+  const { data: accountIds } = useAccountQuery();
   const accountId = accountIds?.[0];
-  const isAuthenticated = useGatewayStore(selectIsAuthenticated);
 
   // Detect a wallet on the wrong network via the CONNECTOR's chain
   // (`useAccount().chainId`), NOT `useChainId()`: the latter returns the wagmi
@@ -113,13 +106,7 @@ function SessionGateInner({ children }: { children: ReactNode }) {
     }
   }, [wrongChain, walletClientErrored, refetchWalletClient]);
 
-  const stage = sessionStage({
-    wallet,
-    wrongChain,
-    accountId,
-    accountsLoading,
-    isAuthenticated,
-  });
+  const stage = useSessionStageLocal();
 
   // Пока идёт восстановление, wagmi отвечает `disconnected`, и без этой ветки
   // гейт показывал бы экран входа кадром на каждой перезагрузке. Раньше ту же
