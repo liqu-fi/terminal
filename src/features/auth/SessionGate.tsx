@@ -3,6 +3,7 @@ import {
   useCreateAccountMutation,
   useGatewayAuthMutation,
 } from "@liq/react";
+import { INSUFFICIENT_GAS_MESSAGE, isInsufficientGas } from "@liq/core";
 import { type ReactNode, useEffect } from "react";
 import { useAccount, useChainId, useSwitchChain, useWalletClient } from "wagmi";
 
@@ -196,7 +197,11 @@ function SessionGateInner({ children }: { children: ReactNode }) {
         >
           {createAccount.isPending ? "Creating…" : "Create Account"}
         </Button>
-        <ErrorLine error={createAccount.error} testid="create-account-error" />
+        <ErrorLine
+          error={createAccount.error}
+          testid="create-account-error"
+          formatMessage={(error) => createAccountErrorMessage(error, account.address)}
+        />
       </Centered>
     );
   }
@@ -258,12 +263,37 @@ function Centered({
   );
 }
 
+/**
+ * Что показать вместо сырого `error.message` при отказе создания аккаунта.
+ *
+ * @remarks
+ * Спека §5 и таблица краевых случаев называют это единственным местом, ради
+ * которого вообще делался долив газа: на деплое без его ручек (задокументи-
+ * рованный 404) кошелёк без ETH иначе объясняется сырым текстом реверта
+ * viem — пользователь смотрит на "execution reverted" и не понимает, что ему
+ * нужно прислать ETH. Остальные отказы (не про газ) показываются как есть —
+ * `isInsufficientGas` целится только в нехватку средств на комиссию.
+ */
+function createAccountErrorMessage(error: Error, address: string | undefined): string {
+  if (!isInsufficientGas(error)) return error.message;
+  return `${INSUFFICIENT_GAS_MESSAGE} Send ETH to ${address ?? "your wallet"} and try again.`;
+}
+
 /** Surfaces a mutation error inline so a failed CTA isn't a silent dead-end. */
-function ErrorLine({ error, testid }: { error: Error | null; testid: string }) {
+function ErrorLine({
+  error,
+  testid,
+  formatMessage,
+}: {
+  error: Error | null;
+  testid: string;
+  /** Переопределяет `error.message` — например, чтобы humanize'ить конкретную причину. */
+  formatMessage?: (error: Error) => string;
+}) {
   if (!error) return null;
   return (
     <p className="text-sm text-short" role="alert" data-testid={testid}>
-      {error.message}
+      {formatMessage ? formatMessage(error) : error.message}
     </p>
   );
 }
