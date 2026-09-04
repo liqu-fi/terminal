@@ -14,6 +14,9 @@ import {
 } from "../turnkeyLadder";
 
 const ADDR = "0x2222222222222222222222222222222222222222" as const;
+// В EIP-55 (смешанный регистр) — ADDR из одних цифр не годится показать
+// разницу регистров, в нём нет ни одной буквы.
+const MIXED_CASE_ADDR = "0xAbCdEf0123456789aBcDeF0123456789aBcDeF01" as const;
 
 function ctx(over: Partial<LadderCtx> = {}): LadderCtx {
   return {
@@ -77,6 +80,22 @@ describe("ladderNext", () => {
       }),
     );
     expect(r.effect.kind).toBe("reset");
+  });
+
+  it("разница только в регистре — не рассинхрон", () => {
+    // Адрес из wagmi в EIP-55 (смешанный регистр), токен — в нижнем, как
+    // его пишет `tokenAddress()` из `@liq/core`. Прежний тест на `"0xaaa"`/
+    // `"0xbbb"` эту ветку поймать не мог — оба значения там уже в одном
+    // регистре.
+    const first = step(initialLadderState, ctx()).state;
+    const r = step(
+      first,
+      ctx({
+        wagmi: { ...ctx().wagmi, address: MIXED_CASE_ADDR },
+        tokenAddress: MIXED_CASE_ADDR.toLowerCase(),
+      }),
+    );
+    expect(r.effect.kind).not.toBe("reset");
   });
 
   it("восстановленный токен без подключённого кошелька — не рассинхрон", () => {

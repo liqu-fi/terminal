@@ -186,26 +186,30 @@ export function ladderRetry(state: LadderState, step: LadderStep): LadderState {
  * ошибка, ради которой это вынесено отдельно.
  */
 function normalise(state: LadderState, ctx: LadderCtx): LadderState {
+  // Локальная переменная, а не переприсваивание параметра: модуль весь
+  // построен на неизменяемости, и `state` — не то место, где стоит заводить
+  // исключение.
+  let next = state;
   // Самый первый вход — не смена личности, а её появление: сбрасывать
   // нечего, attempts и так пуст. Без этой адаптации правило 1 ниже приняло бы
   // `null → ctx.key` за настоящую смену и отдало бы `reset` вместо того,
   // чтобы в этом же тике дойти до `resolve-signer` — то же самое «первое
   // совпадение выигрывает», из-за которого не дожила бы до газа защёлка
   // connect чуть ниже.
-  if (state.key === null && ctx.key !== null) {
-    state = { ...state, key: ctx.key };
+  if (next.key === null && ctx.key !== null) {
+    next = { ...next, key: ctx.key };
   }
   // Живое подключение снимает защёлку connect. Защищаемся от повтора, пока
   // отключены, а не от подключения после отключения: соединение, которое
   // получилось и потом отвалилось, заслуживает новой попытки, а неудавшееся —
   // нет. Неудачу wagmi не сообщает никак (это `mutate()`), поэтому «не вышло»
   // выражено как «отметка есть, а isConnected ложно».
-  if (ctx.wagmi.isConnected && state.attempts.connect) {
-    const attempts = { ...state.attempts };
+  if (ctx.wagmi.isConnected && next.attempts.connect) {
+    const attempts = { ...next.attempts };
     delete attempts.connect;
-    return { ...state, attempts };
+    return { ...next, attempts };
   }
-  return state;
+  return next;
 }
 
 /**
@@ -229,7 +233,15 @@ export function ladderNext(
   //    подключённый адрес несущая: восстановленный токен при ещё не
   //    подключённом wagmi — обычное дело, а не рассинхрон, и без неё живая
   //    сессия сбрасывалась бы на каждом холодном старте.
-  if (ctx.wagmi.address && ctx.tokenAddress && ctx.tokenAddress !== ctx.wagmi.address) {
+  //    `.toLowerCase()` здесь, а не только на совести вызывающего: договор
+  //    «регистр уже приведён» до сих пор жил одним JSDoc на `wagmi.address`, и
+  //    второй производитель `LadderCtx`, который его не читает, превратил бы
+  //    это сравнение в вечно истинное — вход подписью перестал бы держаться,
+  //    гоняя пользователя по кругу вход → сброс → needs-signin без единой
+  //    ошибки на экране. Вызов идемпотентен, чистоту редьюсера не нарушает.
+  const wagmiAddress = ctx.wagmi.address?.toLowerCase() ?? null;
+  const tokenAddr = ctx.tokenAddress?.toLowerCase() ?? null;
+  if (wagmiAddress && tokenAddr && tokenAddr !== wagmiAddress) {
     const cleared = identityChanged(current, current.key);
     const seq = cleared.seq + 1;
     return { state: { ...cleared, seq }, effect: { kind: "reset", seq } };
