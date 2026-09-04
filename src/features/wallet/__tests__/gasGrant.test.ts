@@ -111,4 +111,59 @@ describe("requestGasGrant", () => {
       reason: "UNKNOWN",
     });
   });
+
+  it("обрыв связи на втором запросе — тоже NETWORK", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { nonce: "n1" }, meta: {} }))
+      .mockRejectedValueOnce(new Error("offline"));
+    await expect(call(fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      funded: false,
+      reason: "NETWORK",
+    });
+  });
+
+  it("отказной статус на втором запросе — HTTP_ERROR со статусом", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { nonce: "n1" }, meta: {} }))
+      .mockResolvedValueOnce(new Response("", { status: 503 }));
+    await expect(call(fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      funded: false,
+      reason: "HTTP_ERROR",
+      status: 503,
+    });
+  });
+
+  it("неразбираемое тело на втором запросе — BAD_RESPONSE", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { nonce: "n1" }, meta: {} }))
+      .mockResolvedValueOnce(new Response("не json", { status: 200 }));
+    await expect(call(fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      funded: false,
+      reason: "BAD_RESPONSE",
+    });
+  });
+
+  it("ответ на нонс без поля nonce — BAD_RESPONSE, а не падение", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { unexpected: 1 }, meta: {} }));
+    await expect(call(fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      funded: false,
+      reason: "BAD_RESPONSE",
+    });
+  });
+
+  it("ответ на долив без поля funded — BAD_RESPONSE", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { nonce: "n1" }, meta: {} }))
+      .mockResolvedValueOnce(jsonResponse({ data: { reason: "UNAVAILABLE" }, meta: {} }));
+    await expect(call(fetchImpl as unknown as typeof fetch)).resolves.toEqual({
+      funded: false,
+      reason: "BAD_RESPONSE",
+    });
+  });
 });
