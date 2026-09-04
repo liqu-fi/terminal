@@ -294,6 +294,7 @@ Wallet и **нет** Turnkey-кнопки, старый путь до терми
 | `src/features/auth/GasGrantRunner.tsx` | **новый** |
 | `src/features/auth/SignInPanel.tsx` | **новый** — экран с двумя дверьми |
 | `src/features/auth/TurnkeyLoginButton.tsx` | **новый** |
+| `src/features/auth/useSessionStage.ts` | **новый** — вычисление ступени, вынесенное из `SessionGate`: её читает и провайдер личности |
 | `src/features/auth/SessionGate.tsx` | ступень `disconnected` → `SignInPanel`; `booting` → `loading` |
 | `src/features/wallet/gasGrant.ts` | **новый** — порт `requestGasGrant` |
 | `src/features/wallet/ConnectButton.tsx` | выбор коннектора по id; выход, зависящий от двери |
