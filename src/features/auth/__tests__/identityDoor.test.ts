@@ -54,6 +54,28 @@ describe("readDoor", () => {
   });
 });
 
+describe("writeDoor", () => {
+  it("переживает хранилище, чей setItem бросает", () => {
+    const throwing = {
+      setItem: () => {
+        throw new Error("SecurityError");
+      },
+    };
+    expect(() => writeDoor(throwing, "turnkey")).not.toThrow();
+  });
+});
+
+describe("clearDoor", () => {
+  it("переживает хранилище, чьё removeItem бросает", () => {
+    const throwing = {
+      removeItem: () => {
+        throw new Error("SecurityError");
+      },
+    };
+    expect(() => clearDoor(throwing)).not.toThrow();
+  });
+});
+
 describe("reconnectPlan", () => {
   it("без запомненной двери не восстанавливает ничего", () => {
     expect(reconnectPlan(null, BOTH)).toBeNull();
