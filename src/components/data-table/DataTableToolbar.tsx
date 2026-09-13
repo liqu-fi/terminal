@@ -33,7 +33,8 @@ export function DataTableToolbar({
 }: {
   columns: ToolbarColumn[];
   markets: ToolbarMarket[];
-  market: string;
+  /** `null` — у таблицы нет колонки рынка, фильтр не рисуется. */
+  market: string | null;
   onMarketChange: (value: string) => void;
 }) {
   return (
@@ -62,6 +63,7 @@ export function DataTableToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {market !== null && (
       <DropdownMenu>
         <DropdownMenuTrigger
           className={
@@ -94,6 +96,7 @@ export function DataTableToolbar({
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+      )}
     </div>
   );
 }
