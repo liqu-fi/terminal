@@ -1,7 +1,11 @@
 import { AccountPage } from "../pages/AccountPage";
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
-import { ledgerRowFixture, readyWorld } from "../support/world";
+import {
+  defaultPortfolio,
+  ledgerRowFixture,
+  readyWorld,
+} from "../support/world";
 
 test.describe("страница Account", () => {
   test("ссылка в шапке открывает страницу с четырьмя вкладками", async ({
@@ -61,6 +65,10 @@ test.describe("страница Account", () => {
     await account.open();
     await account.tab("transactions").click();
 
+    // Market-фильтра у вкладки быть не должно: экспорт CSV его не видит, и
+    // экран разошёлся бы с файлом (регрессия d39df05/ad9f39d).
+    await expect(page.getByTestId("table-filter-button")).toHaveCount(0);
+
     // Фикстуры датированы 2024-м: окно 30 дней их не видит, берём всё время.
     await account.select("transactions-period", "all");
     await expect(account.transactionRows).toHaveCount(2);
@@ -69,6 +77,62 @@ test.describe("страница Account", () => {
     await account.select("transactions-type", "deposit");
     await expect(account.transactionRows).toHaveCount(1);
     await expect(account.transactionRows.first()).toContainText("Deposit");
+  });
+
+  test("сабграф молчит (available: false): подпись про переводы, расчёты на месте", async ({
+    page,
+    world,
+  }) => {
+    await enterTerminal(page, world, () =>
+      readyWorld({
+        portfolio: { ...defaultPortfolio(), available: false },
+        settlementLedger: [ledgerRowFixture()],
+      }),
+    );
+    const account = new AccountPage(page);
+    await account.open();
+
+    await expect(
+      page.getByTestId("recent-activity-events-unavailable"),
+    ).toBeVisible();
+    // Депозит из портфеля пропал вместе с сабграфом, расчёт леджера остался —
+    // «неизвестно» не стирает то, что известно.
+    await expect(account.activityRows).toHaveCount(1);
+
+    await account.tab("transactions").click();
+    await expect(
+      page.getByTestId("transactions-events-unavailable"),
+    ).toBeVisible();
+    await account.select("transactions-period", "all");
+    await expect(account.transactionRows).toHaveCount(1);
+  });
+
+  test("портфель отвечает 500: три панели говорят о недоступности", async ({
+    page,
+    world,
+  }) => {
+    // Два ожидания по 20 с не помещаются в бюджет теста по умолчанию (30 с) —
+    // `test.slow()` даёт тройной, иначе тест умрёт раньше своих же таймаутов.
+    test.slow();
+    await enterTerminal(page, world, () =>
+      readyWorld({ faults: { portfolioStatus: 500 } }),
+    );
+    const account = new AccountPage(page);
+    await account.open();
+
+    // react-query по умолчанию повторяет запрос 3 раза с нарастающей паузой,
+    // поэтому провал «оседает» секунд через десять — ждём это явным
+    // таймаутом ожидания, а не сном.
+    const settled = { timeout: 20_000 };
+    await expect(page.getByTestId("portfolio-unavailable")).toBeVisible(settled);
+    await expect(page.getByTestId("recent-activity-unavailable")).toBeVisible(
+      settled,
+    );
+
+    await account.tab("transactions").click();
+    await expect(page.getByTestId("transactions-unavailable")).toBeVisible(
+      settled,
+    );
   });
 
   test("ссылка Trade возвращает терминал", async ({ page, world }) => {
