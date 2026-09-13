@@ -1,17 +1,12 @@
 import { formatUsd, wadToNumber } from "@liq/core";
-import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
 
 import { DASH, fmtSignedUsd } from "../../lib/format";
-import { DepositDialog } from "./DepositDialog";
 import { useAccountSummary } from "./useAccountSummary";
-import { WithdrawDialog } from "./WithdrawDialog";
 
 export function AccountPanel() {
   const { summary } = useAccountSummary();
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   return (
     // `shrink-0`: карточка счёта — подвал колонки тикета, а не её соперник за
@@ -59,12 +54,6 @@ export function AccountPanel() {
           }
         />
       </div>
-
-      <DepositDialog open={depositOpen} onClose={() => setDepositOpen(false)} />
-      <WithdrawDialog
-        open={withdrawOpen}
-        onClose={() => setWithdrawOpen(false)}
-      />
     </Card>
   );
 }

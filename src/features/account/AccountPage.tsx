@@ -4,6 +4,7 @@ import { ACCOUNT_TABS, accountHref, type AccountTab } from "@/lib/hashRoute";
 
 import { SessionCta } from "../auth/SessionCta";
 import { Panel } from "./AccountCards";
+import { AssetsTab } from "./AssetsTab";
 import { OverviewTab } from "./OverviewTab";
 import { PortfolioTab } from "./PortfolioTab";
 
@@ -75,8 +76,10 @@ function TabBody({ tab }: { tab: AccountTab }) {
       return <OverviewTab />;
     case "portfolio":
       return <PortfolioTab />;
+    case "assets":
+      return <AssetsTab />;
     default:
-      // Assets, Transactions добавляются следующими задачами плана.
+      // Transactions добавляется следующей задачей плана.
       return null;
   }
 }
