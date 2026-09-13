@@ -110,7 +110,7 @@ export function PortfolioTab() {
         <Panel className="flex flex-col gap-2" testid="pnl-breakdown">
           <span className="text-sm font-semibold">PnL breakdown</span>
           <span className="text-[11px] text-muted">
-            Selected period{approx ? " · first 200 settlements" : ""}
+            Selected period{approx ? " · totals incomplete" : ""}
           </span>
           {/* Тот же принцип трёх состояний, что у кривой слева: строки
               леджера не рисуются, пока запрос ещё не осел (иначе `null`→DASH
