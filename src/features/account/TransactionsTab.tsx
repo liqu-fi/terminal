@@ -9,8 +9,8 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { Download } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { DataTable, MARKET_COLUMN_ID } from "@/components/data-table/DataTable";
-import { features, marketFilterFn } from "@/components/data-table/features";
+import { DataTable } from "@/components/data-table/DataTable";
+import { features } from "@/components/data-table/features";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -75,12 +75,11 @@ const columns = helper.columns([
     ),
   }),
   helper.accessor((r) => r.symbol, {
-    id: MARKET_COLUMN_ID,
+    // Не MARKET_COLUMN_ID: у вкладки свои фильтры (тип, период), а market-фильтр
+    // DataTable не виден экспорту CSV — экран и файл должны совпадать.
+    id: "market-symbol",
     header: "Market",
     enableHiding: false,
-    // Депозиты рынка не имеют: при выбранном рынке они скрываются, при «все» — видны.
-    filterFn: (row, _id, value) =>
-      marketFilterFn(row.original.row.marketId?.toString() ?? "", value),
     cell: (info) =>
       info.getValue() ? (
         <span className="font-semibold">{info.getValue()}</span>
