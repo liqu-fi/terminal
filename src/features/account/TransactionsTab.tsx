@@ -129,15 +129,20 @@ export function TransactionsTab() {
     isError: ledgerFailed,
   } = useSettlementLedgerQuery(accountId, { ...range, limit: LEDGER_PAGE });
 
-  // Три состояния запроса, не два (ruling после задачи 5): пока хоть один из
-  // двух источников не осел — ничего не утверждаем; провал/`available: false`
-  // — отдельная строка, а не пустая таблица; «пусто» — только когда оба
-  // источника отдали ответ и он говорит именно это.
+  // Три состояния запроса, не два (ruling после задачи 5), и ровно как в
+  // ленте OverviewTab, а не по букве брифа: пока хоть один из двух
+  // источников не осел — ничего не утверждаем; провал (`isError`) любого из
+  // двух — отдельная строка. `portfolio.available === false` — НЕ провал:
+  // это значит только «депозиты/выводы неизвестны», а не «леджера тоже
+  // нет» — расчёты леджера остаются видны, как и в ленте Overview
+  // (`activityFailed = monthFailed || ledgerFailed`, без проверки
+  // `available`). «Пусто» — только когда оба источника отдали ответ и
+  // результирующий список действительно пуст.
   const pending = portfolioPending || ledgerPending;
-  const unavailable = portfolio?.available === false || portfolioFailed || ledgerFailed;
+  const failed = portfolioFailed || ledgerFailed;
 
   const rows = useMemo<Row[]>(() => {
-    if (pending || unavailable) return [];
+    if (pending || failed) return [];
     const events = portfolio?.available ? portfolio.collateralEvents : [];
     const all = withinWindow(activityRows(events, ledger?.rows ?? []), range);
     return filterActivity(all, kind).map((row, i) => ({
@@ -145,7 +150,7 @@ export function TransactionsTab() {
       symbol: row.marketId === undefined ? "" : marketSymbol(markets, row.marketId),
       key: `${row.id}-${i}`,
     }));
-  }, [pending, unavailable, portfolio, ledger, range, kind, markets]);
+  }, [pending, failed, portfolio, ledger, range, kind, markets]);
 
   function exportCsv() {
     const csv = activityCsv(
@@ -202,7 +207,7 @@ export function TransactionsTab() {
         rowId={(r) => r.key}
         loading={pending}
         notice={
-          unavailable
+          failed
             ? {
                 testid: "transactions-unavailable",
                 text: "Transaction history is unavailable on this gateway",
