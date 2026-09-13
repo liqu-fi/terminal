@@ -11,6 +11,7 @@ import {
 } from "lightweight-charts";
 import { useEffect, useMemo, useRef } from "react";
 
+import { cssVar } from "@/lib/cssVar";
 import type { ChartScaleMode } from "@/stores/useTerminalUiStore";
 
 import { toLwcBar } from "./candleMapping";
@@ -29,17 +30,6 @@ export const CHART_ROUTE = "oracle" as const;
 const INITIAL_BARS = 120;
 /** Пустые бары справа от последнего — воздух под живую свечу. */
 const RIGHT_OFFSET_BARS = 4;
-
-/**
- * `lightweight-charts` wants concrete color strings, but the palette is
- * declared once in `src/styles/tokens.css` and that file is its one owner —
- * hardcoding hexes here would silently drift from a repaint of the tokens.
- */
-function cssVar(name: string): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-}
 
 export function CandleChart({
   marketId,
