@@ -261,7 +261,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: типы `PortfolioCollateralEvent`, `PortfolioPeriod`, `PortfolioPoint`, `SettlementLedgerRow` из `@liq/api-client`; `wadToNumber` из `@liq/core`; `UTCTimestamp` из `lightweight-charts`.
-- Produces: `PERIODS`, `PERIOD_LABEL`, `periodWindow`, `windowPnl`, `pnlSeries` (+ `type PnlPoint`), `marginUsage`, `type ActivityKind`, `interface ActivityRow`, `ACTIVITY_LABEL`, `activityRows`, `withinWindow`, `filterActivity`, `activityCsv`, `interface TimeWindow`.
+- Produces: `LEDGER_PAGE`, `PERIODS`, `PERIOD_LABEL`, `periodWindow`, `windowPnl`, `pnlSeries` (+ `type PnlPoint`), `marginUsage`, `type ActivityKind`, `interface ActivityRow`, `ACTIVITY_LABEL`, `activityRows`, `withinWindow`, `filterActivity`, `activityCsv`, `interface TimeWindow`.
 
 - [ ] **Step 1: Падающий тест**
 
@@ -467,6 +467,12 @@ import type { UTCTimestamp } from "lightweight-charts";
  * системы единиц: портфель шлюза (decimal `number`, unix-секунды) и
  * леджер/маржа (WAD `bigint`, миллисекунды).
  */
+
+/**
+ * Первая страница леджера — потолок шлюза (`limit ≤ 200`).
+ * ponytail: первые 200 расчётов за период; пагинация по `nextCursor` — когда у счёта их станет больше.
+ */
+export const LEDGER_PAGE = 200;
 
 /** Периоды селектора в порядке макета; `1d` живёт только у Today's PnL. */
 export const PERIODS: readonly PortfolioPeriod[] = [
@@ -881,7 +887,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `useHashRoute`, `accountHref`, `ACCOUNT_TABS`, `TRADE_HREF` (Task 1); `fmtUsdNum`, `fmtSignedUsdNum`, `fmtSignedPctNum`, `fmtPctNum` (Task 2); `windowPnl`, `pnlSeries`, `activityRows`, `ACTIVITY_LABEL`, `type PnlPoint`, `type ActivityRow` (Task 3); `useAccountSummary` с `free`/`marginUsage`, `useCollateralBalances` (Task 4).
-- Produces: `Panel`, `Stat`, `PeriodSelect`, `Unavailable` из `AccountCards.tsx`; `PnlChart`; `AccountPage({ tab })`; `OverviewTab()`.
+- Produces: `Panel`, `Stat` (с `sub`), `PeriodSelect`, `Unavailable` из `AccountCards.tsx`; `PnlChart`; `AccountPage({ tab })`; `OverviewTab()`.
 
 - [ ] **Step 1: Вынести `cssVar`**
 
@@ -1039,12 +1045,15 @@ export function Panel({
 export function Stat({
   label,
   value,
+  sub,
   tone = "text-text",
   link,
   testid,
 }: {
   label: string;
   value: string;
+  /** Подстрочник под значением («Margin usage 28.6%», «2 assets»). */
+  sub?: string;
   tone?: string;
   link?: { href: string; text: string };
   testid: string;
@@ -1065,6 +1074,11 @@ export function Stat({
       >
         {value}
       </span>
+      {sub && (
+        <span className="text-xs text-muted" data-testid={`${testid}-sub`}>
+          {sub}
+        </span>
+      )}
     </Panel>
   );
 }
@@ -1386,25 +1400,20 @@ export function OverviewTab() {
           label="Trading"
           testid="account-card-trading"
           value={summary.equity === undefined ? DASH : formatUsd(summary.equity)}
+          sub={`Margin usage ${
+            summary.marginUsage === undefined
+              ? DASH
+              : fmtPctNum(summary.marginUsage)
+          }`}
           link={{ href: accountHref("portfolio"), text: "View portfolio" }}
         />
         <Stat
           label="Assets"
           testid="account-card-assets"
           value={totalWad === undefined ? DASH : formatUsd(totalWad)}
+          sub={`${heldAssets} ${heldAssets === 1 ? "asset" : "assets"}`}
           link={{ href: accountHref("assets"), text: "View assets" }}
         />
-      </div>
-      <div className="-mt-2 grid gap-3 text-xs text-muted md:grid-cols-2">
-        <span data-testid="account-card-trading-sub">
-          Margin usage{" "}
-          {summary.marginUsage === undefined
-            ? DASH
-            : fmtPctNum(summary.marginUsage)}
-        </span>
-        <span data-testid="account-card-assets-sub">
-          {heldAssets} {heldAssets === 1 ? "asset" : "assets"}
-        </span>
       </div>
 
       <DepositDialog open={depositOpen} onClose={() => setDepositOpen(false)} />
@@ -1442,8 +1451,6 @@ function ActivityLine({ row, symbol }: { row: ActivityRow; symbol?: string }) {
   );
 }
 ```
-
-Подстрочники карточек Trading/Assets вынесены отдельной строкой сетки, потому что `Stat` их не знает; если верстальщику удобнее — добавить в `Stat` необязательный проп `sub?: ReactNode` и рисовать его под значением (тогда второй `grid` и оба `*-sub` переезжают внутрь `Stat`; testid сохранить).
 
 - [ ] **Step 6: Навигация в `App.tsx`**
 
@@ -1553,15 +1560,9 @@ import {
 } from "../../lib/format";
 import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 import { Panel, PeriodSelect, Stat, Unavailable } from "./AccountCards";
-import { periodWindow, pnlSeries } from "./accountPage";
+import { LEDGER_PAGE, periodWindow, pnlSeries } from "./accountPage";
 import { PnlChart } from "./PnlChart";
 import { useAccountSummary } from "./useAccountSummary";
-
-/**
- * Первая страница леджера — потолок шлюза. Дальше нужен `nextCursor`.
- * ponytail: первые 200 расчётов за период; пагинация — когда у счёта их станет больше.
- */
-const LEDGER_PAGE = 200;
 
 export function PortfolioTab() {
   const accountId = useAccountId();
@@ -2017,14 +2018,12 @@ import {
   activityCsv,
   activityRows,
   filterActivity,
+  LEDGER_PAGE,
   periodWindow,
   withinWindow,
   type ActivityKind,
   type ActivityRow,
 } from "./accountPage";
-
-/** ponytail: первые 200 расчётов за период; пагинация по nextCursor — когда их станет больше. */
-const LEDGER_PAGE = 200;
 
 type Kind = ActivityKind | "all";
 const KINDS: readonly Kind[] = ["all", "deposit", "withdrawal", "trade", "liquidation"];
