@@ -12,6 +12,7 @@ import {
   marginUsage,
   periodWindow,
   pnlSeries,
+  pnlShare,
   sumWhenAllLoaded,
   windowPnl,
   withinWindow,
@@ -117,6 +118,18 @@ describe("использование маржи", () => {
   });
 });
 
+describe("доля нереализованного PnL в стоимости счёта", () => {
+  it("отношение к стоимости счёта, без зажима", () => {
+    expect(pnlShare(100n * WAD, 1_000n * WAD)).toBe(0.1);
+    expect(pnlShare(-50n * WAD, 1_000n * WAD)).toBe(-0.05);
+  });
+
+  it("делить не на что — null, а не 0", () => {
+    expect(pnlShare(100n * WAD, 0n)).toBeNull();
+    expect(pnlShare(100n * WAD, undefined)).toBeNull();
+  });
+});
+
 describe("сумма остатков коллатералов", () => {
   it("все прочитаны — сумма; хоть один в полёте или список пуст — undefined", () => {
     expect(sumWhenAllLoaded([1n * WAD, 2n * WAD, 3n * WAD])).toBe(6n * WAD);
@@ -166,6 +179,14 @@ describe("лента активности", () => {
         to: new Date(1_700_000_200_000),
       }),
     ).toHaveLength(1);
+    // Границы окна включительны: строка ровно на `from` (расчёт леджера) и
+    // строка ровно на `to` (депозит) обе остаются.
+    expect(
+      withinWindow(rows, {
+        from: new Date(1_700_000_000_000),
+        to: new Date(1_700_000_100_000),
+      }),
+    ).toHaveLength(2);
     expect(withinWindow(rows, {})).toHaveLength(2);
   });
 

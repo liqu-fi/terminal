@@ -18,9 +18,12 @@ import type { PnlPoint } from "./accountLogic";
 export function PnlChart({
   series,
   testid,
+  emptyText = "No data for this period",
 }: {
   series: PnlPoint[];
   testid: string;
+  /** Подпись пустой кривой; у Today's PnL окно — день, а не «период». */
+  emptyText?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -79,7 +82,7 @@ export function PnlChart({
           className="absolute inset-0 flex items-center justify-center text-xs text-muted"
           data-testid={`${testid}-empty`}
         >
-          No data for this period
+          {emptyText}
         </p>
       )}
     </div>

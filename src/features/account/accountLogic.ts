@@ -119,6 +119,19 @@ export function marginUsage(
 }
 
 /**
+ * Доля нереализованного PnL в стоимости счёта. Без зажима, в отличие от
+ * `marginUsage`: убыток больше стоимости — настоящий ответ, а не «−100 %».
+ * Делить не на что (стоимость неизвестна или неположительна) — `null`.
+ */
+export function pnlShare(
+  pnl: bigint,
+  accountValue: bigint | undefined,
+): number | null {
+  if (accountValue === undefined || accountValue <= 0n) return null;
+  return wadToNumber(pnl) / wadToNumber(accountValue);
+}
+
+/**
  * Сумма остатков, только когда прочитаны все: пустой список или хоть один
  * непрочитанный элемент — `undefined`, а не частичный итог.
  */

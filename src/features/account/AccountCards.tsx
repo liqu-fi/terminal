@@ -92,7 +92,12 @@ export function PeriodSelect({
       value={value}
       onValueChange={(next) => onChange(next as PortfolioPeriod)}
     >
-      <SelectTrigger size="sm" className="h-7 text-xs" data-testid={testid}>
+      <SelectTrigger
+        size="sm"
+        className="h-7 text-xs"
+        aria-label="Period"
+        data-testid={testid}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

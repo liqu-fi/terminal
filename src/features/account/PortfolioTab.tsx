@@ -1,5 +1,5 @@
 import type { PortfolioPeriod } from "@liq/api-client";
-import { formatUsd, wadToNumber } from "@liq/core";
+import { formatUsd } from "@liq/core";
 import {
   useAccountId,
   usePortfolioQuery,
@@ -16,7 +16,7 @@ import {
 } from "../../lib/format";
 import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 import { Panel, PeriodSelect, Stat, Unavailable } from "./AccountCards";
-import { LEDGER_PAGE, periodWindow, pnlSeries } from "./accountLogic";
+import { LEDGER_PAGE, periodWindow, pnlSeries, pnlShare } from "./accountLogic";
 import { PnlChart } from "./PnlChart";
 import { useAccountSummary } from "./useAccountSummary";
 
@@ -49,10 +49,7 @@ export function PortfolioTab() {
   );
   const totals = ledger?.totals ?? null;
   const approx = totals !== null && !totals.complete ? "≈" : "";
-  const upnlPct =
-    summary.accountValue !== undefined && summary.accountValue > 0n
-      ? wadToNumber(summary.unrealizedPnl) / wadToNumber(summary.accountValue)
-      : null;
+  const upnlPct = pnlShare(summary.unrealizedPnl, summary.accountValue);
 
   function changePeriod(next: PortfolioPeriod) {
     setPeriod(next);

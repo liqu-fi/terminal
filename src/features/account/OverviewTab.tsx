@@ -169,7 +169,11 @@ export function OverviewTab() {
             {today?.available === false || todayFailed ? (
               <Unavailable />
             ) : todayPending ? null : (
-              <PnlChart series={series} testid="today-pnl-chart" />
+              <PnlChart
+                series={series}
+                testid="today-pnl-chart"
+                emptyText="No data for today"
+              />
             )}
           </div>
         </Panel>
@@ -184,6 +188,19 @@ export function OverviewTab() {
               View all →
             </a>
           </div>
+          {/* Та же подпись, что во вкладке Transactions: `available: false`
+              значит «депозиты и выводы неизвестны», а не «их не было», —
+              строки леджера ниже рисуются как обычно. */}
+          {!activityPending &&
+            !activityFailed &&
+            month?.available === false && (
+              <p
+                className="text-xs text-muted"
+                data-testid="recent-activity-events-unavailable"
+              >
+                Deposits and withdrawals are unavailable on this gateway
+              </p>
+            )}
           {activityPending ? null : activityFailed ? (
             // Не `Unavailable`: та карточка говорит про историю портфеля, а
             // лента стоит ещё и на леджере — и второй `portfolio-unavailable`
@@ -202,9 +219,12 @@ export function OverviewTab() {
               No recent activity yet
             </p>
           ) : (
-            activity.map((row) => (
+            // Ключ — как в TransactionsTab: `row.id` события
+            // (`type-timestamp-collateralId-amountUsd`) может совпасть у двух
+            // одинаковых по секунде депозитов, индекс их различает.
+            activity.map((row, i) => (
               <ActivityLine
-                key={row.id}
+                key={`${row.id}-${i}`}
                 row={row}
                 symbol={
                   row.marketId === undefined

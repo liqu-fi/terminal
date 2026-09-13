@@ -170,7 +170,12 @@ export function TransactionsTab() {
         <h2 className="text-sm font-semibold">Transactions</h2>
         <div className="flex-1" />
         <Select value={kind} onValueChange={(next) => setKind(next as Kind)}>
-          <SelectTrigger size="sm" className="h-7 text-xs" data-testid="transactions-type">
+          <SelectTrigger
+            size="sm"
+            className="h-7 text-xs"
+            aria-label="Type"
+            data-testid="transactions-type"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -199,6 +204,18 @@ export function TransactionsTab() {
           <Download size={14} /> CSV
         </Button>
       </div>
+      {/* `available: false` — «события депозитов и выводов неизвестны», а не
+          «их не было»: без подписи таблица из одних расчётов леджера (или
+          пустая) читалась бы как «переводов не делали». Строки леджера при
+          этом рисуются как обычно. */}
+      {!pending && !failed && portfolio?.available === false && (
+        <p
+          className="text-xs text-muted"
+          data-testid="transactions-events-unavailable"
+        >
+          Deposits and withdrawals are unavailable on this gateway
+        </p>
+      )}
       <DataTable
         data={rows}
         columns={columns}
