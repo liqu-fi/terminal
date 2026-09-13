@@ -71,8 +71,9 @@ describe("окно периода", () => {
 describe("PnL окна", () => {
   it("депозит посреди окна прибылью не считается", () => {
     const pnl = windowPnl([
-      point({ equityUsd: 1_000, netDepositsUsd: 1_000 }),
-      point({ equityUsd: 2_050, netDepositsUsd: 2_000 }),
+      // netDepositsUsd ≠ equityUsd у первой точки: pct считается от equity, не от депозитов.
+      point({ equityUsd: 1_000, netDepositsUsd: 800 }),
+      point({ equityUsd: 2_050, netDepositsUsd: 1_800 }),
     ]);
     expect(pnl).toEqual({ pnlUsd: 50, pct: 0.05 });
   });

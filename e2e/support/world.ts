@@ -422,8 +422,10 @@ export function defaultPortfolio(): WirePortfolio {
   return {
     available: true,
     points: [
-      { timestamp: 1_717_113_600, equityUsd: 5_000, realizedPnlUsd: 0, unrealizedPnlUsd: 0, netDepositsUsd: 5_000 },
-      { timestamp: 1_717_200_000, equityUsd: 5_120, realizedPnlUsd: 120, unrealizedPnlUsd: 0, netDepositsUsd: 5_000 },
+      // netDepositsUsd ≠ equityUsd намеренно: иначе pct = pnl/equity и pnl/netDeposits
+      // неразличимы (DP-012); Δ(equity − netDeposits) = 120, pct = 120/5000 = 2.40%.
+      { timestamp: 1_717_113_600, equityUsd: 5_000, realizedPnlUsd: 0, unrealizedPnlUsd: 0, netDepositsUsd: 4_900 },
+      { timestamp: 1_717_200_000, equityUsd: 5_120, realizedPnlUsd: 120, unrealizedPnlUsd: 0, netDepositsUsd: 4_900 },
     ],
     summary: {
       realizedPnlUsd: 120,
