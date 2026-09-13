@@ -3,7 +3,7 @@ import { SessionGate } from "./features/auth/SessionGate";
 import { ConnectButton } from "./features/wallet/ConnectButton";
 import { MarketProvider } from "./features/market/MarketContext";
 import { Terminal } from "./features/terminal/Terminal";
-import { TRADE_HREF, useHashRoute } from "./lib/hashRoute";
+import { accountHref, TRADE_HREF, useHashRoute } from "./lib/hashRoute";
 
 /**
  * Оболочка экрана.
@@ -39,7 +39,7 @@ export default function App() {
               Trade
             </a>
             <a
-              href="#/account"
+              href={accountHref("overview")}
               aria-current={onAccount ? "page" : undefined}
               data-testid="nav-account"
               className={

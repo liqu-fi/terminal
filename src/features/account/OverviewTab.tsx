@@ -43,9 +43,21 @@ export function OverviewTab() {
   const { markets } = useSelectedMarket();
   // Два окна портфеля: `1d` — Today's PnL, `30d` — события депозитов/выводов
   // для ленты. Lifetime-сводка (объём) одна и та же в обоих ответах.
-  const { data: today } = usePortfolioQuery(accountId, "1d");
-  const { data: month } = usePortfolioQuery(accountId, "30d");
-  const { data: ledger } = useSettlementLedgerQuery(accountId, {
+  const {
+    data: today,
+    isPending: todayPending,
+    isError: todayFailed,
+  } = usePortfolioQuery(accountId, "1d");
+  const {
+    data: month,
+    isPending: monthPending,
+    isError: monthFailed,
+  } = usePortfolioQuery(accountId, "30d");
+  const {
+    data: ledger,
+    isPending: ledgerPending,
+    isError: ledgerFailed,
+  } = useSettlementLedgerQuery(accountId, {
     limit: RECENT,
   });
   const { balances, totalWad } = useCollateralBalances();
@@ -71,6 +83,10 @@ export function OverviewTab() {
       ).slice(0, RECENT),
     [month, ledger],
   );
+  // Лента живёт на двух запросах, и у неё три состояния, а не два: пока хоть
+  // один не ответил — не утверждаем «событий нет», а упавший запрос — не пустой.
+  const activityPending = monthPending || ledgerPending;
+  const activityFailed = monthFailed || ledgerFailed;
   const heldAssets = balances.filter((b) => (b.amount ?? 0n) > 0n).length;
 
   return (
@@ -118,7 +134,11 @@ export function OverviewTab() {
               <div className="text-xs text-muted">Today's PnL</div>
               <div
                 className={`text-xl font-semibold tabular-nums ${
-                  pnl && pnl.pnlUsd < 0 ? "text-short" : "text-long"
+                  pnl === undefined
+                    ? "text-text"
+                    : pnl.pnlUsd < 0
+                      ? "text-short"
+                      : "text-long"
                 }`}
                 data-testid="today-pnl"
               >
@@ -146,9 +166,9 @@ export function OverviewTab() {
             </div>
           </div>
           <div className="h-56">
-            {today?.available === false ? (
+            {today?.available === false || todayFailed ? (
               <Unavailable />
-            ) : (
+            ) : todayPending ? null : (
               <PnlChart series={series} testid="today-pnl-chart" />
             )}
           </div>
@@ -164,7 +184,17 @@ export function OverviewTab() {
               View all →
             </a>
           </div>
-          {activity.length === 0 ? (
+          {activityPending ? null : activityFailed ? (
+            // Не `Unavailable`: та карточка говорит про историю портфеля, а
+            // лента стоит ещё и на леджере — и второй `portfolio-unavailable`
+            // на странице сделал бы этот testid неоднозначным для e2e.
+            <p
+              className="py-6 text-center text-xs text-muted"
+              data-testid="recent-activity-unavailable"
+            >
+              Activity history is unavailable on this gateway
+            </p>
+          ) : activity.length === 0 ? (
             <p
               className="py-6 text-center text-xs text-muted"
               data-testid="recent-activity-empty"

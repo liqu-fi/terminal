@@ -16,8 +16,8 @@ const TAB_LABEL: Record<AccountTab, string> = {
 /**
  * Полноэкранная страница счёта. Вкладки — настоящие ссылки на хеш: колесо,
  * средняя кнопка и «назад» работают браузером. На стадиях `no-account` /
- * `needs-signin` вместо вкладок стоит тот же `SessionCta`, что и в подвале
- * тикета: иначе с `#/account` было бы некуда войти.
+ * `needs-signin` вкладки остаются на месте, а вместо тела вкладки стоит тот же
+ * `SessionCta`, что и в подвале тикета: иначе с `#/account` было бы некуда войти.
  */
 export function AccountPage({ tab }: { tab: AccountTab }) {
   const stage = useSessionStage();
@@ -31,7 +31,7 @@ export function AccountPage({ tab }: { tab: AccountTab }) {
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">
         <h1 className="text-lg font-semibold">Account</h1>
         <nav
-          className="inline-flex w-fit items-center gap-1 rounded-lg bg-surface-2 p-[3px] text-sm"
+          className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg bg-surface-2 p-[3px] text-sm"
           aria-label="Account sections"
         >
           {ACCOUNT_TABS.map((t) => (
