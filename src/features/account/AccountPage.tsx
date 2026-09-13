@@ -7,6 +7,7 @@ import { Panel } from "./AccountCards";
 import { AssetsTab } from "./AssetsTab";
 import { OverviewTab } from "./OverviewTab";
 import { PortfolioTab } from "./PortfolioTab";
+import { TransactionsTab } from "./TransactionsTab";
 
 const TAB_LABEL: Record<AccountTab, string> = {
   overview: "Overview",
@@ -78,8 +79,7 @@ function TabBody({ tab }: { tab: AccountTab }) {
       return <PortfolioTab />;
     case "assets":
       return <AssetsTab />;
-    default:
-      // Transactions добавляется следующей задачей плана.
-      return null;
+    case "transactions":
+      return <TransactionsTab />;
   }
 }
