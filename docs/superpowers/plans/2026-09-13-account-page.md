@@ -4,7 +4,9 @@
 
 **Goal:** Полноэкранная страница Account (`#/account`) с четырьмя вкладками — Overview, Portfolio, Assets, Transactions — на живых данных SDK, с навигацией из шапки терминала.
 
-**Architecture:** URL-хеш — единственное состояние маршрута (`src/lib/hashRoute.ts`, без роутера); `App.tsx` рендерит `AccountPage` вместо `Terminal`, когда хеш начинается с `#/account`. Все числа читаются хуками `@liq/react` (`usePortfolioQuery`, `useSettlementLedgerQuery`, `useCollateralAmountQuery`, `useDepositableBalance`, `useAvailableMarginQuery`) и складываются чистыми функциями `features/account/accountPage.ts`; компоненты ничего не вычисляют. Таблицы истории на вкладке Portfolio — существующий `UserInfoTabs`; депозит/вывод — существующие диалоги.
+**Architecture:** URL-хеш — единственное состояние маршрута (`src/lib/hashRoute.ts`, без роутера); `App.tsx` рендерит `AccountPage` вместо `Terminal`, когда хеш начинается с `#/account`. Все числа читаются хуками `@liq/react` (`usePortfolioQuery`, `useSettlementLedgerQuery`, `useCollateralAmountQuery`, `useDepositableBalance`, `useAvailableMarginQuery`) и складываются чистыми функциями `features/account/accountLogic.ts`; компоненты ничего не вычисляют. Таблицы истории на вкладке Portfolio — существующий `UserInfoTabs`; депозит/вывод — существующие диалоги.
+
+> **Примечание исполнения (задача 5):** чистый модуль вычислений называется `src/features/account/accountLogic.ts` (в первой редакции плана — `accountPage.ts`; переименован из-за конфликта регистра с `AccountPage.tsx`, который ломал импорт без расширения на macOS).
 
 **Tech Stack:** React 19, TypeScript 6, Vite 8, Tailwind v4 (токены в `tokens.css`), `@liq/*@0.50`, `@tanstack/react-query` 5, `@tanstack/react-table` 9, `lightweight-charts` 5 (`BaselineSeries`), radix-ui `Select`, vitest 4 (node), Playwright 1.60 (tier1, hermetic).
 
@@ -17,7 +19,7 @@
 - Компоненты не тестируются; всякая нетривиальная логика — в чистом `.ts` рядом с тестом в `__tests__/`.
 - Никакого `Date.now()` во время рендера (React 19): только в `useState(() => Date.now())` или в обработчиках.
 - Прочерк «данных нет» — только `DASH` из `lib/format.ts`. Никаких `toFixed` в компонентах: форматирование — в `lib/format.ts` или `@liq/core`.
-- Две системы единиц: портфель шлюза — decimal `number` и unix-**секунды**; леджер/маржа — WAD `bigint` и **миллисекунды**. Стык — только в `accountPage.ts`.
+- Две системы единиц: портфель шлюза — decimal `number` и unix-**секунды**; леджер/маржа — WAD `bigint` и **миллисекунды**. Стык — только в `accountLogic.ts`.
 - Плитки без бэкенда (fee tier, security level, staking, статус/balance-after) **не рисуются**.
 - Testid — контракт с e2e; имена берутся из задач ниже дословно.
 - Каждая задача заканчивается зелёными `pnpm typecheck && pnpm lint && pnpm test` и коммитом.
@@ -256,8 +258,8 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 3: Чистые вычисления страницы
 
 **Files:**
-- Create: `src/features/account/accountPage.ts`
-- Test: `src/features/account/__tests__/accountPage.test.ts`
+- Create: `src/features/account/accountLogic.ts`
+- Test: `src/features/account/__tests__/accountLogic.test.ts`
 
 **Interfaces:**
 - Consumes: типы `PortfolioCollateralEvent`, `PortfolioPeriod`, `PortfolioPoint`, `SettlementLedgerRow` из `@liq/api-client`; `wadToNumber` из `@liq/core`; `UTCTimestamp` из `lightweight-charts`.
@@ -266,7 +268,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - [ ] **Step 1: Падающий тест**
 
 ```ts
-// src/features/account/__tests__/accountPage.test.ts
+// src/features/account/__tests__/accountLogic.test.ts
 import type {
   PortfolioCollateralEvent,
   PortfolioPoint,
@@ -283,7 +285,7 @@ import {
   pnlSeries,
   windowPnl,
   withinWindow,
-} from "../accountPage";
+} from "../accountLogic";
 
 const WAD = 10n ** 18n;
 const DAY = 86_400_000;
@@ -446,13 +448,13 @@ describe("лента активности", () => {
 
 - [ ] **Step 2: Убедиться, что падает**
 
-Run: `pnpm vitest run src/features/account/__tests__/accountPage.test.ts`
+Run: `pnpm vitest run src/features/account/__tests__/accountLogic.test.ts`
 Expected: FAIL — модуль `../accountPage` не найден.
 
 - [ ] **Step 3: Реализация**
 
 ```ts
-// src/features/account/accountPage.ts
+// src/features/account/accountLogic.ts
 import type {
   PortfolioCollateralEvent,
   PortfolioPeriod,
@@ -666,14 +668,14 @@ export function activityCsv(
 
 - [ ] **Step 4: Прогнать**
 
-Run: `pnpm vitest run src/features/account/__tests__/accountPage.test.ts`
+Run: `pnpm vitest run src/features/account/__tests__/accountLogic.test.ts`
 Expected: PASS (все `describe`). Если падает CSV-тест по времени — проверить, что ISO-строки в ожидании соответствуют `1_700_000_100_000` и `1_700_000_000_000` (правится тест, не код).
 
 - [ ] **Step 5: Коммит**
 
 ```bash
 pnpm typecheck && pnpm lint
-git add src/features/account/accountPage.ts src/features/account/__tests__/accountPage.test.ts
+git add src/features/account/accountLogic.ts src/features/account/__tests__/accountLogic.test.ts
 git commit -m "feat(account): чистые вычисления страницы — окно PnL, лента активности, CSV
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
@@ -742,7 +744,7 @@ Expected: FAIL — `marginUsage`/`free` undefined там, где ожидает�
 - [ ] **Step 3: Реализация** — правки в `useAccountSummary.ts`:
 
 ```ts
-import { marginUsage } from "./accountPage";
+import { marginUsage } from "./accountLogic";
 
 interface SummaryInput {
   available: bigint | undefined;
@@ -921,7 +923,7 @@ import { useEffect, useRef } from "react";
 
 import { cssVar } from "@/lib/cssVar";
 
-import type { PnlPoint } from "./accountPage";
+import type { PnlPoint } from "./accountLogic";
 
 /**
  * Кривая накопленного PnL: выше нуля — цвет long, ниже — short. Родитель
@@ -1015,7 +1017,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { PERIOD_LABEL, PERIODS } from "./accountPage";
+import { PERIOD_LABEL, PERIODS } from "./accountLogic";
 
 /**
  * Карточка страницы Account. Со своей рамкой и скруглением — в отличие от
@@ -1240,7 +1242,7 @@ import {
   pnlSeries,
   windowPnl,
   type ActivityRow,
-} from "./accountPage";
+} from "./accountLogic";
 import { DepositDialog } from "./DepositDialog";
 import { PnlChart } from "./PnlChart";
 import { useAccountSummary } from "./useAccountSummary";
@@ -1560,7 +1562,7 @@ import {
 } from "../../lib/format";
 import { UserInfoTabs } from "../userinfo/UserInfoTabs";
 import { Panel, PeriodSelect, Stat, Unavailable } from "./AccountCards";
-import { LEDGER_PAGE, periodWindow, pnlSeries } from "./accountPage";
+import { LEDGER_PAGE, periodWindow, pnlSeries } from "./accountLogic";
 import { PnlChart } from "./PnlChart";
 import { useAccountSummary } from "./useAccountSummary";
 
@@ -2023,7 +2025,7 @@ import {
   withinWindow,
   type ActivityKind,
   type ActivityRow,
-} from "./accountPage";
+} from "./accountLogic";
 
 type Kind = ActivityKind | "all";
 const KINDS: readonly Kind[] = ["all", "deposit", "withdrawal", "trade", "liquidation"];

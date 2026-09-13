@@ -96,7 +96,7 @@ export function useHashRoute(): Route;             // useSyncExternalStore("hash
 
 ## §2. Данные и чистые вычисления
 
-`features/account/accountPage.ts` — чистые функции, все под vitest:
+`features/account/accountLogic.ts` — чистые функции, все под vitest:
 
 | Функция | Вход | Выход |
 | --- | --- | --- |
@@ -227,7 +227,7 @@ Amount (`fmtSignedUsdNum`, тон по знаку, `null` → «—»), Tx (`tru
 **Vitest** (`src/**/__tests__/*.test.ts`, окружение node):
 - `lib/__tests__/hashRoute.test.ts` — `parseRoute` на все четыре вкладки, `#/account`,
   пустой хеш, мусор (`#id_token=…`) → trade; `accountHref` обратен `parseRoute`.
-- `features/account/__tests__/accountPage.test.ts` — `periodWindow` границы и `all`;
+- `features/account/__tests__/accountLogic.test.ts` — `periodWindow` границы и `all`;
   `windowPnl` (Δ с депозитом посреди дня не считается прибылью, `< 2` точек → `undefined`,
   `equity₀ ≤ 0` → `pct: null`); `pnlSeries`; `marginUsage` (зажим, `available ≤ 0`);
   `activityRows` (слияние секунд и миллисекунд, порядок, `netBalanceDelta: null` → `null`,
@@ -261,7 +261,7 @@ Amount (`fmtSignedUsdNum`, тон по знаку, `null` → «—»), Tx (`tru
 | `src/features/account/AssetsTab.tsx` | новый: §5, `AssetRow` |
 | `src/features/account/TransactionsTab.tsx` | новый: §5 |
 | `src/features/account/PnlChart.tsx` | новый: §6 |
-| `src/features/account/accountPage.ts` (+ тест) | новый: чистые функции §2 |
+| `src/features/account/accountLogic.ts` (+ тест) | новый: чистые функции §2 |
 | `src/features/account/useCollateralBalances.ts` | новый: `useQueries` на ключах SDK |
 | `src/features/account/useAccountSummary.ts` (+ тест) | `withdrawable` → `free`, `marginUsage` |
 | `src/features/account/{Deposit,Withdraw}Dialog.tsx` | проп `initialSymbol` |
