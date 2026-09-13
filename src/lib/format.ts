@@ -58,3 +58,36 @@ export function parseOrZero(
     return 0n;
   }
 }
+
+/**
+ * Портфель шлюза (`/accounts/:id/portfolio`) отдаёт decimal-`number`, а не
+ * WAD, — единственное место, где терминал печатает не bigint. Формат тот же,
+ * что у `formatUsd` SDK: `$1,234.50`.
+ */
+const USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function fmtUsdNum(n: number): string {
+  return USD.format(n === 0 ? 0 : n);
+}
+
+/** «+$1,923.40» / «-$500.00»; ноль (и минус-ноль) — без знака. */
+export function fmtSignedUsdNum(n: number): string {
+  const v = n === 0 ? 0 : n;
+  return (v > 0 ? "+" : "") + USD.format(v);
+}
+
+/** Доля → «28.6%» (один знак): уровень использования маржи. */
+export function fmtPctNum(ratio: number): string {
+  return `${(ratio * 100).toFixed(1)}%`;
+}
+
+/** Доля со знаком → «+2.03%» (два знака): изменение PnL. */
+export function fmtSignedPctNum(ratio: number): string {
+  const pct = ratio * 100;
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
+}
