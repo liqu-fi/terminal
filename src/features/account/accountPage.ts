@@ -118,6 +118,19 @@ export function marginUsage(
   return Math.min(1, Math.max(0, used));
 }
 
+/**
+ * Сумма остатков, только когда прочитаны все: пустой список или хоть один
+ * непрочитанный элемент — `undefined`, а не частичный итог.
+ */
+export function sumWhenAllLoaded(
+  amounts: (bigint | undefined)[],
+): bigint | undefined {
+  if (amounts.length === 0 || amounts.some((a) => a === undefined)) {
+    return undefined;
+  }
+  return amounts.reduce<bigint>((sum, a) => sum + a!, 0n);
+}
+
 export type ActivityKind = "deposit" | "withdrawal" | "trade" | "liquidation";
 
 export const ACTIVITY_LABEL: Record<ActivityKind, string> = {

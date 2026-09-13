@@ -8,6 +8,8 @@ import {
 } from "@liq/react";
 import { useQueries } from "@tanstack/react-query";
 
+import { sumWhenAllLoaded } from "./accountPage";
+
 export interface CollateralBalance {
   symbol: string;
   marketId: bigint;
@@ -51,8 +53,6 @@ export function useCollateralBalances(): {
     marketId: BigInt(c.marketId),
     amount: results[i].data,
   }));
-  const totalWad = balances.every((b) => b.amount !== undefined)
-    ? balances.reduce((sum, b) => sum + b.amount!, 0n)
-    : undefined;
+  const totalWad = sumWhenAllLoaded(balances.map((b) => b.amount));
   return { balances, totalWad };
 }

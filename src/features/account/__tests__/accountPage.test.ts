@@ -12,6 +12,7 @@ import {
   marginUsage,
   periodWindow,
   pnlSeries,
+  sumWhenAllLoaded,
   windowPnl,
   withinWindow,
 } from "../accountPage";
@@ -112,6 +113,14 @@ describe("использование маржи", () => {
   it("нечем измерять — undefined", () => {
     expect(marginUsage(0n, 0n)).toBeUndefined();
     expect(marginUsage(-1n, 0n)).toBeUndefined();
+  });
+});
+
+describe("сумма остатков коллатералов", () => {
+  it("все прочитаны — сумма; хоть один в полёте или список пуст — undefined", () => {
+    expect(sumWhenAllLoaded([1n * WAD, 2n * WAD, 3n * WAD])).toBe(6n * WAD);
+    expect(sumWhenAllLoaded([1n * WAD, undefined, 3n * WAD])).toBeUndefined();
+    expect(sumWhenAllLoaded([])).toBeUndefined();
   });
 });
 
