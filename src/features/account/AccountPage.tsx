@@ -5,6 +5,7 @@ import { ACCOUNT_TABS, accountHref, type AccountTab } from "@/lib/hashRoute";
 import { SessionCta } from "../auth/SessionCta";
 import { Panel } from "./AccountCards";
 import { OverviewTab } from "./OverviewTab";
+import { PortfolioTab } from "./PortfolioTab";
 
 const TAB_LABEL: Record<AccountTab, string> = {
   overview: "Overview",
@@ -72,8 +73,10 @@ function TabBody({ tab }: { tab: AccountTab }) {
   switch (tab) {
     case "overview":
       return <OverviewTab />;
+    case "portfolio":
+      return <PortfolioTab />;
     default:
-      // Portfolio, Assets, Transactions добавляются следующими задачами плана.
+      // Assets, Transactions добавляются следующими задачами плана.
       return null;
   }
 }
