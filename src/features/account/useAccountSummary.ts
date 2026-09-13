@@ -9,6 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 import { useSelectedMarket } from "../market/useSelectedMarket";
+import { marginUsage } from "./accountLogic";
 
 const WAD = 10n ** 18n;
 
@@ -21,8 +22,12 @@ interface SummaryPosition {
 interface SummaryInput {
   /** `getAvailableMargin` — залог, переоценённый по марку. `undefined` = не прочитано. */
   available: bigint | undefined;
+  /** `getWithdrawableMargin` — то, что можно вывести, не задев начальную маржу. */
+  withdrawable?: bigint;
   /** Офчейн-лок под неурегулированные филлы. */
   locked: bigint;
+  /** `free` шлюза = `available − locked`; может быть отрицательным. */
+  free?: bigint;
   debt: bigint;
   positions: SummaryPosition[];
 }
@@ -35,10 +40,14 @@ interface AccountSummary {
   exposure: bigint;
   /** WAD-кратность. `undefined`, когда стоимость счёта неизвестна или неположительна. */
   leverage: bigint | undefined;
+  /** Доступно для новых ордеров по мнению шлюза. */
+  free: bigint | undefined;
+  /** Доля маржи под позициями, `[0, 1]`. */
+  marginUsage: number | undefined;
 }
 
 /**
- * Шесть чисел панели из четырёх чтений.
+ * Восемь чисел панели из четырёх чтений.
  *
  * @remarks Чистая функция — вся её работа складывать и делить уже посчитанное:
  * `unrealizedPnl` и `notional` приходят из `enrichPosition`, `available` из
@@ -60,6 +69,10 @@ export function summarize(input: SummaryInput): AccountSummary {
     accountValue === undefined || accountValue <= 0n
       ? undefined
       : (exposure * WAD) / accountValue;
+  const usage =
+    accountValue === undefined || input.withdrawable === undefined
+      ? undefined
+      : marginUsage(accountValue, input.withdrawable);
   return {
     unrealizedPnl,
     accountValue,
@@ -67,6 +80,8 @@ export function summarize(input: SummaryInput): AccountSummary {
     borrowed: input.debt,
     exposure,
     leverage,
+    free: input.free,
+    marginUsage: usage,
   };
 }
 
@@ -112,7 +127,9 @@ export function useAccountSummary(): {
   return {
     summary: summarize({
       available: margins?.available,
+      withdrawable: margins?.withdrawable,
       locked: gatewayMargin?.locked ?? 0n,
+      free: gatewayMargin?.free,
       debt: debt ?? 0n,
       positions: positions.map((p) => ({
         unrealizedPnl: p.unrealizedPnl,

@@ -22,9 +22,12 @@ import { CollateralTabs } from "./CollateralTabs";
 export function DepositDialog({
   open,
   onClose,
+  initialSymbol,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Токен, с которого открывается диалог (строка Assets); иначе — первый контура. */
+  initialSymbol?: string;
 }) {
   const accountId = useAccountId();
   const networkId = useNetworkId();
@@ -37,7 +40,13 @@ export function DepositDialog({
   // ещё USDm.
   const collaterals = getCollaterals(getChainConfig(networkId));
   const symbols = Object.keys(collaterals);
-  const [symbol, setSymbol] = useState(symbols[0]);
+  // Начальное значение читается один раз: вызывающий, которому нужен другой
+  // токен на повторном открытии, перемонтирует диалог через `key`.
+  const [symbol, setSymbol] = useState(
+    initialSymbol !== undefined && symbols.includes(initialSymbol)
+      ? initialSymbol
+      : symbols[0],
+  );
   const { decimals } = collaterals[symbol];
 
   // Wallet balance of the token this deposit actually spends (lifted to WAD) —

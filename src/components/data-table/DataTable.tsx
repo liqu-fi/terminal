@@ -87,8 +87,17 @@ export function DataTable<T extends RowData>({
     meta,
   });
 
-  const marketFilter = table.getColumn(MARKET_COLUMN_ID);
-  const market = (marketFilter?.getFilterValue() as string) ?? ALL_MARKETS;
+  // Без колонки рынка (Transactions на странице Account) фильтра нет вовсе:
+  // getColumn на отсутствующем id пишет предупреждение в консоль, поэтому сначала
+  // проверяем по списку колонок.
+  const marketFilter = table
+    .getAllLeafColumns()
+    .some((c) => c.id === MARKET_COLUMN_ID)
+    ? table.getColumn(MARKET_COLUMN_ID)
+    : undefined;
+  const market = marketFilter
+    ? ((marketFilter.getFilterValue() as string) ?? ALL_MARKETS)
+    : null;
 
   const toolbar = (
     <DataTableToolbar

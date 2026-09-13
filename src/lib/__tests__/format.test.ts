@@ -3,9 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   fmtLeverage,
+  fmtPctNum,
   fmtPrice,
   fmtSignedPct,
+  fmtSignedPctNum,
   fmtSignedUsd,
+  fmtSignedUsdNum,
+  fmtUsdNum,
   parseOrZero,
 } from "@/lib/format";
 
@@ -36,5 +40,27 @@ describe("обёртки над форматтерами SDK", () => {
     expect(parseOrZero(Price.parse, "")).toBe(0n);
     expect(parseOrZero(Price.parse, "abc")).toBe(0n);
     expect(parseOrZero(Price.parse, "1.5")).toBe((15n * WAD) / 10n);
+  });
+});
+
+describe("decimal-числа портфеля шлюза", () => {
+  it("fmtUsdNum: валюта с разрядами и двумя знаками", () => {
+    expect(fmtUsdNum(1234.5)).toBe("$1,234.50");
+    expect(fmtUsdNum(0)).toBe("$0.00");
+    expect(fmtUsdNum(-12)).toBe("-$12.00");
+  });
+
+  it("fmtSignedUsdNum: плюс дописан, ноль без знака, минус-ноль — ноль", () => {
+    expect(fmtSignedUsdNum(1923.4)).toBe("+$1,923.40");
+    expect(fmtSignedUsdNum(-500)).toBe("-$500.00");
+    expect(fmtSignedUsdNum(0)).toBe("$0.00");
+    expect(fmtSignedUsdNum(-0)).toBe("$0.00");
+  });
+
+  it("fmtPctNum и fmtSignedPctNum: доля → проценты", () => {
+    expect(fmtPctNum(0.286)).toBe("28.6%");
+    expect(fmtPctNum(1)).toBe("100.0%");
+    expect(fmtSignedPctNum(0.0203)).toBe("+2.03%");
+    expect(fmtSignedPctNum(-0.01)).toBe("-1.00%");
   });
 });

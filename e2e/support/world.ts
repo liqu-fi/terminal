@@ -106,6 +106,33 @@ interface WireLedgerRow {
   liquidationTouched: boolean;
 }
 
+/** Ответ `GET /accounts/:id/portfolio` без полей, которые мок дописывает сам. */
+export interface WirePortfolio {
+  available: boolean;
+  points: Array<{
+    timestamp: number;
+    equityUsd: number;
+    realizedPnlUsd: number;
+    unrealizedPnlUsd: number;
+    netDepositsUsd: number;
+  }>;
+  summary: {
+    realizedPnlUsd: number;
+    fundingUsd: number;
+    feesUsd: number;
+    volumeUsd: number;
+    netDepositsUsd: number;
+    maxDrawdownPct: number | null;
+    estimated: boolean;
+  };
+  collateralEvents: Array<{
+    timestamp: number;
+    amountUsd: number;
+    type: "deposit" | "withdrawal";
+    collateralId: string;
+  }>;
+}
+
 interface RecordedTx {
   hash: string;
   to: string;
@@ -216,6 +243,8 @@ export interface MockWorld {
   settlementLedger: WireLedgerRow[];
   /** `GET /accounts/:id/margin` — офчейн-лок питает строку Equity панели. */
   accountMargin: { available: string; locked: string; free: string };
+  /** `GET /accounts/:id/portfolio` — кривая, lifetime-сводка, депозиты/выводы. */
+  portfolio: WirePortfolio;
   /** Снимок книги для GET /markets/:id/orderbook (WAD-строки). */
   orderbook: {
     bids: Array<{ price: string; size: string }>;
@@ -249,6 +278,10 @@ export interface MockWorld {
     ordersStatus?: number;
     tradesStatus?: number;
     orderbookStatus?: number;
+    // gateway: per-endpoint next-response status override (mirror marketsStatus) —
+    // the three-state Account UI needs both `available: false` (set via
+    // `world.portfolio`) and a hard failure as distinct branches.
+    portfolioStatus?: number;
     // wallet: reject the next eth_requestAccounts (user dismisses the connect prompt)
     connectRejects?: boolean;
   };
@@ -384,6 +417,31 @@ function defaultBook(price: bigint): MockWorld["orderbook"] {
   };
 }
 
+/** Две точки (+$120 заработано) и один депозит — минимум, на котором видны все плитки. */
+export function defaultPortfolio(): WirePortfolio {
+  return {
+    available: true,
+    points: [
+      // netDepositsUsd ≠ equityUsd намеренно: иначе pct = pnl/equity и pnl/netDeposits
+      // неразличимы (DP-012); Δ(equity − netDeposits) = 120, pct = 120/5000 = 2.40%.
+      { timestamp: 1_717_113_600, equityUsd: 5_000, realizedPnlUsd: 0, unrealizedPnlUsd: 0, netDepositsUsd: 4_900 },
+      { timestamp: 1_717_200_000, equityUsd: 5_120, realizedPnlUsd: 120, unrealizedPnlUsd: 0, netDepositsUsd: 4_900 },
+    ],
+    summary: {
+      realizedPnlUsd: 120,
+      fundingUsd: -2,
+      feesUsd: 1,
+      volumeUsd: 1_280_000,
+      netDepositsUsd: 5_000,
+      maxDrawdownPct: null,
+      estimated: false,
+    },
+    collateralEvents: [
+      { timestamp: 1_717_113_600, amountUsd: 2_500, type: "deposit", collateralId: "2" },
+    ],
+  };
+}
+
 interface ScenarioOptions {
   accounts?: AccountFixture[];
   price?: bigint;
@@ -398,6 +456,7 @@ interface ScenarioOptions {
   positionHistory?: MockWorld["positionHistory"];
   settlementLedger?: WireLedgerRow[];
   accountMargin?: MockWorld["accountMargin"];
+  portfolio?: WirePortfolio;
   orderbook?: MockWorld["orderbook"];
   /**
    * Fault overrides active from the world's construction, not just after
@@ -461,6 +520,7 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
       locked: "0",
       free: (5_000n * WAD).toString(),
     },
+    portfolio: opts.portfolio ?? defaultPortfolio(),
     orderbook: opts.orderbook ?? defaultBook(price),
     faults: opts.faults ?? {},
     submittedOrders: [],

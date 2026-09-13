@@ -66,4 +66,42 @@ describe("свод счёта", () => {
     expect(s.equity).toBeUndefined();
     expect(s.leverage).toBeUndefined();
   });
+
+  it("использование маржи — доля available, недоступная к выводу", () => {
+    const s = summarize({
+      available: 1000n * WAD,
+      withdrawable: 714n * WAD,
+      locked: 0n,
+      debt: 0n,
+      positions: [],
+    });
+    expect(s.marginUsage).toBeCloseTo(0.286, 3);
+  });
+
+  it("free шлюза проходит как есть — и отрицательным", () => {
+    const s = summarize({
+      available: 1000n * WAD,
+      locked: 1_040n * WAD,
+      free: -40n * WAD,
+      debt: 0n,
+      positions: [],
+    });
+    expect(s.free).toBe(-40n * WAD);
+  });
+
+  it("без withdrawable и без залога использование маржи неизвестно", () => {
+    expect(
+      summarize({ available: 1000n * WAD, locked: 0n, debt: 0n, positions: [] })
+        .marginUsage,
+    ).toBeUndefined();
+    expect(
+      summarize({
+        available: undefined,
+        withdrawable: 0n,
+        locked: 0n,
+        debt: 0n,
+        positions: [],
+      }).marginUsage,
+    ).toBeUndefined();
+  });
 });

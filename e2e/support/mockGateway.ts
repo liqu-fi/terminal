@@ -415,6 +415,27 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       });
       return;
     }
+    const portfolio = path.match(/\/accounts\/([^/]+)\/portfolio$/);
+    if (portfolio) {
+      if (world.faults.portfolioStatus) {
+        await error(route, world.faults.portfolioStatus);
+        return;
+      }
+      await send(route, {
+        accountId: portfolio[1],
+        period: url.searchParams.get("period") ?? "all",
+        generatedAt: Math.floor(Date.now() / 1000),
+        ...world.portfolio,
+        coverage: {
+          eventsComplete: true,
+          oldestEventAt: world.portfolio.points[0]?.timestamp ?? null,
+          inferredOpeningPositions: 0,
+          bucketsMissingMark: 0,
+          firstBucketMissingMarkAt: null,
+        },
+      });
+      return;
+    }
     const register = path.match(/\/accounts\/([^/]+)\/register$/);
     if (register) {
       world.registeredAccountIds.push(register[1]);

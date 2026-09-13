@@ -83,6 +83,9 @@ in `src/deploy-env-init.ts`) selects the contract set; chain and RPC come from t
 - `src/config/` — chain + wagmi config + typed env.
 - `src/features/<name>/` — one folder per concern (wallet, auth, market, chart, trade, positions,
   orders, history, account).
+- `#/account` — full-screen Account page (`src/features/account/AccountPage.tsx`): Overview /
+  Portfolio / Assets / Transactions on live SDK reads; hash routing in `src/lib/hashRoute.ts`, no
+  router dependency.
 - `src/lib/format.ts` — the single tested formatting layer (WAD bigint → display).
 - `src/styles/tokens.css` — design tokens.
 
