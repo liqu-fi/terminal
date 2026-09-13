@@ -8,7 +8,7 @@ import {
 } from "@liq/react";
 import { useQueries } from "@tanstack/react-query";
 
-import { sumWhenAllLoaded } from "./accountPage";
+import { sumWhenAllLoaded } from "./accountLogic";
 
 export interface CollateralBalance {
   symbol: string;

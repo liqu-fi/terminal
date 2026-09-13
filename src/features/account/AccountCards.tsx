@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { PERIOD_LABEL, PERIODS } from "./accountPage";
+import { PERIOD_LABEL, PERIODS } from "./accountLogic";
 
 /**
  * Карточка страницы Account. Со своей рамкой и скруглением — в отличие от

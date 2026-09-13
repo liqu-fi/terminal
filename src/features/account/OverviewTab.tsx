@@ -27,7 +27,7 @@ import {
   pnlSeries,
   windowPnl,
   type ActivityRow,
-} from "./accountPage";
+} from "./accountLogic";
 import { DepositDialog } from "./DepositDialog";
 import { PnlChart } from "./PnlChart";
 import { useAccountSummary } from "./useAccountSummary";

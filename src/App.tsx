@@ -1,7 +1,4 @@
-// Расширение в пути — не украшение: на регистронезависимой ФС (macOS) и TS,
-// и vite пробуют `AccountPage.ts` раньше `.tsx` и попадают в соседний
-// `accountPage.ts` — модуль чистых вычислений, где такого экспорта нет.
-import { AccountPage } from "./features/account/AccountPage.tsx";
+import { AccountPage } from "./features/account/AccountPage";
 import { SessionGate } from "./features/auth/SessionGate";
 import { ConnectButton } from "./features/wallet/ConnectButton";
 import { MarketProvider } from "./features/market/MarketContext";

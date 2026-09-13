@@ -8,7 +8,7 @@ import { useEffect, useRef } from "react";
 
 import { cssVar } from "@/lib/cssVar";
 
-import type { PnlPoint } from "./accountPage";
+import type { PnlPoint } from "./accountLogic";
 
 /**
  * Кривая накопленного PnL: выше нуля — цвет long, ниже — short. Родитель

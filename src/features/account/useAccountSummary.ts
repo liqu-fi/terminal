@@ -9,7 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 import { useSelectedMarket } from "../market/useSelectedMarket";
-import { marginUsage } from "./accountPage";
+import { marginUsage } from "./accountLogic";
 
 const WAD = 10n ** 18n;
 

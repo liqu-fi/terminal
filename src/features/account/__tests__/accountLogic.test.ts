@@ -15,7 +15,7 @@ import {
   sumWhenAllLoaded,
   windowPnl,
   withinWindow,
-} from "../accountPage";
+} from "../accountLogic";
 
 const WAD = 10n ** 18n;
 const DAY = 86_400_000;
