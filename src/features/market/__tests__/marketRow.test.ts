@@ -8,7 +8,7 @@ const WAD = 10n ** 18n;
 const base: MarketFullRow = {
   id: 200n,
   symbol: "BTC",
-  pythFeedId: "0x00",
+  feedId: "0x00",
   isActive: true,
   initialMarginBps: 200n,
   maintenanceMarginBps: 50n,
