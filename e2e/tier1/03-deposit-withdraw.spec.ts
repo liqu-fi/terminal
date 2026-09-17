@@ -110,6 +110,11 @@ test.describe("deposit & withdraw", () => {
     // …against the sUSDC collateral id (susdcMarketId = 1 on staging), NOT the
     // hardcoded 0 that withdrew from an empty collateral slot and reverted (#459).
     expect(world.lastCollateralId).toBe(1n);
+    // Вывод тоже едет релеем. Отправителя выбирает проп `relay` у LiqSetup, и
+    // это единственное, что отделяет вывод от кошелькового пути: встроенный
+    // кошелёк пустой, ETH на газ у него нет. Типы потерю пропа не заметят —
+    // `relay ?? false` молча откатывается, — поэтому держим утверждением.
+    expect(world.sentTxs.filter((t) => t.kind !== "relay")).toHaveLength(0);
   });
 
   test("withdrawing USDm debits margin under its own collateral id", async ({
