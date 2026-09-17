@@ -133,6 +133,38 @@ test.describe("position actions", () => {
     expect(order.reduceOnly).toBe(true);
   });
 
+  test("a rejected TP submit is named in the dialog and leaves the old trigger standing", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].positions = [longPositionFixture()];
+      w.conditionalOrders = [
+        conditionalOrderFixture({
+          id: "tp-1",
+          orderType: "TAKE_PROFIT_MARKET",
+          triggerPrice: (90_000n * WAD).toString(),
+        }),
+      ];
+      w.faults.submitOrderStatus = 422;
+      return w;
+    });
+
+    await userInfo.selectTab("positions");
+    await userInfo.editTpSl(MARKET.id).click();
+    await userInfo.tpslTp.fill("95000");
+    await userInfo.tpslSave.click();
+
+    // Отказ называет ногу и остаётся на экране: закрыть диалог поверх ошибки
+    // значило бы сообщить об успехе, которого не было.
+    await expect(userInfo.tpslError).toContainText("Take profit");
+    await expect(userInfo.tpslDialog).toBeVisible();
+    // Замену подать не удалось — предшественника не снимают, иначе позиция
+    // осталась бы без скобки. Ради этого подача и идёт раньше отмены.
+    expect(world.cancelledOrderIds).toEqual([]);
+  });
+
   test("clearing the SL field only cancels", async ({ page, world }) => {
     const { userInfo } = await enterTerminal(page, world, () => {
       const w = readyWorld();
