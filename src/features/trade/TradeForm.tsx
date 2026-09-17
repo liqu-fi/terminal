@@ -101,7 +101,11 @@ export function TradeForm() {
     available: margins?.available ?? 0n,
     markPrice,
   });
-  const pending = submitOrder.isPending;
+  // Пока SDK подаёт ноги, тикет ещё занят: `submitOrder.isPending` гаснет на
+  // принятом входе, а скобки уходят после него. Без этого второй вход в то же
+  // окно отцепил бы наблюдатель мутации от первого, и отказ по его скобкам
+  // никто бы не показал.
+  const pending = submitOrder.isPending || applyBrackets.isPending;
   const error = submitOrder.error ?? applyBrackets.error;
   const insufficientMargin = !margins || margins.available === 0n;
 
