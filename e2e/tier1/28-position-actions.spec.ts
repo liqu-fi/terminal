@@ -106,6 +106,7 @@ test.describe("position actions", () => {
           id: "tp-1",
           orderType: "TAKE_PROFIT_MARKET",
           triggerPrice: (90_000n * WAD).toString(),
+          groupId: "11111111-2222-4333-8444-555555555555",
         }),
       ];
       return w;
@@ -131,6 +132,9 @@ test.describe("position actions", () => {
     // Длинная: TP срабатывает выше рынка.
     expect(order.triggerAbove).toBe(true);
     expect(order.reduceOnly).toBe(true);
+    // Замена встаёт в связку заменяемой: в новой связке сработавший стоп её
+    // не снимет, и переставленный TP переживёт позицию.
+    expect(order.groupId).toBe("11111111-2222-4333-8444-555555555555");
   });
 
   test("a rejected TP submit is named in the dialog and leaves the old trigger standing", async ({

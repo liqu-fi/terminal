@@ -2,7 +2,7 @@ import { Qty } from "@liq/sdk";
 
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
-import { WAD } from "../support/constants";
+import { GATEWAY_URL, WAD } from "../support/constants";
 
 test.describe("market orders", () => {
   test("submits a market BUY and resets the form", async ({ page, world }) => {
@@ -90,42 +90,119 @@ test.describe("market orders", () => {
     await expect(trade.sizeInput).toHaveValue("");
   });
 
-  test("attaches reduce-only TP/SL conditional orders after a long entry", async ({
+  for (const entry of [
+    {
+      side: "buy" as const,
+      label: "long",
+      tp: "80000",
+      sl: "60000",
+      // Длинную закрывает продажа: TP срабатывает выше рынка, SL ниже.
+      closeSide: "SELL",
+      tpAbove: true,
+      slAbove: false,
+      negativeSize: true,
+    },
+    {
+      side: "sell" as const,
+      label: "short",
+      tp: "60000",
+      sl: "80000",
+      // Короткую закрывает покупка, направления зеркальны.
+      closeSide: "BUY",
+      tpAbove: false,
+      slAbove: true,
+      negativeSize: false,
+    },
+  ]) {
+    test(`attaches reduce-only TP/SL conditional orders after a ${entry.label} entry`, async ({
+      page,
+      world,
+    }) => {
+      const { trade } = await enterTerminal(page, world);
+
+      await trade.setSize("0.5");
+      await trade.tpslToggle.click();
+      await trade.entryTpInput.fill(entry.tp);
+      await trade.entrySlInput.fill(entry.sl);
+      await trade.submit(entry.side);
+
+      // entry MARKET + TAKE_PROFIT_MARKET + STOP_MARKET = 3 submits
+      await expect.poll(() => world.submittedOrders.length).toBe(3);
+      const tp = world.submittedOrders.find(
+        (o) => o.orderType === "TAKE_PROFIT_MARKET",
+      )!;
+      const sl = world.submittedOrders.find(
+        (o) => o.orderType === "STOP_MARKET",
+      )!;
+
+      // Направление триггера выводится из стороны позиции: перепутанное
+      // сработало бы стопом сразу же.
+      expect(tp.triggerAbove).toBe(entry.tpAbove);
+      expect(sl.triggerAbove).toBe(entry.slAbove);
+      expect(tp.side).toBe(entry.closeSide);
+      expect(sl.side).toBe(entry.closeSide);
+      // Обе ноги закрывают вход: размер противоположен входному.
+      expect(String(tp.sizeDelta).startsWith("-")).toBe(entry.negativeSize);
+      expect(String(sl.sizeDelta).startsWith("-")).toBe(entry.negativeSize);
+      // Reduce-only: осиротевший триггер не откроет встречную позицию.
+      expect(tp.reduceOnly).toBe(true);
+      expect(sl.reduceOnly).toBe(true);
+      // Одна связка на обе ноги: без неё сработавший TP не снимет стоп, и тот
+      // переживёт позицию.
+      expect(tp.groupId).toBeTruthy();
+      expect(sl.groupId).toBe(tp.groupId);
+
+      // TP/SL prices are cleared after a confirmed submit (no stale re-attach).
+      await expect(trade.entryTpInput).toHaveValue("");
+      await expect(trade.entrySlInput).toHaveValue("");
+    });
+  }
+
+  test("a rejected take-profit leg is named, and the stop is still submitted", async ({
     page,
     world,
   }) => {
     const { trade } = await enterTerminal(page, world);
 
-    // Long market entry with TP above / SL below.
-    await trade.setSize("0.5"); // BUY (default side)
+    // Отказ конкретной ноге ставится здесь, а не в `mockGateway`: тот умеет
+    // ронять только весь эндпоинт (`faults.submitOrderStatus`). Playwright
+    // отдаёт приоритет маршруту, зарегистрированному последним, а
+    // `route.fallback()` возвращает всё остальное — включая GET-опросы списка
+    // ордеров — обратно моку.
+    await page.route(`${GATEWAY_URL}/orders`, async (route) => {
+      const request = route.request();
+      const body =
+        request.method() === "POST"
+          ? (request.postDataJSON() as { orderType?: string } | null)
+          : null;
+      if (body?.orderType === "TAKE_PROFIT_MARKET") {
+        await route.fulfill({
+          status: 422,
+          contentType: "application/json",
+          body: JSON.stringify({
+            error: { code: "rejected", message: "rejected" },
+          }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+
+    await trade.setSize("0.5");
     await trade.tpslToggle.click();
     await trade.entryTpInput.fill("80000");
     await trade.entrySlInput.fill("60000");
     await trade.submit();
 
-    // entry MARKET + TAKE_PROFIT_MARKET + STOP_MARKET = 3 submits
-    await expect.poll(() => world.submittedOrders.length).toBe(3);
-    const tp = world.submittedOrders.find(
-      (o) => o.orderType === "TAKE_PROFIT_MARKET",
-    )!;
-    const sl = world.submittedOrders.find(
-      (o) => o.orderType === "STOP_MARKET",
-    )!;
-    // long → TP triggers above, SL below; both CLOSE the position (opposite
-    // side, negative/short sizeDelta), carrying the typed trigger prices.
-    expect(tp.triggerAbove).toBe(true);
-    expect(sl.triggerAbove).toBe(false);
-    expect(tp.side).toBe("SELL");
-    expect(sl.side).toBe("SELL");
-    expect(String(tp.sizeDelta).startsWith("-")).toBe(true);
-    expect(String(sl.sizeDelta).startsWith("-")).toBe(true);
-    // Attached TP/SL must be reduce-only so an orphaned trigger cannot flip the
-    // account into an opposite position (enforced backend-side at trigger time).
-    expect(tp.reduceOnly).toBe(true);
-    expect(sl.reduceOnly).toBe(true);
-
-    // TP/SL prices are cleared after a confirmed submit (no stale re-attach).
-    await expect(trade.entryTpInput).toHaveValue("");
-    await expect(trade.entrySlInput).toHaveValue("");
+    // Отказ по одной ноге не отменяет остальные: стоп защищает позицию и
+    // подаётся, даже когда TP отвергнут.
+    await expect
+      .poll(() =>
+        world.submittedOrders.filter((o) => o.orderType === "STOP_MARKET"),
+      )
+      .toHaveLength(1);
+    // До 0.54.0 тикет этот отказ терял: вторая подача отцепляла наблюдатель
+    // мутации от первой, и `trade-error` молчал.
+    await expect(trade.tradeError).toContainText("Take profit");
   });
 });

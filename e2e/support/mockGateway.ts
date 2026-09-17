@@ -150,6 +150,10 @@ function restSubmittedOrder(
     triggerPrice:
       payload.triggerPrice != null ? String(payload.triggerPrice) : null,
     createdAt: "2026-01-01T00:00:00.000Z",
+    // Связку шлюз возвращает в списках: без неё `positionBrackets` в e2e видит
+    // `undefined`, и замена ноги получает новую связку вместо унаследованной —
+    // то есть проверялось бы не то поведение, что в проде.
+    groupId: payload.groupId != null ? String(payload.groupId) : null,
   };
   if (orderType === "LIMIT") world.openOrders.push(order);
   else world.conditionalOrders.push(order);
