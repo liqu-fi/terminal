@@ -4,10 +4,12 @@ import {
   describeRejection,
   describeWarning,
   Price,
+  type Qty,
   Side,
 } from "@liq/sdk";
 import {
   useAccountId,
+  useApplyBracketsMutation,
   useAvailableMarginQuery,
   useOrderSubmission,
   useSessionStage,
@@ -63,11 +65,9 @@ export function TradeForm() {
   // которых требует тикет, а черновик их несёт.
   const submitDraft = useOrderSubmission();
   const submitOrder = useMutation({ mutationFn: submitDraft });
-  // Прикреплённые TP/SL идут ОТДЕЛЬНОЙ мутацией, хотя функция подачи та же.
-  // Они отправляются из `onSuccess` входного ордера, а повторный `mutate` на том
-  // же наблюдателе сбрасывает его `mutateOptions` прямо посреди чужого колбэка —
-  // TanStack валится в `Cannot read properties of undefined (reading 'onSettled')`.
-  const submitAttached = useMutation({ mutationFn: submitDraft });
+  // Скобки входа — то же действие, что у диалога позиции: план, связка ног,
+  // порядок подачи и сбор отказов живут в SDK.
+  const applyBrackets = useApplyBracketsMutation(accountId);
 
   const [tab, setTab] = useState<Tab>("Market");
   const [limitPrice, setLimitPrice] = useState("");
@@ -101,10 +101,8 @@ export function TradeForm() {
     available: margins?.available ?? 0n,
     markPrice,
   });
-  const attachable = tab === "Market" || tab === "Limit";
-
   const pending = submitOrder.isPending;
-  const error = submitOrder.error ?? submitAttached.error;
+  const error = submitOrder.error ?? applyBrackets.error;
   const insufficientMargin = !margins || margins.available === 0n;
 
   // The active tab's price field, parsed (0n = blank/unparseable).
@@ -122,38 +120,20 @@ export function TradeForm() {
     !sizing.validation.ok ||
     !tabPriceReady;
 
-  // Reduce-only TP/SL submitted after a confirmed entry (best-effort, not
-  // atomic). Long: TP triggers above, SL below; short: mirrored. Closing side
-  // and delta are the inverse of the entry.
-  function submitAttachedTpSl(entryDelta: bigint, entrySide: Side) {
+  // Скобки входа: позиция размером со вход и пустые существующие скобки —
+  // вход ничего не отменяет. Куда смотрит триггер, чем закрывается позиция и в
+  // какой связке стоят ноги, решает действие SDK; подаются они после того, как
+  // шлюз принял вход, то есть не атомарно с ним.
+  function attachBrackets(entryDelta: Qty, entrySide: Side) {
     if (!tpslOn || accountId === undefined || marketId === undefined) return;
-    const long = entrySide === Side.BUY;
-    const closeDelta = -entryDelta;
-    const closeSide = long ? Side.SELL : Side.BUY;
-    const fire = (
-      raw: string,
-      orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET",
-      above: boolean,
-    ) => {
-      const triggerPrice = parseOrZero(Price.parse, raw);
-      if (triggerPrice <= 0n) return;
-      submitAttached.mutate({
-        kind: "conditional",
-        accountId,
-        marketId,
-        sizeDelta: closeDelta,
-        side: closeSide,
-        orderType,
-        triggerPrice,
-        triggerAbove: above,
-        // Reduce-only: an attached TP/SL must only close the entry position. If
-        // it fires after the position is already gone, the matching engine
-        // rejects it instead of opening an unintended opposite position.
-        reduceOnly: true,
-      });
-    };
-    fire(tp, "TAKE_PROFIT_MARKET", long);
-    fire(sl, "STOP_MARKET", !long);
+    // `mutate`, как и вход: отказ приходит в `applyBrackets.error` и печатается
+    // строкой `trade-error`.
+    applyBrackets.mutate({
+      position: { marketId, side: entrySide, size: entryDelta },
+      brackets: { takeProfit: null, stopLoss: null },
+      takeProfit: Price(parseOrZero(Price.parse, tp)),
+      stopLoss: Price(parseOrZero(Price.parse, sl)),
+    });
   }
 
   // `mutate` (not `mutateAsync`): a rejected submit surfaces via the mutation's
@@ -170,7 +150,7 @@ export function TradeForm() {
       // Fire the attached orders from the just-submitted prices, THEN clear the
       // TP/SL fields — otherwise the next entry on this tab would re-attach the
       // stale prices (the form clears only on a confirmed submit).
-      submitAttachedTpSl(sizeDelta, side);
+      attachBrackets(sizeDelta, side);
       setTp("");
       setSl("");
     };
@@ -198,26 +178,24 @@ export function TradeForm() {
     const price = parsedTabPrice();
     if (price <= 0n) return;
 
-    if (tab === "Limit") {
-      // `acceptablePrice` у лимитного черновика нет: подписанное сообщение
-      // приравнивает его к лимитной цене — лимитка исполняется по ней или лучше.
-      submitOrder.mutate(
-        {
-          kind: "limit",
-          accountId,
-          marketId,
-          sizeDelta,
-          side,
-          limitPrice: price,
-          reduceOnly,
-          // Post-only принимает только лимитная семья — на рыночных шлюз
-          // отвечает отказом, поэтому у рыночного и условного черновиков поля
-          // нет по типу, а не по забывчивости.
-          postOnly,
-        },
-        { onSuccess },
-      );
-    }
+    // `acceptablePrice` у лимитного черновика нет: подписанное сообщение
+    // приравнивает его к лимитной цене — лимитка исполняется по ней или лучше.
+    submitOrder.mutate(
+      {
+        kind: "limit",
+        accountId,
+        marketId,
+        sizeDelta,
+        side,
+        limitPrice: price,
+        reduceOnly,
+        // Post-only принимает только лимитная семья — на рыночных шлюз
+        // отвечает отказом, поэтому у рыночного и условного черновиков поля
+        // нет по типу, а не по забывчивости.
+        postOnly,
+      },
+      { onSuccess },
+    );
   }
 
   // `not-ready` (нет цены, пустой размер) молчит намеренно: у ордера, который
@@ -301,18 +279,15 @@ export function TradeForm() {
           onReduceOnly={setReduceOnly}
           tpsl={tpslOn}
           onTpsl={setTpslOn}
-          tpslAvailable={attachable}
         />
 
-        {attachable && (
-          <EntryTpSlFields
-            enabled={tpslOn}
-            tp={tp}
-            setTp={setTp}
-            sl={sl}
-            setSl={setSl}
-          />
-        )}
+        <EntryTpSlFields
+          enabled={tpslOn}
+          tp={tp}
+          setTp={setTp}
+          sl={sl}
+          setSl={setSl}
+        />
       </div>
 
       {/* Подвал: сводка, кнопки подачи и всё, что объясняет их состояние. Не
