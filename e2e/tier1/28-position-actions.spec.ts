@@ -121,8 +121,10 @@ test.describe("position actions", () => {
     await userInfo.tpslSave.click();
 
     await expect.poll(() => world.submittedOrders.length).toBe(1);
-    // Шлюз не умеет менять триггер на месте: правка — отмена и подача.
-    expect(world.cancelledOrderIds).toContain("tp-1");
+    // Шлюз не умеет менять триггер на месте: правка — отмена и подача. Отмена
+    // ждётся, а не читается сразу: она уходит после подачи — замену подают
+    // первой, чтобы позиция не осталась без скобки, если подача не пройдёт.
+    await expect.poll(() => world.cancelledOrderIds).toContain("tp-1");
     const order = world.submittedOrders.at(-1)!;
     expect(order.orderType).toBe("TAKE_PROFIT_MARKET");
     expect(order.triggerPrice).toBe((95_000n * WAD).toString());
