@@ -31,9 +31,10 @@ export function DepositDialog({
 }) {
   const accountId = useAccountId();
   const networkId = useNetworkId();
-  // Весь депозит одним планом: approve, wrap и modifyCollateral вместе —
-  // отдельных транзакций approve больше нет. Отправителя выбирает провайдер —
-  // проп `relay` в LiqSetup (ADR-0063).
+  // Отправителя выбирает провайдер — проп `relay` в LiqSetup (ADR-0063).
+  // Под ним весь депозит едет одним подписанным батчем; кошельковый путь
+  // послал бы прямой approve отдельной транзакцией — как группировать план,
+  // решает отправитель, а не билдер.
   const deposit = useDepositMutation();
   const [amount, setAmount] = useState("");
   // Депозитные токены контура из конфига SDK: на prod один USDC, на staging
