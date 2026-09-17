@@ -145,6 +145,11 @@ export function TradeForm() {
   // the click handler. The form is cleared only after a confirmed submit.
   function submit(side: Side) {
     if (accountId === undefined || marketId === undefined) return;
+    // Отказ по прошлым скобкам снимается здесь: `submitOrder.mutate` обнуляет
+    // только свою ошибку, а подача скобок может вообще не состояться (тумблер
+    // погашен) — тогда прошлый «Take profit: rejected» повис бы под кнопкой
+    // рядом с принятым ордером и читался бы как отказ по нему.
+    applyBrackets.reset();
     const sizeDelta =
       side === Side.BUY
         ? sizing.summary.long.sizeDelta

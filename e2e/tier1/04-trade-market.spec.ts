@@ -100,7 +100,6 @@ test.describe("market orders", () => {
       closeSide: "SELL",
       tpAbove: true,
       slAbove: false,
-      negativeSize: true,
     },
     {
       side: "sell" as const,
@@ -111,7 +110,6 @@ test.describe("market orders", () => {
       closeSide: "BUY",
       tpAbove: false,
       slAbove: true,
-      negativeSize: false,
     },
   ]) {
     test(`attaches reduce-only TP/SL conditional orders after a ${entry.label} entry`, async ({
@@ -141,9 +139,15 @@ test.describe("market orders", () => {
       expect(sl.triggerAbove).toBe(entry.slAbove);
       expect(tp.side).toBe(entry.closeSide);
       expect(sl.side).toBe(entry.closeSide);
-      // Обе ноги закрывают вход: размер противоположен входному.
-      expect(String(tp.sizeDelta).startsWith("-")).toBe(entry.negativeSize);
-      expect(String(sl.sizeDelta).startsWith("-")).toBe(entry.negativeSize);
+      // Обе ноги закрывают вход ровно: не только знак, но и величина. Нога
+      // другого размера оставила бы часть позиции без защиты, а проверка
+      // одного знака этого бы не увидела.
+      const entryOrder = world.submittedOrders.find(
+        (o) => o.orderType === "MARKET",
+      )!;
+      const closing = (-BigInt(String(entryOrder.sizeDelta))).toString();
+      expect(tp.sizeDelta).toBe(closing);
+      expect(sl.sizeDelta).toBe(closing);
       // Reduce-only: осиротевший триггер не откроет встречную позицию.
       expect(tp.reduceOnly).toBe(true);
       expect(sl.reduceOnly).toBe(true);
@@ -205,5 +209,16 @@ test.describe("market orders", () => {
     // До 0.54.0 тикет этот отказ терял: вторая подача отцепляла наблюдатель
     // мутации от первой, и `trade-error` молчал.
     await expect(trade.tradeError).toContainText("Take profit");
+
+    // И отказ не переживает следующий вход: с погашенным тумблером скобки не
+    // подаются вовсе, поэтому обнулить их ошибку некому, кроме самой подачи.
+    // Иначе под принятым ордером висел бы отказ по прошлому.
+    await trade.tpslToggle.click();
+    await trade.setSize("0.25");
+    await trade.submit();
+    // Вход + стоп первой подачи (перехваченный TP до мока не доходит) и вход
+    // второй — три записи.
+    await expect.poll(() => world.submittedOrders.length).toBe(3);
+    await expect(trade.tradeError).toBeHidden();
   });
 });
