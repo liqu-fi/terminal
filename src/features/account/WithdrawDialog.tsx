@@ -5,7 +5,7 @@ import {
   useCollateralAmountQuery,
   useLiqOnchain,
   useNetworkId,
-  useRelayedWithdrawMutation,
+  useWithdrawMutation,
 } from "@liq/react";
 import { formatUsd, getChainConfig, getCollaterals, wadToFixed } from "@liq/core";
 import { useQuery } from "@tanstack/react-query";
@@ -82,11 +82,10 @@ export function WithdrawDialog({
   const exceedsLimit = limit !== undefined && amountWad > limit;
   const invalid = exceedsLimit;
 
-  // Один подписанный батч через релеер (ADR-0063): снять синт с аккаунта и
-  // развернуть его в токен, а при долге — погасить в голове того же батча.
-  // Долг хук читает сам, отдельных транзакций approve больше нет, и ETH в
-  // кошельке не нужен: за газ платит релеер.
-  const withdraw = useRelayedWithdrawMutation();
+  // Один план: снять синт с аккаунта и развернуть его в токен, а при долге —
+  // погасить в голове того же плана; долг хук читает сам. Отправителя выбирает
+  // провайдер — проп `relay` в LiqSetup (ADR-0063).
+  const withdraw = useWithdrawMutation();
 
   const pending = withdraw.isPending;
   const error = withdraw.error;

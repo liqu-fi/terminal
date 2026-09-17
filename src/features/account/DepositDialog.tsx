@@ -1,9 +1,9 @@
 import { Margin } from "@liq/sdk";
 import {
   useAccountId,
+  useDepositMutation,
   useDepositableBalance,
   useNetworkId,
-  useRelayedDepositMutation,
 } from "@liq/react";
 import { formatUsd, getChainConfig, getCollaterals, wadToFixed } from "@liq/core";
 import { useState } from "react";
@@ -31,10 +31,10 @@ export function DepositDialog({
 }) {
   const accountId = useAccountId();
   const networkId = useNetworkId();
-  // Депозит едет одним подписанным батчем через релеер (ADR-0063): approve,
-  // wrap и modifyCollateral в одной транзакции, за которую платит он. Отдельных
-  // транзакций approve больше нет, ETH в кошельке не нужен.
-  const deposit = useRelayedDepositMutation();
+  // Весь депозит одним планом: approve, wrap и modifyCollateral вместе —
+  // отдельных транзакций approve больше нет. Отправителя выбирает провайдер —
+  // проп `relay` в LiqSetup (ADR-0063).
+  const deposit = useDepositMutation();
   const [amount, setAmount] = useState("");
   // Депозитные токены контура из конфига SDK: на prod один USDC, на staging
   // ещё USDm.

@@ -1,8 +1,8 @@
 import { USDC_DECIMALS } from "@liq/core";
 import {
+  useClaimFaucetMutation,
   useFaucetState,
   useNetworkId,
-  useRelayedClaimFaucetMutation,
   useWallet,
 } from "@liq/react";
 import { getChainConfig } from "@liq/sdk";
@@ -63,9 +63,8 @@ function FaucetBody() {
     address: getChainConfig(networkId).contracts.USDC,
   };
   const state = useFaucetState([token]);
-  // Клейм едет релеем (ADR-0063): за газ платит он, и пустому кошельку больше
-  // не нужно идти за тестовым ETH в кран сети, чтобы получить тестовые USDC.
-  const claim = useRelayedClaimFaucetMutation();
+  // Отправителя выбирает провайдер — проп `relay` в LiqSetup (ADR-0063).
+  const claim = useClaimFaucetMutation();
 
   if (state.isError) {
     return (
