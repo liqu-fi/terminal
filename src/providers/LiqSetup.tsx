@@ -84,8 +84,15 @@ export function LiqSetup({ children }: { children: ReactNode }) {
     children
   );
 
+  // `relay` — каждый план едет через релеер (ADR-0063): встроенный кошелёк
+  // создаётся пустым, ETH ему не нужен.
   const provider = (
-    <LiqProvider client={liqClient} onchain={liqOnchain} sessionKey={env.turnkey}>
+    <LiqProvider
+      client={liqClient}
+      onchain={liqOnchain}
+      sessionKey={env.turnkey}
+      relay
+    >
       {inner}
     </LiqProvider>
   );

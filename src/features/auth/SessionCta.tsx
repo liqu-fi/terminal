@@ -1,7 +1,7 @@
 import {
   useAccountId,
+  useCreateAccountMutation,
   useGatewayAuthMutation,
-  useRelayedCreateAccountMutation,
 } from "@liq/react";
 import { useEffect } from "react";
 import { useWalletClient } from "wagmi";
@@ -22,10 +22,8 @@ export function SessionCta({
   stage: "no-account" | "needs-signin";
 }) {
   const accountId = useAccountId();
-  // Создание аккаунта едет релеем (ADR-0063): встроенный кошелёк создаётся
-  // пустым, и это первая ончейн-запись, которая раньше упиралась в нулевой
-  // баланс — пользователю приходилось идти за ETH до начала работы.
-  const createAccount = useRelayedCreateAccountMutation();
+  // Отправителя выбирает провайдер — проп `relay` в LiqSetup (ADR-0063).
+  const createAccount = useCreateAccountMutation();
   const auth = useGatewayAuthMutation();
 
   // После перехода wrong-chain → MegaETH запрос walletClient у wagmi может
