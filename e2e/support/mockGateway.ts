@@ -6,6 +6,12 @@
  * SDK's response parser returns `json.data ?? json`, so a bare shape is correct
  * whether or not a given endpoint wraps — and it can't accidentally double-wrap.
  */
+import {
+  IN_FLIGHT_ORDER_STATUSES,
+  OPEN_ORDER_STATUSES,
+  OrderStatus,
+  TERMINAL_ORDER_STATUSES,
+} from "@liq/core";
 import type { Page, Route } from "@playwright/test";
 
 import { TEST_ADDRESS } from "./constants";
@@ -97,15 +103,8 @@ function marketFull(world: MockWorld) {
   });
 }
 
-/** Статусы, которыми история представляется шлюзу (`TERMINAL_ORDER_STATUSES`). */
-const TERMINAL_STATUSES = new Set([
-  "SETTLED",
-  "FAILED",
-  "CANCELLED",
-  "EXPIRED",
-  "REJECTED",
-  "TRIGGER_DROPPED",
-]);
+/** Статусы, которыми история представляется шлюзу. */
+const TERMINAL_STATUSES = new Set<string>(TERMINAL_ORDER_STATUSES);
 
 /**
  * Разводит три запроса, которые ходят на один `/orders`: открытые, условные и
@@ -174,17 +173,15 @@ const SSE_LONGPOLL_MS = 20_000;
 /**
  * Статусы, при которых ордер остаётся на экране открытых.
  *
- * @remarks Три в полёте (`MATCHED`, `SETTLEMENT_SUBMITTED`,
- * `FAILED_RETRYABLE`) — тоже здесь: с 0.46.0 открытый список их спрашивает, и
- * событие о матчинге больше не убирает ордер с экрана до исхода.
+ * @remarks Ордера в полёте — тоже здесь: с 0.46.0 открытый список их
+ * спрашивает, и событие о матчинге больше не убирает ордер с экрана до исхода.
+ * `TRIGGER_PENDING` своего набора в SDK не имеет — условные идут отдельной
+ * выдачей (`liqSlices.orders.conditional`), но на экране открытых стоят.
  */
-const OPEN_STATUSES = new Set([
-  "PENDING",
-  "PARTIALLY_FILLED",
-  "TRIGGER_PENDING",
-  "MATCHED",
-  "SETTLEMENT_SUBMITTED",
-  "FAILED_RETRYABLE",
+const OPEN_STATUSES = new Set<string>([
+  ...OPEN_ORDER_STATUSES,
+  ...IN_FLIGHT_ORDER_STATUSES,
+  OrderStatus.TRIGGER_PENDING,
 ]);
 
 /**

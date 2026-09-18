@@ -3,49 +3,19 @@
  * test on real account state — e.g. whether the account can actually withdraw —
  * instead of discovering it via a 180s UI hang on a reverting transaction.
  *
- * ABIs are inlined (not imported from the Tier 1 mock's `contracts.ts`) so this
- * stays a pure Tier 2 concern; only the address book is shared.
+ * Адреса и ABI — из SDK, а не из мока Tier 1: устаревший здесь адрес отвечает
+ * на живом контуре чужого развёртывания, и предусловие тихо мерит не тот
+ * аккаунт.
  */
+import {
+  getContractAddress,
+  perpsAccountProxyAbi,
+  perpsMarketProxyAbi,
+} from "@liq/sdk";
 import { createPublicClient, defineChain, http } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 
-import { ADDR } from "../support/contracts";
 import { liveEnv } from "./env";
-
-const accountProxyAbi = [
-  {
-    name: "balanceOf",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "owner", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    name: "tokenOfOwnerByIndex",
-    type: "function",
-    stateMutability: "view",
-    inputs: [
-      { name: "owner", type: "address" },
-      { name: "index", type: "uint256" },
-    ],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-] as const;
-
-const marketProxyAbi = [
-  {
-    name: "debt",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "accountId", type: "uint128" }],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-] as const;
-
-/** ADDR.* arrays are `[production, staging]` (see e2e/support/contracts.ts). */
-function deployAddr(pair: readonly string[]): `0x${string}` {
-  return (liveEnv.deployEnv === "production" ? pair[0] : pair[1]) as `0x${string}`;
-}
 
 function publicClient() {
   const chain = defineChain({
@@ -72,23 +42,31 @@ export async function readAccountDebt(
   const owner = mnemonicToAccount(liveEnv.mnemonic, {
     addressIndex: walletIndex,
   }).address;
-  const accountProxy = deployAddr(ADDR.perpsAccountProxy);
+  const accountProxy = getContractAddress(
+    liveEnv.chainId,
+    "PerpsAccountProxy",
+    liveEnv.deployEnv,
+  );
   const count = await pub.readContract({
     address: accountProxy,
-    abi: accountProxyAbi,
+    abi: perpsAccountProxyAbi,
     functionName: "balanceOf",
     args: [owner],
   });
   if (count === 0n) return null;
   const accountId = await pub.readContract({
     address: accountProxy,
-    abi: accountProxyAbi,
+    abi: perpsAccountProxyAbi,
     functionName: "tokenOfOwnerByIndex",
     args: [owner, 0n],
   });
   return pub.readContract({
-    address: deployAddr(ADDR.perpsMarketProxy),
-    abi: marketProxyAbi,
+    address: getContractAddress(
+      liveEnv.chainId,
+      "PerpsMarketProxy",
+      liveEnv.deployEnv,
+    ),
+    abi: perpsMarketProxyAbi,
     functionName: "debt",
     args: [accountId],
   });
