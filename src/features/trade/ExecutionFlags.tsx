@@ -66,7 +66,6 @@ export function ExecutionFlags({
   onReduceOnly,
   tpsl,
   onTpsl,
-  tpslAvailable,
 }: {
   postOnly: boolean;
   onPostOnly: (v: boolean) => void;
@@ -76,8 +75,6 @@ export function ExecutionFlags({
   onReduceOnly: (v: boolean) => void;
   tpsl: boolean;
   onTpsl: (v: boolean) => void;
-  /** Прикрепить TP/SL можно к входному ордеру, но не к условному. */
-  tpslAvailable: boolean;
 }) {
   return (
     <TooltipProvider>
@@ -113,14 +110,12 @@ export function ExecutionFlags({
             onChange={onReduceOnly}
           />
         </div>
-        {tpslAvailable && (
-          <Flag
-            testid="tpsl-toggle"
-            label="TP / SL"
-            checked={tpsl}
-            onChange={onTpsl}
-          />
-        )}
+        <Flag
+          testid="tpsl-toggle"
+          label="TP / SL"
+          checked={tpsl}
+          onChange={onTpsl}
+        />
       </div>
     </TooltipProvider>
   );

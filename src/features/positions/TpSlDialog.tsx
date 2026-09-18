@@ -1,9 +1,5 @@
 import { Price } from "@liq/sdk";
-import {
-  useAccountId,
-  useCancelOrdersMutation,
-  useOrderSubmission,
-} from "@liq/react";
+import { useAccountId, useApplyBracketsMutation } from "@liq/react";
 import { wadToFixed } from "@liq/core";
 import { useState } from "react";
 
@@ -17,7 +13,6 @@ import {
 
 import { parseOrZero } from "../../lib/format";
 import { DecimalInput } from "../../components/ui/DecimalInput";
-import { tpslPlan } from "./tpslPlan";
 import type { PositionRow } from "./usePositionRows";
 
 /**
@@ -29,8 +24,9 @@ import type { PositionRow } from "./usePositionRows";
  * `key` по рынку: сброс полей через эффект переписывал бы уже набранное на
  * каждом опросе позиций.
  *
- * Отмены уходят одной пачкой, подачи — по очереди: каждый ордер подписывается
- * следующим nonce, и параллельная подача гонит `withNonceRetry` сам с собой.
+ * План правки, порядок «подача, потом отмена», связка ног и сбор отказов живут
+ * в `useApplyBracketsMutation`: то же действие зовёт тикет для скобок входа, и
+ * второй копии правила у терминала больше нет.
  */
 export function TpSlDialog({
   row,
@@ -40,8 +36,7 @@ export function TpSlDialog({
   onClose: () => void;
 }) {
   const accountId = useAccountId();
-  const cancelOrders = useCancelOrdersMutation(accountId);
-  const submit = useOrderSubmission();
+  const applyBrackets = useApplyBracketsMutation(accountId);
   const [tp, setTp] = useState(() =>
     row.brackets.takeProfit
       ? wadToFixed(row.brackets.takeProfit.triggerPrice, 2)
@@ -52,38 +47,22 @@ export function TpSlDialog({
       ? wadToFixed(row.brackets.stopLoss.triggerPrice, 2)
       : "",
   );
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function save() {
-    if (accountId === undefined) return;
-    const plan = tpslPlan({
-      position: row.position,
-      brackets: row.brackets,
-      // Пустое поле — `0n`, то есть «снять».
-      takeProfit: parseOrZero(Price.parse, tp),
-      stopLoss: parseOrZero(Price.parse, sl),
-    });
-    if (plan.cancel.length === 0 && plan.submit.length === 0) {
-      onClose();
-      return;
-    }
-
-    setPending(true);
-    setError(null);
-    try {
-      if (plan.cancel.length > 0) {
-        await cancelOrders.mutateAsync(plan.cancel);
-      }
-      for (const order of plan.submit) {
-        await submit({ kind: "conditional", accountId, ...order });
-      }
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPending(false);
-    }
+  // `mutate` (не `mutateAsync`): отказ показывается из `applyBrackets.error`
+  // ниже, а диалог остаётся открытым — закрывать его поверх ошибки значило бы
+  // прятать её.
+  function save() {
+    applyBrackets.mutate(
+      {
+        position: row.position,
+        brackets: row.brackets,
+        // Пустое поле — `0n`, то есть «снять». `parseOrZero` отдаёт голый
+        // `bigint`, а действие ждёт `Price`, поэтому бренд возвращается явно.
+        takeProfit: Price(parseOrZero(Price.parse, tp)),
+        stopLoss: Price(parseOrZero(Price.parse, sl)),
+      },
+      { onSuccess: () => onClose() },
+    );
   }
 
   return (
@@ -130,9 +109,9 @@ export function TpSlDialog({
           Empty field removes the bracket. Orders are reduce-only.
         </p>
 
-        {error && (
+        {applyBrackets.error && (
           <p className="mt-2 text-[11px] text-short" data-testid="tpsl-error">
-            {error}
+            {applyBrackets.error.message}
           </p>
         )}
 
@@ -147,11 +126,11 @@ export function TpSlDialog({
           </Button>
           <Button
             className="flex-1"
-            disabled={pending || accountId === undefined}
-            onClick={() => void save()}
+            disabled={applyBrackets.isPending || accountId === undefined}
+            onClick={save}
             data-testid="tpsl-save"
           >
-            {pending ? "Saving…" : "Save"}
+            {applyBrackets.isPending ? "Saving…" : "Save"}
           </Button>
         </div>
       </DialogContent>

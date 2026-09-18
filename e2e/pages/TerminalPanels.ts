@@ -328,6 +328,9 @@ export class UserInfoPanel {
   get tpslSave(): Locator {
     return this.page.getByTestId("tpsl-save");
   }
+  get tpslError(): Locator {
+    return this.page.getByTestId("tpsl-error");
+  }
 
   get ordersTable(): Locator {
     return this.page.getByTestId("orders-table");

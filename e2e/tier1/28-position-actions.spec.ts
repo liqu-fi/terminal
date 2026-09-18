@@ -106,6 +106,7 @@ test.describe("position actions", () => {
           id: "tp-1",
           orderType: "TAKE_PROFIT_MARKET",
           triggerPrice: (90_000n * WAD).toString(),
+          groupId: "11111111-2222-4333-8444-555555555555",
         }),
       ];
       return w;
@@ -121,14 +122,51 @@ test.describe("position actions", () => {
     await userInfo.tpslSave.click();
 
     await expect.poll(() => world.submittedOrders.length).toBe(1);
-    // Шлюз не умеет менять триггер на месте: правка — отмена и подача.
-    expect(world.cancelledOrderIds).toContain("tp-1");
+    // Шлюз не умеет менять триггер на месте: правка — отмена и подача. Отмена
+    // ждётся, а не читается сразу: она уходит после подачи — замену подают
+    // первой, чтобы позиция не осталась без скобки, если подача не пройдёт.
+    await expect.poll(() => world.cancelledOrderIds).toContain("tp-1");
     const order = world.submittedOrders.at(-1)!;
     expect(order.orderType).toBe("TAKE_PROFIT_MARKET");
     expect(order.triggerPrice).toBe((95_000n * WAD).toString());
     // Длинная: TP срабатывает выше рынка.
     expect(order.triggerAbove).toBe(true);
     expect(order.reduceOnly).toBe(true);
+    // Замена встаёт в связку заменяемой: в новой связке сработавший стоп её
+    // не снимет, и переставленный TP переживёт позицию.
+    expect(order.groupId).toBe("11111111-2222-4333-8444-555555555555");
+  });
+
+  test("a rejected TP submit is named in the dialog and leaves the old trigger standing", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].positions = [longPositionFixture()];
+      w.conditionalOrders = [
+        conditionalOrderFixture({
+          id: "tp-1",
+          orderType: "TAKE_PROFIT_MARKET",
+          triggerPrice: (90_000n * WAD).toString(),
+        }),
+      ];
+      w.faults.submitOrderStatus = 422;
+      return w;
+    });
+
+    await userInfo.selectTab("positions");
+    await userInfo.editTpSl(MARKET.id).click();
+    await userInfo.tpslTp.fill("95000");
+    await userInfo.tpslSave.click();
+
+    // Отказ называет ногу и остаётся на экране: закрыть диалог поверх ошибки
+    // значило бы сообщить об успехе, которого не было.
+    await expect(userInfo.tpslError).toContainText("Take profit");
+    await expect(userInfo.tpslDialog).toBeVisible();
+    // Замену подать не удалось — предшественника не снимают, иначе позиция
+    // осталась бы без скобки. Ради этого подача и идёт раньше отмены.
+    expect(world.cancelledOrderIds).toEqual([]);
   });
 
   test("clearing the SL field only cancels", async ({ page, world }) => {

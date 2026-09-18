@@ -3,12 +3,18 @@ import {
   Bps,
   describeRejection,
   describeWarning,
+  positionBrackets,
   Price,
+  Qty,
   Side,
+  toSignedSize,
 } from "@liq/sdk";
 import {
   useAccountId,
+  useApplyBracketsMutation,
   useAvailableMarginQuery,
+  useConditionalOrders,
+  useEnrichedPositions,
   useOrderSubmission,
   useSessionStage,
   useTradeStore,
@@ -49,8 +55,16 @@ const SLIPPAGE_BPS = Bps(50n); // 0.5%
  */
 const LIMIT_PRICE_DECIMALS = 2;
 
+/** Стабильные пустышки: новый литерал на каждый рендер гонял бы мемо впустую. */
+const EMPTY_ORDERS: NonNullable<
+  ReturnType<typeof useConditionalOrders>["data"]
+> = [];
+const EMPTY_POSITIONS: NonNullable<
+  ReturnType<typeof useEnrichedPositions>["data"]
+> = [];
+
 export function TradeForm() {
-  const { marketId, market } = useSelectedMarket();
+  const { marketId, market, allMarketIds } = useSelectedMarket();
   const accountId = useAccountId();
   const stage = useSessionStage();
   const markPrice = useMarkPrice();
@@ -63,11 +77,14 @@ export function TradeForm() {
   // которых требует тикет, а черновик их несёт.
   const submitDraft = useOrderSubmission();
   const submitOrder = useMutation({ mutationFn: submitDraft });
-  // Прикреплённые TP/SL идут ОТДЕЛЬНОЙ мутацией, хотя функция подачи та же.
-  // Они отправляются из `onSuccess` входного ордера, а повторный `mutate` на том
-  // же наблюдателе сбрасывает его `mutateOptions` прямо посреди чужого колбэка —
-  // TanStack валится в `Cannot read properties of undefined (reading 'onSettled')`.
-  const submitAttached = useMutation({ mutationFn: submitDraft });
+  // Скобки входа — то же действие, что у диалога позиции: план, связка ног,
+  // порядок подачи и сбор отказов живут в SDK.
+  const applyBrackets = useApplyBracketsMutation(accountId);
+  // Скобки ставятся на позицию, а не на вход, поэтому тикету нужно то же, что
+  // и строке позиции: её текущий размер и её действующие скобки.
+  const { data: conditional = EMPTY_ORDERS } = useConditionalOrders();
+  const { data: positions = EMPTY_POSITIONS } =
+    useEnrichedPositions(allMarketIds);
 
   const [tab, setTab] = useState<Tab>("Market");
   const [limitPrice, setLimitPrice] = useState("");
@@ -101,10 +118,12 @@ export function TradeForm() {
     available: margins?.available ?? 0n,
     markPrice,
   });
-  const attachable = tab === "Market" || tab === "Limit";
-
-  const pending = submitOrder.isPending;
-  const error = submitOrder.error ?? submitAttached.error;
+  // Пока SDK подаёт ноги, тикет ещё занят: `submitOrder.isPending` гаснет на
+  // принятом входе, а скобки уходят после него. Без этого второй вход в то же
+  // окно отцепил бы наблюдатель мутации от первого, и отказ по его скобкам
+  // никто бы не показал.
+  const pending = submitOrder.isPending || applyBrackets.isPending;
+  const error = submitOrder.error ?? applyBrackets.error;
   const insufficientMargin = !margins || margins.available === 0n;
 
   // The active tab's price field, parsed (0n = blank/unparseable).
@@ -122,38 +141,37 @@ export function TradeForm() {
     !sizing.validation.ok ||
     !tabPriceReady;
 
-  // Reduce-only TP/SL submitted after a confirmed entry (best-effort, not
-  // atomic). Long: TP triggers above, SL below; short: mirrored. Closing side
-  // and delta are the inverse of the entry.
-  function submitAttachedTpSl(entryDelta: bigint, entrySide: Side) {
+  /**
+   * Прикрепить скобки к позиции, которой станет рынок после принятого входа.
+   *
+   * @remarks Размер — позиция целиком, а не один вход, и существующие скобки
+   * передаются настоящие: иначе долив завёл бы вторую связку поверх первой,
+   * строка позиции показывала бы только первую, и «переставил тейк» из диалога
+   * оставил бы второй уровень висеть — позиция закрылась бы по цене, которую
+   * пользователь считал заменённой.
+   *
+   * Позиция здесь ещё дошлюзовая: вход принят, но не рассчитан, поэтому её
+   * размер складывается с размером входа вручную. Знак приводит
+   * `toSignedSize` — часть источников несёт размер по модулю.
+   *
+   * Куда смотрит триггер, чем закрывается позиция и в какой связке стоят ноги,
+   * решает действие SDK. Подаются они после того, как шлюз принял вход, то есть
+   * не атомарно с ним.
+   */
+  function attachBrackets(entryDelta: Qty) {
     if (!tpslOn || accountId === undefined || marketId === undefined) return;
-    const long = entrySide === Side.BUY;
-    const closeDelta = -entryDelta;
-    const closeSide = long ? Side.SELL : Side.BUY;
-    const fire = (
-      raw: string,
-      orderType: "TAKE_PROFIT_MARKET" | "STOP_MARKET",
-      above: boolean,
-    ) => {
-      const triggerPrice = parseOrZero(Price.parse, raw);
-      if (triggerPrice <= 0n) return;
-      submitAttached.mutate({
-        kind: "conditional",
-        accountId,
-        marketId,
-        sizeDelta: closeDelta,
-        side: closeSide,
-        orderType,
-        triggerPrice,
-        triggerAbove: above,
-        // Reduce-only: an attached TP/SL must only close the entry position. If
-        // it fires after the position is already gone, the matching engine
-        // rejects it instead of opening an unintended opposite position.
-        reduceOnly: true,
-      });
-    };
-    fire(tp, "TAKE_PROFIT_MARKET", long);
-    fire(sl, "STOP_MARKET", !long);
+    const open = positions.find((p) => p.marketId === marketId);
+    const size = Qty(
+      (open ? toSignedSize(open.size, open.side) : 0n) + entryDelta,
+    );
+    // `mutate`, как и вход: отказ приходит в `applyBrackets.error` и печатается
+    // строкой `trade-error`.
+    applyBrackets.mutate({
+      position: { marketId, side: size < 0n ? Side.SELL : Side.BUY, size },
+      brackets: positionBrackets(marketId, conditional),
+      takeProfit: Price(parseOrZero(Price.parse, tp)),
+      stopLoss: Price(parseOrZero(Price.parse, sl)),
+    });
   }
 
   // `mutate` (not `mutateAsync`): a rejected submit surfaces via the mutation's
@@ -161,6 +179,11 @@ export function TradeForm() {
   // the click handler. The form is cleared only after a confirmed submit.
   function submit(side: Side) {
     if (accountId === undefined || marketId === undefined) return;
+    // Отказ по прошлым скобкам снимается здесь: `submitOrder.mutate` обнуляет
+    // только свою ошибку, а подача скобок может вообще не состояться (тумблер
+    // погашен) — тогда прошлый «Take profit: rejected» повис бы под кнопкой
+    // рядом с принятым ордером и читался бы как отказ по нему.
+    applyBrackets.reset();
     const sizeDelta =
       side === Side.BUY
         ? sizing.summary.long.sizeDelta
@@ -170,7 +193,7 @@ export function TradeForm() {
       // Fire the attached orders from the just-submitted prices, THEN clear the
       // TP/SL fields — otherwise the next entry on this tab would re-attach the
       // stale prices (the form clears only on a confirmed submit).
-      submitAttachedTpSl(sizeDelta, side);
+      attachBrackets(sizeDelta);
       setTp("");
       setSl("");
     };
@@ -198,26 +221,24 @@ export function TradeForm() {
     const price = parsedTabPrice();
     if (price <= 0n) return;
 
-    if (tab === "Limit") {
-      // `acceptablePrice` у лимитного черновика нет: подписанное сообщение
-      // приравнивает его к лимитной цене — лимитка исполняется по ней или лучше.
-      submitOrder.mutate(
-        {
-          kind: "limit",
-          accountId,
-          marketId,
-          sizeDelta,
-          side,
-          limitPrice: price,
-          reduceOnly,
-          // Post-only принимает только лимитная семья — на рыночных шлюз
-          // отвечает отказом, поэтому у рыночного и условного черновиков поля
-          // нет по типу, а не по забывчивости.
-          postOnly,
-        },
-        { onSuccess },
-      );
-    }
+    // `acceptablePrice` у лимитного черновика нет: подписанное сообщение
+    // приравнивает его к лимитной цене — лимитка исполняется по ней или лучше.
+    submitOrder.mutate(
+      {
+        kind: "limit",
+        accountId,
+        marketId,
+        sizeDelta,
+        side,
+        limitPrice: price,
+        reduceOnly,
+        // Post-only принимает только лимитная семья — на рыночных шлюз
+        // отвечает отказом, поэтому у рыночного и условного черновиков поля
+        // нет по типу, а не по забывчивости.
+        postOnly,
+      },
+      { onSuccess },
+    );
   }
 
   // `not-ready` (нет цены, пустой размер) молчит намеренно: у ордера, который
@@ -301,18 +322,15 @@ export function TradeForm() {
           onReduceOnly={setReduceOnly}
           tpsl={tpslOn}
           onTpsl={setTpslOn}
-          tpslAvailable={attachable}
         />
 
-        {attachable && (
-          <EntryTpSlFields
-            enabled={tpslOn}
-            tp={tp}
-            setTp={setTp}
-            sl={sl}
-            setSl={setSl}
-          />
-        )}
+        <EntryTpSlFields
+          enabled={tpslOn}
+          tp={tp}
+          setTp={setTp}
+          sl={sl}
+          setSl={setSl}
+        />
       </div>
 
       {/* Подвал: сводка, кнопки подачи и всё, что объясняет их состояние. Не

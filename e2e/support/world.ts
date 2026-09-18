@@ -52,6 +52,8 @@ export interface GatewayOrder {
   limitPrice: string | null;
   triggerPrice: string | null;
   createdAt: string;
+  /** Связка OCO; `null` — ордер без связки. */
+  groupId: string | null;
 }
 
 interface TradeRow {
@@ -628,6 +630,7 @@ export function limitOrderFixture(
     limitPrice: (60_000n * WAD).toString(),
     triggerPrice: null,
     createdAt: "2026-01-01T00:00:00.000Z",
+    groupId: null,
     ...overrides,
   };
 }
@@ -647,6 +650,7 @@ export function conditionalOrderFixture(
     limitPrice: null,
     triggerPrice: (80_000n * WAD).toString(),
     createdAt: "2026-01-01T00:00:00.000Z",
+    groupId: null,
     ...overrides,
   };
 }
