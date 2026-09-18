@@ -175,6 +175,25 @@ interface WireVolumeWindow {
   windowEnd: number;
 }
 
+/**
+ * Маршруты шлюза, у которых спека умеет отобрать ответ статусом. Ключ читается
+ * в `mockGateway.ts` ровно там, где стоял прежний `if (faults.xStatus)` — место
+ * проверки семантично (барьер `holds`, метод, побочный счётчик), поэтому в
+ * диспетчер её не поднять, не заведя вторую копию маршрутизации.
+ */
+export type FaultRoute =
+  | "authVerify"
+  | "candles"
+  | "cancel"
+  | "funding"
+  | "markets"
+  | "orderbook"
+  | "orders"
+  | "portfolio"
+  | "price"
+  | "submitOrder"
+  | "trades";
+
 export interface MockWorld {
   wallet: string;
   /** Chain the injected wallet reports (eth_chainId / net_version); mutable —
@@ -257,11 +276,13 @@ export interface MockWorld {
 
   // --- fault injection ---
   faults: {
-    // gateway: per-endpoint next-response status override
-    submitOrderStatus?: number;
-    marketsStatus?: number;
-    authVerifyStatus?: number;
-    cancelStatus?: number;
+    /**
+     * «Ответ шлюза на маршруте X падает со статусом N» — одно понятие, одна
+     * запись: `world.faults.routeStatus.markets = 500`. Проверка живёт в
+     * `faulted()` (`mockGateway.ts`), новому маршруту нужен только ключ в
+     * `FaultRoute`.
+     */
+    routeStatus: Partial<Record<FaultRoute, number>>;
     // chain: make modifyCollateral (deposit/withdraw) txs revert on-chain
     collateralReverts?: boolean;
     // wallet: reject the next wallet_switchEthereumChain / every eth_sendTransaction
@@ -274,17 +295,6 @@ export interface MockWorld {
     // gateway: one-shot 422 INVALID_NONCE on the next POST /orders, naming
     // the expected nonce (drives the SDK's resync-and-retry path)
     submitNonceConflictExpected?: string;
-    // gateway: per-endpoint next-response status override (mirror marketsStatus)
-    priceStatus?: number;
-    fundingStatus?: number;
-    candlesStatus?: number;
-    ordersStatus?: number;
-    tradesStatus?: number;
-    orderbookStatus?: number;
-    // gateway: per-endpoint next-response status override (mirror marketsStatus) —
-    // the three-state Account UI needs both `available: false` (set via
-    // `world.portfolio`) and a hard failure as distinct branches.
-    portfolioStatus?: number;
     // wallet: reject the next eth_requestAccounts (user dismisses the connect prompt)
     connectRejects?: boolean;
   };
@@ -307,7 +317,7 @@ export interface MockWorld {
   relayJobs: Record<string, RelayJob>;
   authNonceRequests: number;
   authVerifyRequests: Array<{ message: string; signature: string }>;
-  /** Count of `/auth/verify` calls rejected by `faults.authVerifyStatus`. */
+  /** Count of `/auth/verify` calls rejected by `faults.routeStatus.authVerify`. */
   authVerifyRejections: number;
   registeredAccountIds: string[];
   /** Signing methods the wallet performed (personal_sign, eth_signTypedData_v4, …). */
@@ -469,7 +479,7 @@ interface ScenarioOptions {
    * `useOrderbook`'s seed has `retry: false, staleTime: Infinity`, so a
    * fault set on `world.faults` after boot would never be observed).
    */
-  faults?: MockWorld["faults"];
+  faults?: Partial<MockWorld["faults"]>;
 }
 
 /** A connected wallet that owns NO perps account yet. */
@@ -525,7 +535,10 @@ export function freshWorld(opts: ScenarioOptions = {}): MockWorld {
     },
     portfolio: opts.portfolio ?? defaultPortfolio(),
     orderbook: opts.orderbook ?? defaultBook(price),
-    faults: opts.faults ?? {},
+    // `routeStatus` всегда есть: спека дописывает отказ после старта мира
+    // (`world.faults.routeStatus.price = 500`), и опциональная запись потребовала
+    // бы `?.` в каждой такой строке.
+    faults: { ...opts.faults, routeStatus: { ...opts.faults?.routeStatus } },
     submittedOrders: [],
     cancelledOrderIds: [],
     lastCollateralDelta: 0n,

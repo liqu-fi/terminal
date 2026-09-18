@@ -25,7 +25,7 @@ test.describe("order book panel", () => {
     world,
   }) => {
     const { book } = await enterTerminal(page, world, () =>
-      readyWorld({ faults: { orderbookStatus: 503 } }),
+      readyWorld({ faults: { routeStatus: { orderbook: 503 } } }),
     );
     await expect(book.unavailable).toBeVisible();
     await expect(book.empty).toHaveCount(0);
@@ -40,7 +40,7 @@ test.describe("order book panel", () => {
     world,
   }) => {
     const { book } = await enterTerminal(page, world, () =>
-      readyWorld({ faults: { orderbookStatus: 500 } }),
+      readyWorld({ faults: { routeStatus: { orderbook: 500 } } }),
     );
     await expect(book.error).toBeVisible();
     await expect(book.unavailable).toHaveCount(0);
@@ -57,7 +57,7 @@ test.describe("order book panel", () => {
     // остаётся навсегда: сообщение об отказе имеет право показываться только
     // когда показывать нечего, то есть при `asOf === null`.
     const { book } = await enterTerminal(page, world, () =>
-      readyWorld({ faults: { orderbookStatus: 503 } }),
+      readyWorld({ faults: { routeStatus: { orderbook: 503 } } }),
     );
     await expect(book.unavailable).toBeVisible();
 
@@ -82,7 +82,7 @@ test.describe("order book panel", () => {
     // `undefined`, книга выключена и снимка не будет никогда. «Book is empty»
     // здесь было бы утверждением о рынке, которого на экране нет.
     const { book } = await enterTerminal(page, world, () =>
-      readyWorld({ faults: { marketsStatus: 500 } }),
+      readyWorld({ faults: { routeStatus: { markets: 500 } } }),
     );
     await expect(book.noMarket).toBeVisible();
     await expect(book.empty).toHaveCount(0);

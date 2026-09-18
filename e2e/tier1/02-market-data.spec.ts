@@ -98,7 +98,7 @@ test.describe("market data", () => {
     world,
   }) => {
     seed(world, readyWorld());
-    world.faults.priceStatus = 500;
+    world.faults.routeStatus.price = 500;
     const app = new AppPage(page);
     await app.goto();
     await app.signInToTerminal();
@@ -110,7 +110,7 @@ test.describe("market data", () => {
 
   test("a funding fetch failure shows an em-dash", async ({ page, world }) => {
     seed(world, readyWorld());
-    world.faults.fundingStatus = 500;
+    world.faults.routeStatus.funding = 500;
     const app = new AppPage(page);
     await app.goto();
     await app.signInToTerminal();
@@ -123,7 +123,7 @@ test.describe("market data", () => {
     world,
   }) => {
     seed(world, readyWorld());
-    world.faults.candlesStatus = 500;
+    world.faults.routeStatus.candles = 500;
     const app = new AppPage(page);
     await app.goto();
     await app.signInToTerminal();

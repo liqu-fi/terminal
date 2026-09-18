@@ -115,7 +115,7 @@ test.describe("страница Account", () => {
     // `test.slow()` даёт тройной, иначе тест умрёт раньше своих же таймаутов.
     test.slow();
     await enterTerminal(page, world, () =>
-      readyWorld({ faults: { portfolioStatus: 500 } }),
+      readyWorld({ faults: { routeStatus: { portfolio: 500 } } }),
     );
     const account = new AccountPage(page);
     await account.open();

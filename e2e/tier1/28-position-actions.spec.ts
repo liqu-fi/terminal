@@ -200,7 +200,7 @@ test.describe("position actions", () => {
           triggerPrice: (90_000n * WAD).toString(),
         }),
       ];
-      w.faults.submitOrderStatus = 422;
+      w.faults.routeStatus.submitOrder = 422;
       return w;
     });
 

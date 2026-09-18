@@ -147,7 +147,10 @@ test.describe("trades tape", () => {
     // сценарий). Показывать эти строки нельзя, и «No trades yet.» тоже:
     // и то и другое — утверждение о рынке, которого на экране нет.
     const { book } = await enterTerminal(page, world, () =>
-      readyWorld({ trades: [tradeFixture()], faults: { marketsStatus: 500 } }),
+      readyWorld({
+        trades: [tradeFixture()],
+        faults: { routeStatus: { markets: 500 } },
+      }),
     );
     await book.selectTab("trades");
     await expect(book.tapeNoMarket).toBeVisible();
