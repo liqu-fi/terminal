@@ -137,6 +137,55 @@ test.describe("position actions", () => {
     expect(order.groupId).toBe("11111111-2222-4333-8444-555555555555");
   });
 
+  test("editing one leg of a group-less pair re-submits both into one group", async ({
+    page,
+    world,
+  }) => {
+    const { userInfo } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].positions = [longPositionFixture()];
+      // Обе скобки без связки — так выглядит пара, выставленная до 0.54.0.
+      w.conditionalOrders = [
+        conditionalOrderFixture({
+          id: "tp-old",
+          orderType: "TAKE_PROFIT_MARKET",
+          triggerPrice: (90_000n * WAD).toString(),
+        }),
+        conditionalOrderFixture({
+          id: "sl-old",
+          triggerPrice: (60_000n * WAD).toString(),
+        }),
+      ];
+      return w;
+    });
+
+    await userInfo.selectTab("positions");
+    await userInfo.editTpSl(MARKET.id).click();
+    await userInfo.tpslTp.fill("95000");
+    await userInfo.tpslSave.click();
+
+    // Тронут один уровень, а подач две: нетронутый стоп переподаётся на своей
+    // же цене, чтобы встать в связку к новому тейку. Оставить его как есть
+    // значило бы сохранить исходный баг — сработавший тейк его не снял бы.
+    await expect.poll(() => world.submittedOrders.length).toBe(2);
+    const tp = world.submittedOrders.find(
+      (o) => o.orderType === "TAKE_PROFIT_MARKET",
+    )!;
+    const sl = world.submittedOrders.find(
+      (o) => o.orderType === "STOP_MARKET",
+    )!;
+
+    expect(tp.triggerPrice).toBe((95_000n * WAD).toString());
+    // Цену стопа пользователь не менял — меняется только связка.
+    expect(sl.triggerPrice).toBe((60_000n * WAD).toString());
+    expect(tp.groupId).toBeTruthy();
+    expect(sl.groupId).toBe(tp.groupId);
+    // Обе старые заявки снимаются, и только после подач.
+    await expect
+      .poll(() => [...world.cancelledOrderIds].sort())
+      .toEqual(["sl-old", "tp-old"]);
+  });
+
   test("a rejected TP submit is named in the dialog and leaves the old trigger standing", async ({
     page,
     world,

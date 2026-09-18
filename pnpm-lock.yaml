@@ -12,20 +12,20 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@liq/api-client':
-        specifier: npm:@liqpro/liq-api-client@^0.54.0
-        version: '@liqpro/liq-api-client@0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)'
+        specifier: npm:@liqpro/liq-api-client@^0.55.0
+        version: '@liqpro/liq-api-client@0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)'
       '@liq/core':
-        specifier: npm:@liqpro/liq-core@^0.54.0
-        version: '@liqpro/liq-core@0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)'
+        specifier: npm:@liqpro/liq-core@^0.55.0
+        version: '@liqpro/liq-core@0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)'
       '@liq/react':
-        specifier: npm:@liqpro/liq-react@^0.54.0
-        version: '@liqpro/liq-react@0.54.0(@tanstack/react-query@5.100.14(react@19.2.6))(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.2.6))(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)'
+        specifier: npm:@liqpro/liq-react@^0.55.0
+        version: '@liqpro/liq-react@0.55.0(@tanstack/react-query@5.100.14(react@19.2.6))(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.2.6))(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)'
       '@liq/sdk':
-        specifier: npm:@liqpro/liq-sdk@^0.54.0
-        version: '@liqpro/liq-sdk@0.54.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)'
+        specifier: npm:@liqpro/liq-sdk@^0.55.0
+        version: '@liqpro/liq-sdk@0.55.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)'
       '@liq/turnkey':
-        specifier: npm:@liqpro/liq-turnkey@^0.54.0
-        version: '@liqpro/liq-turnkey@0.54.0(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)'
+        specifier: npm:@liqpro/liq-turnkey@^0.55.0
+        version: '@liqpro/liq-turnkey@0.55.0(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)'
       '@tanstack/react-query':
         specifier: ^5.100.14
         version: 5.100.14(react@19.2.6)
@@ -477,25 +477,25 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@liqpro/liq-api-client@0.54.0':
-    resolution: {integrity: sha512-IRis/r+GvJPVVhloqm6mykaTIoFl7ipFH4sD6xHQ+8kIfLba/+gDsJEjn+q5f3S7uQ9j87nrg7PATVnioJHwWw==}
+  '@liqpro/liq-api-client@0.55.0':
+    resolution: {integrity: sha512-GOx6FCVUc36C0fxR62+HsnLHs3itKf2HVHIhMLg19v0qcHcM8VMucV7pNFjLZ9W+ki1meh9qqppfr3VcCD8jdg==}
 
-  '@liqpro/liq-core@0.54.0':
-    resolution: {integrity: sha512-EAnwHj0ScbrkHSkad+2G8ZdclepRC9C8xzyuaCYYsLZo9PMdSe7dAu5rO4BnMP/VwyfOtsKV+1Zz0/FU5z7B9g==}
+  '@liqpro/liq-core@0.55.0':
+    resolution: {integrity: sha512-W10CEMO374GygEBFDyyXeeeNuNp8mixWIBxpXurUhee7AGV0yiMv/xiOgOQecqDuzGVXll7/XTs6Ao+rkpASiw==}
     peerDependencies:
       viem: ^2.0.0
       zod: ^4.0.0
 
-  '@liqpro/liq-onchain@0.54.0':
-    resolution: {integrity: sha512-WOWvHKN90RK/Z+fpiThf0ou/I4NAM62lmcHANz0ALsdPE+jLcWqkpGXgHEq0N0hydnYdEcx9TilcVqP5PN68wA==}
+  '@liqpro/liq-onchain@0.55.0':
+    resolution: {integrity: sha512-bpyKY3AJbtnGI4OKwiewXeo5KZYt49my5rJn8ojRV8masP+xtoG0DodedZkXgfsUf7pUGdn2+BZmqPFR0i4+nw==}
     peerDependencies:
       viem: ^2.0.0
 
-  '@liqpro/liq-prices@0.54.0':
-    resolution: {integrity: sha512-OsJeQXvgU9LUXCQz1nGJA8Q9I3iSSx2FZJB22RLUeRu794SdXK6rKb/GN/XSiuuFNTiG0cIGltwoPPwHkTV5MQ==}
+  '@liqpro/liq-prices@0.55.0':
+    resolution: {integrity: sha512-Gk76ER3LTuCTtWELVwKW5Tkcm2P/c9WzxARm6wGqUEj8lFXTWdsr/HFAZQSazynzZLFZuXztgD/ZLENkDRC/4Q==}
 
-  '@liqpro/liq-react@0.54.0':
-    resolution: {integrity: sha512-jbAPC0TUAJ9n9uQ8dL744izLMoNdsUcqomc4RWqKmB2gALUrP2snc6R9xbUPzPZsEpkXJL1YDp0mn0By5sRhYQ==}
+  '@liqpro/liq-react@0.55.0':
+    resolution: {integrity: sha512-zhBABiv1lKJvhoa/T+bwyGJWGhyMqV9AZKOL9KnZ9RZmuUx+sb+I66hxCrOpYDlXvnbbF4fkEmq78Yz71c8iGA==}
     peerDependencies:
       '@tanstack/ai-react': ^0.7.9
       '@tanstack/react-query': ^5.99.2
@@ -506,16 +506,16 @@ packages:
       '@tanstack/ai-react':
         optional: true
 
-  '@liqpro/liq-sdk@0.54.0':
-    resolution: {integrity: sha512-MkELqDSRO+J29whL2soG0l/WDKxnuKvUImy+J+KQnJZVmpXxeOG4/kg3P10pacUg9J2UQBgPRqQjW611VNLyeA==}
+  '@liqpro/liq-sdk@0.55.0':
+    resolution: {integrity: sha512-cTcxVB2Etjkpmydd4kyT4b/PTlteZmEELD12ajIK+/n3X6XJ6w69DciRG1Lt8xxnyFyjSWuHBBDmg3csjNrXaw==}
 
-  '@liqpro/liq-subgraph@0.54.0':
-    resolution: {integrity: sha512-lA7NYYZIjXIayW978Q1TobwrPaKaufhtFj4Lz3i8+aNk3kYXPIfrefttZJQwR5FXwh/65fGTtDAKd+yteeg6Hw==}
+  '@liqpro/liq-subgraph@0.55.0':
+    resolution: {integrity: sha512-Rx7yeOZ4k+/kTDBxsZKIoE9SgatA5c5pZu5M1dMEdUKJa/7Ct9oYP0Q/WTTbrpUGEcVDqxQ4C5Vthy4ULIusGQ==}
     peerDependencies:
       graphql: ^16.0.0
 
-  '@liqpro/liq-turnkey@0.54.0':
-    resolution: {integrity: sha512-j/gMFgRDdngONdOUnFrTTLn189Kq7eTBSqRG9QjSus6DKc0h4pZy5u0oTFUq8YqRXLXyLQYESx0bwBSz7YiPrA==}
+  '@liqpro/liq-turnkey@0.55.0':
+    resolution: {integrity: sha512-kFRwagquVE1NPcH3yJv8wEXYTiCwEvdgZV/0J0BX4mY+gtumrnylZ45Selr3ziaP7pJgsAE51IrGyB3JcSYoOg==}
     peerDependencies:
       '@turnkey/sdk-browser': ^8.2.1
       '@turnkey/viem': ^0.14.37
@@ -5068,42 +5068,42 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@liqpro/liq-api-client@0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-api-client@0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-core': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-core': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
       up-fetch: 2.6.0
     transitivePeerDependencies:
       - viem
       - zod
 
-  '@liqpro/liq-core@0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-core@0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
       viem: 2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3)
       zod: 4.4.3
 
-  '@liqpro/liq-onchain@0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-onchain@0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-core': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-core': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
       '@noble/curves': 2.2.0
       viem: 2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3)
     transitivePeerDependencies:
       - zod
 
-  '@liqpro/liq-prices@0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-prices@0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-core': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-core': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
       lodash: 4.18.1
     transitivePeerDependencies:
       - viem
       - zod
 
-  '@liqpro/liq-react@0.54.0(@tanstack/react-query@5.100.14(react@19.2.6))(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.2.6))(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-react@0.55.0(@tanstack/react-query@5.100.14(react@19.2.6))(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(use-sync-external-store@1.4.0(react@19.2.6))(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-api-client': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-core': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-onchain': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-prices': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-turnkey': 0.54.0(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-api-client': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-core': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-onchain': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-prices': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-turnkey': 0.55.0(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)
       '@tanstack/react-query': 5.100.14(react@19.2.6)
       react: 19.2.6
       viem: 2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3)
@@ -5143,20 +5143,20 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@liqpro/liq-sdk@0.54.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-sdk@0.55.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-api-client': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-core': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-onchain': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
-      '@liqpro/liq-subgraph': 0.54.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-api-client': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-core': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-onchain': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-subgraph': 0.55.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
     transitivePeerDependencies:
       - graphql
       - viem
       - zod
 
-  '@liqpro/liq-subgraph@0.54.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-subgraph@0.55.0(graphql@16.14.0)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-core': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-core': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
       graphql: 16.14.0
       graphql-request: 7.4.0(graphql@16.14.0)
@@ -5164,9 +5164,9 @@ snapshots:
       - viem
       - zod
 
-  '@liqpro/liq-turnkey@0.54.0(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)':
+  '@liqpro/liq-turnkey@0.55.0(@turnkey/sdk-browser@6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(@turnkey/viem@0.14.29(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(wagmi@2.19.5(@tanstack/query-core@5.100.14)(@tanstack/react-query@5.100.14(react@19.2.6))(@types/react@19.2.15)(bufferutil@4.1.0)(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@liqpro/liq-onchain': 0.54.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
+      '@liqpro/liq-onchain': 0.55.0(viem@2.52.2(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3))(zod@4.4.3)
       '@turnkey/core': 2.8.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3)
       '@turnkey/react-wallet-kit': 2.4.2(@types/react@19.2.15)(bufferutil@4.1.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3)
       '@turnkey/sdk-browser': 6.0.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.4.3)
