@@ -210,7 +210,7 @@ test.describe("market orders", () => {
     const { trade } = await enterTerminal(page, world);
 
     // Отказ конкретной ноге ставится здесь, а не в `mockGateway`: тот умеет
-    // ронять только весь эндпоинт (`faults.submitOrderStatus`). Playwright
+    // ронять только весь эндпоинт (`faults.routeStatus.submitOrder`). Playwright
     // отдаёт приоритет маршруту, зарегистрированному последним, а
     // `route.fallback()` возвращает моку остальные подачи — вход и стоп.
     // Опросы списка сюда не заходят вовсе: они идут с `?status=…`, а точная

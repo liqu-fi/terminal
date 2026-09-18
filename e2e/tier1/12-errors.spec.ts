@@ -10,7 +10,7 @@ test.describe("error states", () => {
     world,
   }) => {
     const { trade } = await enterTerminal(page, world);
-    world.faults.submitOrderStatus = 500;
+    world.faults.routeStatus.submitOrder = 500;
 
     await trade.setSize("0.5");
     await trade.submit();
@@ -27,14 +27,14 @@ test.describe("error states", () => {
     world,
   }) => {
     const { trade } = await enterTerminal(page, world);
-    world.faults.submitOrderStatus = 500;
+    world.faults.routeStatus.submitOrder = 500;
 
     await trade.setSize("0.5");
     await trade.submit();
     await expect(trade.tradeError).toBeVisible();
 
     // the input survived the error, so clearing the fault + resubmitting works
-    delete world.faults.submitOrderStatus;
+    delete world.faults.routeStatus.submitOrder;
     await trade.submit();
     await expect.poll(() => world.submittedOrders.length).toBeGreaterThan(1);
     await expect(trade.sizeInput).toHaveValue(""); // success clears the form
@@ -44,7 +44,7 @@ test.describe("error states", () => {
     const { userInfo } = await enterTerminal(page, world, () =>
       readyWorld({ openOrders: [limitOrderFixture()] }),
     );
-    world.faults.cancelStatus = 500;
+    world.faults.routeStatus.cancel = 500;
 
     await userInfo.selectTab("open-orders");
     await userInfo.cancelOrder("ord-limit-1");
@@ -58,7 +58,7 @@ test.describe("error states", () => {
     world,
   }) => {
     const { trade } = await enterTerminal(page, world);
-    world.faults.submitOrderStatus = 500;
+    world.faults.routeStatus.submitOrder = 500;
 
     await trade.selectTab("limit");
     await trade.setSize("1");
@@ -75,7 +75,7 @@ test.describe("error states", () => {
     world,
   }) => {
     seed(world, readyWorld({ openOrders: [limitOrderFixture()] }));
-    world.faults.ordersStatus = 500;
+    world.faults.routeStatus.orders = 500;
     const app = new AppPage(page);
     await app.goto();
     await app.signInToTerminal();
@@ -94,7 +94,7 @@ test.describe("error states", () => {
     const { app, userInfo } = await enterTerminal(page, world, () =>
       readyWorld({ trades: [tradeFixture()] }),
     );
-    world.faults.tradesStatus = 500;
+    world.faults.routeStatus.trades = 500;
     await userInfo.selectTab("trade-history");
 
     await expect(app.terminal).toBeVisible();
@@ -107,7 +107,7 @@ test.describe("error states", () => {
     world,
   }) => {
     seed(world, readyWorld());
-    world.faults.marketsStatus = 500;
+    world.faults.routeStatus.markets = 500;
 
     const app = new AppPage(page);
     await app.goto();

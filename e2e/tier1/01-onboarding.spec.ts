@@ -108,7 +108,7 @@ test.describe("boot + onboarding", () => {
     await expect(app.needsSigninGate).toBeVisible();
 
     // Gateway rejects the SIWE verify: the app must NOT advance into the terminal.
-    world.faults.authVerifyStatus = 401;
+    world.faults.routeStatus.authVerify = 401;
     await app.signinButton.click();
     await expect(app.tradeReady).toBeHidden();
     await expect(app.needsSigninGate).toBeVisible();
@@ -127,7 +127,7 @@ test.describe("boot + onboarding", () => {
 
     // Clearing the fault and retrying recovers — proving it's a retryable gate,
     // not a silent dead-end or a silent advance.
-    delete world.faults.authVerifyStatus;
+    delete world.faults.routeStatus.authVerify;
     await app.signinButton.click();
     await expect(app.tradeReady).toBeVisible();
     expect(world.authVerifyRequests).toHaveLength(1);

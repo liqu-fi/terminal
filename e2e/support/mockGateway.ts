@@ -18,6 +18,7 @@ import { TEST_ADDRESS } from "./constants";
 import { applyWrite, withdrawsCollateral } from "./chain";
 import { defaultOracleCandles, nextTxHash } from "./world";
 import type {
+  FaultRoute,
   GatewayOrder,
   MockWorld,
 } from "./world";
@@ -53,6 +54,28 @@ function error(route: Route, status: number, code = "internal"): Promise<void> {
     contentType: "application/json",
     body: JSON.stringify({ error: { code, message: code } }),
   });
+}
+
+/**
+ * Инъекция отказа: если спека отобрала маршрут статусом
+ * (`world.faults.routeStatus[key]`), отвечает ошибкой и возвращает `true` —
+ * обработчик маршрута тогда просто выходит.
+ *
+ * @remarks Одно понятие — одно место. Раньше это был шаблон из одиннадцати
+ * пар «поле в `world.ts` + `if` в этом файле»: маршрут с трёхсостоянным UI
+ * стоил правки в двух файлах, а знание о самой инъекции было размазано по
+ * числу маршрутов.
+ */
+async function faulted(
+  route: Route,
+  world: MockWorld,
+  key: FaultRoute,
+  code?: string,
+): Promise<boolean> {
+  const status = world.faults.routeStatus[key];
+  if (status === undefined) return false;
+  await error(route, status, code);
+  return true;
 }
 
 function marketSummary(world: MockWorld) {
@@ -364,9 +387,8 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       return;
     }
     if (path.endsWith("/auth/verify")) {
-      if (world.faults.authVerifyStatus) {
+      if (await faulted(route, world, "authVerify", "unauthorized")) {
         world.authVerifyRejections += 1;
-        await error(route, world.faults.authVerifyStatus, "unauthorized");
         return;
       }
       const payload = JSON.parse(req.postData() ?? "{}") as {
@@ -418,10 +440,9 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
     const portfolio = path.match(/\/accounts\/([^/]+)\/portfolio$/);
     if (portfolio) {
-      if (world.faults.portfolioStatus) {
-        await error(route, world.faults.portfolioStatus);
-        return;
-      }
+      // Трёхсостоянному UI страницы Account нужны и `available: false` (через
+      // `world.portfolio`), и жёсткий отказ — это разные ветки.
+      if (await faulted(route, world, "portfolio")) return;
       await send(route, {
         accountId: portfolio[1],
         period: url.searchParams.get("period") ?? "all",
@@ -456,18 +477,18 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     // broader match would swallow it.
     const book = path.match(/\/markets\/([^/]+)\/orderbook$/);
     if (book) {
-      if (world.faults.orderbookStatus) {
-        // Код зависит от статуса, а не пришит к маршруту: 503 гейтвей отдаёт
-        // с `ORDERBOOK_UNAVAILABLE` («книгу никто не ведёт» — состояние
-        // рынка), любой другой отказ — обычная поломка. С пришитым кодом SDK
-        // считал `unavailable` и на 500, то есть ветка `book-error` была
-        // недостижима из тестов вовсе.
+      // Код зависит от статуса, а не пришит к маршруту: 503 гейтвей отдаёт
+      // с `ORDERBOOK_UNAVAILABLE` («книгу никто не ведёт» — состояние
+      // рынка), любой другой отказ — обычная поломка. С пришитым кодом SDK
+      // считал `unavailable` и на 500, то есть ветка `book-error` была
+      // недостижима из тестов вовсе.
+      // Поэтому единственный маршрут, который не сводится к `faulted()`.
+      const bookFault = world.faults.routeStatus.orderbook;
+      if (bookFault !== undefined) {
         await error(
           route,
-          world.faults.orderbookStatus,
-          world.faults.orderbookStatus === 503
-            ? "ORDERBOOK_UNAVAILABLE"
-            : "internal",
+          bookFault,
+          bookFault === 503 ? "ORDERBOOK_UNAVAILABLE" : "internal",
         );
         return;
       }
@@ -485,19 +506,13 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       // «рынок пока не выбран» от «рынка не будет» на экране нечем — обе
       // ветки показывались бы мгновенно и одинаково.
       await world.holds.marketsRead?.promise;
-      if (world.faults.marketsStatus) {
-        await error(route, world.faults.marketsStatus);
-        return;
-      }
+      if (await faulted(route, world, "markets")) return;
       await send(route, marketSummary(world));
       return;
     }
     const price = path.match(/\/markets\/([^/]+)\/price$/);
     if (price) {
-      if (world.faults.priceStatus) {
-        await error(route, world.faults.priceStatus);
-        return;
-      }
+      if (await faulted(route, world, "price")) return;
       await send(route, {
         price: world.price.toString(),
         timestamp: 1_717_200_000_000,
@@ -506,10 +521,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
     const funding = path.match(/\/markets\/([^/]+)\/funding$/);
     if (funding) {
-      if (world.faults.fundingStatus) {
-        await error(route, world.faults.fundingStatus);
-        return;
-      }
+      if (await faulted(route, world, "funding")) return;
       await send(route, world.funding);
       return;
     }
@@ -525,10 +537,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     }
     const candles = path.match(/\/markets\/([^/]+)\/candles$/);
     if (candles) {
-      if (world.faults.candlesStatus) {
-        await error(route, world.faults.candlesStatus);
-        return;
-      }
+      if (await faulted(route, world, "candles")) return;
       await send(route, world.candlesByMarket?.[candles[1]] ?? world.candles);
       return;
     }
@@ -571,10 +580,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
           });
           return;
         }
-        if (world.faults.submitOrderStatus) {
-          await error(route, world.faults.submitOrderStatus, "order_rejected");
-          return;
-        }
+        if (await faulted(route, world, "submitOrder", "order_rejected")) return;
         const id = `srv-${world.submittedOrders.length}`;
         restSubmittedOrder(world, id, payload);
         await send(route, { orderId: id, status: "PENDING" });
@@ -601,10 +607,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       }
       // GET list
       const status = url.searchParams.get("status");
-      if (world.faults.ordersStatus) {
-        await error(route, world.faults.ordersStatus);
-        return;
-      }
+      if (await faulted(route, world, "orders")) return;
       await send(route, orderListFor(world, status));
       return;
     }
@@ -612,10 +615,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
     if (singleOrder) {
       const id = singleOrder[1];
       if (method === "DELETE") {
-        if (world.faults.cancelStatus) {
-          await error(route, world.faults.cancelStatus, "cancel_failed");
-          return;
-        }
+        if (await faulted(route, world, "cancel", "cancel_failed")) return;
         world.cancelledOrderIds.push(id);
         world.openOrders = world.openOrders.filter((o) => o.id !== id);
         world.conditionalOrders = world.conditionalOrders.filter(
@@ -636,10 +636,7 @@ export async function mockGateway(page: Page, world: MockWorld): Promise<void> {
       // Барьер для сцены загрузки ленты: спека держит ответ и проверяет
       // `tape-loading`, потом отпускает и проверяет `tape-empty`.
       await world.holds.tradesRead?.promise;
-      if (world.faults.tradesStatus) {
-        await error(route, world.faults.tradesStatus);
-        return;
-      }
+      if (await faulted(route, world, "trades")) return;
       await send(route, { rows: world.trades, nextCursor: null });
       return;
     }
