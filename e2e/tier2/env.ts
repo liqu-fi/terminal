@@ -7,11 +7,13 @@
  * Configure via env vars or an (untracked) `.env.e2e.local` — see
  * `.env.e2e.example`.
  */
+import type { DeployEnv } from "@liq/core";
+
 interface LiveEnv {
   enabled: boolean;
   gatewayUrl: string;
   rpcUrl: string;
-  deployEnv: string;
+  deployEnv: DeployEnv;
   chainId: number;
   mnemonic: string;
   accountCount: number;
@@ -30,7 +32,8 @@ export const liveEnv: LiveEnv = {
   enabled: process.env.E2E_LIVE === "1" || process.env.E2E_LIVE === "true",
   gatewayUrl: (process.env.E2E_GATEWAY_URL ?? "").replace(/\/$/, ""),
   rpcUrl: process.env.E2E_RPC_URL ?? "https://carrot.megaeth.com/rpc",
-  deployEnv: process.env.E2E_DEPLOY_ENV ?? "staging",
+  // Контур один из двух: всё, кроме явного `production`, — staging.
+  deployEnv: process.env.E2E_DEPLOY_ENV === "production" ? "production" : "staging",
   chainId: num(process.env.E2E_CHAIN_ID, 6343),
   mnemonic: process.env.E2E_MNEMONIC ?? "",
   accountCount: num(process.env.E2E_ACCOUNT_COUNT, 4),

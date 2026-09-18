@@ -6,6 +6,12 @@
  * state that subsequent reads (accounts.list) and gateway responses observe —
  * exactly like a real backend, but deterministic and in-process.
  */
+import type {
+  GatewayOrder as CoreGatewayOrder,
+  OrderStatus,
+  OrderType,
+  Side,
+} from "@liq/core";
 import { parseUnits } from "viem";
 
 import { CHAIN_ID, MARKET, type Market, TEST_ADDRESS, WAD } from "./constants";
@@ -34,27 +40,22 @@ interface AccountFixture {
   positions: PositionFixture[];
 }
 
-export interface GatewayOrder {
-  id: string;
-  accountId: string;
-  marketId: string;
-  /** signed 18-dec decimal string */
-  sizeDelta: string;
-  side: "BUY" | "SELL";
-  orderType:
-    | "MARKET"
-    | "LIMIT"
-    | "STOP_MARKET"
-    | "STOP_LIMIT"
-    | "TAKE_PROFIT_MARKET"
-    | "TAKE_PROFIT_LIMIT";
-  status: string;
-  limitPrice: string | null;
-  triggerPrice: string | null;
-  createdAt: string;
-  /** Связка OCO; `null` — ордер без связки. */
-  groupId: string | null;
-}
+/**
+ * Ордер шлюза — форма из SDK, чтобы копия не разошлась с ней молча (так тут
+ * завёлся статус `REJECTED`, которого у шлюза нет).
+ *
+ * Три поля перечислений развёрнуты в строковые литералы (`${Enum}`): enum'ы в
+ * TS номинальные, и без этого каждая фикстура писала бы `OrderStatus.PENDING`
+ * вместо `"PENDING"`. Набор значений всё равно задаёт SDK.
+ */
+export type GatewayOrder = Omit<
+  CoreGatewayOrder,
+  "side" | "orderType" | "status"
+> & {
+  side: `${Side}`;
+  orderType: `${OrderType}`;
+  status: `${OrderStatus}`;
+};
 
 interface TradeRow {
   id: string;

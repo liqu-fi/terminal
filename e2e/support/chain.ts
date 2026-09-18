@@ -19,11 +19,11 @@ import {
 } from "viem";
 
 import {
-  classify,
-  combinedAbi,
-  multicall3Abi,
   perpsMarketProxyAbi,
-} from "./contracts";
+  trustedMulticallForwarderAbi,
+} from "@liq/sdk";
+
+import { classify, combinedAbi } from "./contracts";
 import { WAD } from "./constants";
 import { findAccount, type MockWorld, type ReceiptLog } from "./world";
 
@@ -47,7 +47,9 @@ for (const item of combinedAbi) {
     REGISTRY.set(toFunctionSelector(item), item as AbiFunction);
   }
 }
-const AGGREGATE3_SELECTOR = toFunctionSelector(multicall3Abi[0] as AbiFunction);
+/** У Multicall3 и у форвардера `aggregate3` одной сигнатуры — значит, и селектор один. */
+const AGGREGATE3 = trustedMulticallForwarderAbi[0] as AbiFunction;
+const AGGREGATE3_SELECTOR = toFunctionSelector(AGGREGATE3);
 
 /** Selector of the collateral write — used to mark a reverting deposit/withdraw. */
 const MODIFY_COLLATERAL_SELECTOR = toFunctionSelector(
@@ -116,16 +118,15 @@ function computeRead(
   const logical = classify(to);
   switch (name) {
     case "balanceOf": {
-      if (logical === "perpsAccountProxy") {
+      if (logical === "PerpsAccountProxy") {
         return [BigInt(world.accounts.length)];
       }
       // ERC-20 token balance — plenty for deposit flows. Honour the token's
-      // real decimals: USDC (what a deposit actually spends) is 6-dec, sUSDC,
-      // USDm/sUSDM (staging, unlisted in ADDR) and the rest are 18-dec. A flat
-      // 18-dec value for USDC would let the dialog's 6-dec→WAD lift overstate
-      // the balance by 10^12.
+      // real decimals: USDC (what a deposit actually spends) is 6-dec, sUSDC
+      // and the rest are 18-dec. A flat 18-dec value for USDC would let the
+      // dialog's 6-dec→WAD lift overstate the balance by 10^12.
       return [
-        logical === "usdc" ? 1_000_000n * 10n ** 6n : 1_000_000n * 10n ** 18n,
+        logical === "USDC" ? 1_000_000n * 10n ** 6n : 1_000_000n * 10n ** 18n,
       ];
     }
     case "tokenOfOwnerByIndex": {
@@ -205,8 +206,9 @@ function computeRead(
       const account = findAccount(world, args[0] as bigint);
       const marketId = (args[1] as bigint).toString();
       const pos = account?.positions.find((p) => p.marketId === marketId);
-      if (!pos) return [0n, 0n, 0n];
-      return [pos.totalPnl, pos.accruedFunding, pos.positionSize];
+      // Четвёртый выход — owedInterest; мир процент не моделирует.
+      if (!pos) return [0n, 0n, 0n, 0n];
+      return [pos.totalPnl, pos.accruedFunding, pos.positionSize, 0n];
     }
     case "indexPrice": {
       return [world.indexPrice];
@@ -230,9 +232,6 @@ function computeRead(
     case "allowance": {
       return [MAX_UINT256];
     }
-    case "decimals": {
-      return [logical === "usdc" ? 6 : 18];
-    }
     default:
       throw new Error(`no read handler for ${name}`);
   }
@@ -242,11 +241,9 @@ function computeRead(
 export function handleEthCall(world: MockWorld, to: string, data: string): Hex {
   if (selectorOf(data) === AGGREGATE3_SELECTOR) {
     const [calls] = decodeAbiParameters(
-      multicall3Abi[0].inputs,
+      AGGREGATE3.inputs,
       bodyOf(data),
-    ) as unknown as [
-      ReadonlyArray<{ target: string; allowFailure: boolean; callData: Hex }>,
-    ];
+    ) as unknown as [ReadonlyArray<{ target: string; callData: Hex }>];
     const results: CallResult[] = calls.map((call) => {
       try {
         return {
@@ -257,7 +254,7 @@ export function handleEthCall(world: MockWorld, to: string, data: string): Hex {
         return { success: false, returnData: "0x" };
       }
     });
-    return encodeAbiParameters(multicall3Abi[0].outputs, [results]) as Hex;
+    return encodeAbiParameters(AGGREGATE3.outputs, [results]) as Hex;
   }
   return encodeSingleCall(world, to, data);
 }
@@ -275,7 +272,7 @@ export function withdrawsCollateral(data: string): boolean {
   const selector = selectorOf(data);
   if (selector === AGGREGATE3_SELECTOR) {
     const [calls] = decodeAbiParameters(
-      multicall3Abi[0].inputs,
+      AGGREGATE3.inputs,
       bodyOf(data),
     ) as unknown as [ReadonlyArray<{ callData: Hex }>];
     return calls.some((call) => withdrawsCollateral(call.callData));
@@ -295,7 +292,7 @@ export function applyWrite(
 
   if (selector === AGGREGATE3_SELECTOR) {
     const [calls] = decodeAbiParameters(
-      multicall3Abi[0].inputs,
+      AGGREGATE3.inputs,
       bodyOf(data),
     ) as unknown as [ReadonlyArray<{ target: string; callData: Hex }>];
     return calls.flatMap((call) =>
