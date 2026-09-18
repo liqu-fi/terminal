@@ -1,12 +1,11 @@
 import {
+  useAccountDebtQuery,
   useAccountId,
   useAvailableMarginQuery,
   useCollateralAmountQuery,
-  useLiqOnchain,
   useWithdrawMutation,
 } from "@liq/react";
 import { formatUsd } from "@liq/core";
-import { useQuery } from "@tanstack/react-query";
 
 import {
   CollateralAmountDialog,
@@ -24,7 +23,6 @@ export function WithdrawDialog({
   initialSymbol?: string;
 }) {
   const accountId = useAccountId();
-  const onchain = useLiqOnchain();
   const { data: margins } = useAvailableMarginQuery();
   // Те же токены, что принимает депозит; вывод отдаёт на кошелёк сам токен,
   // а не синт (SDK разворачивает его в том же батче).
@@ -39,15 +37,10 @@ export function WithdrawDialog({
   // (closed-at-loss); a plain withdraw would revert. Read it so we can offer an
   // atomic repay+withdraw instead. Best-effort: on error/loading the value is
   // `undefined`, which falls through to the normal withdraw path (so debt-free
-  // or mocked accounts are unaffected).
-  const debtKey = ["liq", "account", "debt", accountId?.toString() ?? ""];
-  const { data: debt } = useQuery<bigint>({
-    queryKey: debtKey,
-    queryFn: () => onchain.collateral.debt(accountId!),
-    enabled: open && accountId !== undefined,
-    retry: false,
-    staleTime: 10_000,
-  });
+  // or mocked accounts are unaffected). Та же запись кэша, что у панели Account
+  // (`useAccountDebtQuery`): до SDK 0.56.0 здесь стоял свой `useQuery` с другим
+  // ключом, и два экрана показывали разный долг.
+  const { data: debt } = useAccountDebtQuery();
   const hasDebt = debt !== undefined && debt > 0n;
 
   // Потолок вывода. Без долга — withdrawable (≤ available; ниже при открытых
