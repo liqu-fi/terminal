@@ -3,6 +3,11 @@ import { Qty } from "@liq/sdk";
 import { enterTerminal } from "../pages/flows";
 import { expect, test } from "../support/fixtures";
 import { GATEWAY_URL, WAD } from "../support/constants";
+import {
+  conditionalOrderFixture,
+  longPositionFixture,
+  readyWorld,
+} from "../support/world";
 
 test.describe("market orders", () => {
   test("submits a market BUY and resets the form", async ({ page, world }) => {
@@ -161,6 +166,42 @@ test.describe("market orders", () => {
       await expect(trade.entrySlInput).toHaveValue("");
     });
   }
+
+  test("a top-up brackets the whole position and replaces the existing legs", async ({
+    page,
+    world,
+  }) => {
+    const { trade } = await enterTerminal(page, world, () => {
+      const w = readyWorld();
+      w.accounts[0].positions = [longPositionFixture()]; // +1 BTC
+      w.conditionalOrders = [
+        conditionalOrderFixture({
+          id: "tp-old",
+          orderType: "TAKE_PROFIT_MARKET",
+          triggerPrice: (90_000n * WAD).toString(),
+        }),
+      ];
+      return w;
+    });
+
+    await trade.setSize("0.5");
+    await trade.tpslToggle.click();
+    await trade.entryTpInput.fill("95000");
+    await trade.entrySlInput.fill("60000");
+    await trade.submit();
+
+    // Вход + обе ноги: скобки ставятся на позицию, а не на один долив.
+    await expect.poll(() => world.submittedOrders.length).toBe(3);
+    const tp = world.submittedOrders.find(
+      (o) => o.orderType === "TAKE_PROFIT_MARKET",
+    )!;
+    // Закрывать нужно 1.5 BTC — позицию целиком. Нога размером с долив
+    // оставила бы исходный BTC без защиты.
+    expect(tp.sizeDelta).toBe((-3n * WAD) / 2n + "");
+    // Старый тейк переставлен, а не оставлен вторым уровнем: иначе позиция
+    // закрылась бы по 90 000, хотя пользователь назвал 95 000.
+    await expect.poll(() => world.cancelledOrderIds).toContain("tp-old");
+  });
 
   test("a rejected take-profit leg is named, and the stop is still submitted", async ({
     page,

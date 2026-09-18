@@ -3,14 +3,18 @@ import {
   Bps,
   describeRejection,
   describeWarning,
+  positionBrackets,
   Price,
-  type Qty,
+  Qty,
   Side,
+  toSignedSize,
 } from "@liq/sdk";
 import {
   useAccountId,
   useApplyBracketsMutation,
   useAvailableMarginQuery,
+  useConditionalOrders,
+  useEnrichedPositions,
   useOrderSubmission,
   useSessionStage,
   useTradeStore,
@@ -51,8 +55,16 @@ const SLIPPAGE_BPS = Bps(50n); // 0.5%
  */
 const LIMIT_PRICE_DECIMALS = 2;
 
+/** Стабильные пустышки: новый литерал на каждый рендер гонял бы мемо впустую. */
+const EMPTY_ORDERS: NonNullable<
+  ReturnType<typeof useConditionalOrders>["data"]
+> = [];
+const EMPTY_POSITIONS: NonNullable<
+  ReturnType<typeof useEnrichedPositions>["data"]
+> = [];
+
 export function TradeForm() {
-  const { marketId, market } = useSelectedMarket();
+  const { marketId, market, allMarketIds } = useSelectedMarket();
   const accountId = useAccountId();
   const stage = useSessionStage();
   const markPrice = useMarkPrice();
@@ -68,6 +80,11 @@ export function TradeForm() {
   // Скобки входа — то же действие, что у диалога позиции: план, связка ног,
   // порядок подачи и сбор отказов живут в SDK.
   const applyBrackets = useApplyBracketsMutation(accountId);
+  // Скобки ставятся на позицию, а не на вход, поэтому тикету нужно то же, что
+  // и строке позиции: её текущий размер и её действующие скобки.
+  const { data: conditional = EMPTY_ORDERS } = useConditionalOrders();
+  const { data: positions = EMPTY_POSITIONS } =
+    useEnrichedPositions(allMarketIds);
 
   const [tab, setTab] = useState<Tab>("Market");
   const [limitPrice, setLimitPrice] = useState("");
@@ -124,17 +141,34 @@ export function TradeForm() {
     !sizing.validation.ok ||
     !tabPriceReady;
 
-  // Скобки входа: позиция размером со вход и пустые существующие скобки —
-  // вход ничего не отменяет. Куда смотрит триггер, чем закрывается позиция и в
-  // какой связке стоят ноги, решает действие SDK; подаются они после того, как
-  // шлюз принял вход, то есть не атомарно с ним.
-  function attachBrackets(entryDelta: Qty, entrySide: Side) {
+  /**
+   * Прикрепить скобки к позиции, которой станет рынок после принятого входа.
+   *
+   * @remarks Размер — позиция целиком, а не один вход, и существующие скобки
+   * передаются настоящие: иначе долив завёл бы вторую связку поверх первой,
+   * строка позиции показывала бы только первую, и «переставил тейк» из диалога
+   * оставил бы второй уровень висеть — позиция закрылась бы по цене, которую
+   * пользователь считал заменённой.
+   *
+   * Позиция здесь ещё дошлюзовая: вход принят, но не рассчитан, поэтому её
+   * размер складывается с размером входа вручную. Знак приводит
+   * `toSignedSize` — часть источников несёт размер по модулю.
+   *
+   * Куда смотрит триггер, чем закрывается позиция и в какой связке стоят ноги,
+   * решает действие SDK. Подаются они после того, как шлюз принял вход, то есть
+   * не атомарно с ним.
+   */
+  function attachBrackets(entryDelta: Qty) {
     if (!tpslOn || accountId === undefined || marketId === undefined) return;
+    const open = positions.find((p) => p.marketId === marketId);
+    const size = Qty(
+      (open ? toSignedSize(open.size, open.side) : 0n) + entryDelta,
+    );
     // `mutate`, как и вход: отказ приходит в `applyBrackets.error` и печатается
     // строкой `trade-error`.
     applyBrackets.mutate({
-      position: { marketId, side: entrySide, size: entryDelta },
-      brackets: { takeProfit: null, stopLoss: null },
+      position: { marketId, side: size < 0n ? Side.SELL : Side.BUY, size },
+      brackets: positionBrackets(marketId, conditional),
       takeProfit: Price(parseOrZero(Price.parse, tp)),
       stopLoss: Price(parseOrZero(Price.parse, sl)),
     });
@@ -159,7 +193,7 @@ export function TradeForm() {
       // Fire the attached orders from the just-submitted prices, THEN clear the
       // TP/SL fields — otherwise the next entry on this tab would re-attach the
       // stale prices (the form clears only on a confirmed submit).
-      attachBrackets(sizeDelta, side);
+      attachBrackets(sizeDelta);
       setTp("");
       setSl("");
     };
