@@ -1,10 +1,10 @@
 import type { AccountMargin } from "@liq/api-client";
 import {
+  useAccountDebtQuery,
   useAccountId,
   useAvailableMarginQuery,
   useEnrichedPositions,
   useLiqClient,
-  useLiqOnchain,
 } from "@liq/react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -88,13 +88,15 @@ export function summarize(input: SummaryInput): AccountSummary {
 /**
  * Панель Account поверх четырёх чтений SDK.
  *
- * @remarks Двух из них нет хуками в `@liq/react` — `accounts.getMargin` и
- * `collateral.debt` живут только методами сервисов, поэтому здесь стоит
- * локальный `useQuery`. Это пробел SDK, а не разрешение считать в терминале:
- * логика чтения остаётся за швом, снаружи только проводка. Имена запросов не
- * начинаются с `liq/`, поэтому `resetAuthedQueries` их не сметает; ключ несёт
- * `accountId`, так что вход другим кошельком получает другую запись кэша, а не
- * чужие числа.
+ * @remarks Одного из них нет хуком в `@liq/react` — `accounts.getMargin` живёт
+ * только методом сервиса, поэтому здесь стоит локальный `useQuery`. Это пробел
+ * SDK, а не разрешение считать в терминале: логика чтения остаётся за швом,
+ * снаружи только проводка. Имя запроса не начинается с `liq/`, поэтому
+ * `resetAuthedQueries` его не сметает; ключ несёт `accountId`, так что вход
+ * другим кошельком получает другую запись кэша, а не чужие числа.
+ *
+ * Долг с SDK 0.56.0 читает `useAccountDebtQuery` — одна запись кэша на панель,
+ * диалог вывода и протухание после расчёта или погашения.
  */
 export function useAccountSummary(): {
   summary: AccountSummary;
@@ -102,7 +104,6 @@ export function useAccountSummary(): {
 } {
   const accountId = useAccountId();
   const client = useLiqClient();
-  const onchain = useLiqOnchain();
   const { allMarketIds } = useSelectedMarket();
 
   const { data: margins, isLoading: marginsLoading } = useAvailableMarginQuery();
@@ -116,13 +117,7 @@ export function useAccountSummary(): {
     refetchInterval: 15_000,
   });
 
-  const { data: debt } = useQuery<bigint>({
-    queryKey: ["terminal", "account-debt", accountId?.toString() ?? "none"],
-    queryFn: () => onchain.collateral.debt(accountId!),
-    enabled: accountId !== undefined,
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  });
+  const { data: debt } = useAccountDebtQuery();
 
   return {
     summary: summarize({
