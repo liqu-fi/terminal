@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "base": "main",
+  "push": "required",
+  "projects": [{ "name": "terminal", "path": "." }],
+  "workspace": [
+    "pnpm exec repo-rules check",
+    "pnpm exec repo-rules diff --base origin/main",
+    "~/.claude/skills/review-task/scripts/cite-check \"$(git merge-base HEAD origin/main)\""
+  ],
+  "project": {
+    "lint": "pnpm lint",
+    "typecheck": "pnpm typecheck",
+    "test": "pnpm test"
+  }
+}
