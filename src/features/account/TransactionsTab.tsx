@@ -41,11 +41,12 @@ import {
 } from "./accountLogic";
 
 type Kind = ActivityKind | "all";
-const KINDS: readonly Kind[] = ["all", "deposit", "withdrawal", "trade", "liquidation"];
+const KINDS: readonly Kind[] = ["all", "deposit", "withdrawal", "repayment", "trade", "liquidation"];
 const KIND_LABEL: Record<Kind, string> = {
   all: "All types",
   deposit: "Deposits",
   withdrawal: "Withdrawals",
+  repayment: "Debt repayments",
   trade: "Trades",
   liquidation: "Liquidations",
 };

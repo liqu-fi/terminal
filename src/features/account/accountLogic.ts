@@ -141,11 +141,16 @@ export function sumWhenAllLoaded(
   return amounts.reduce<bigint>((sum, a) => sum + a!, 0n);
 }
 
-export type ActivityKind = "deposit" | "withdrawal" | "trade" | "liquidation";
+/**
+ * `repayment` — погашение долга из кошелька (SDK 0.70.0, monorepo MR-230):
+ * приток, как депозит, сумма положительная.
+ */
+export type ActivityKind = "deposit" | "withdrawal" | "repayment" | "trade" | "liquidation";
 
 export const ACTIVITY_LABEL: Record<ActivityKind, string> = {
   deposit: "Deposit",
   withdrawal: "Withdrawal",
+  repayment: "Debt repaid",
   trade: "Trade",
   liquidation: "Liquidation",
 };

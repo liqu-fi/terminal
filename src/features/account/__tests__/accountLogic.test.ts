@@ -158,6 +158,15 @@ describe("лента активности", () => {
     expect(row.amountUsd).toBe(-500);
   });
 
+  it("погашение долга — своим типом и притоком", () => {
+    const [row] = activityRows(
+      [{ ...deposit, type: "repayment", collateralId: "0", amountUsd: 120 }],
+      [],
+    );
+    expect(row.kind).toBe("repayment");
+    expect(row.amountUsd).toBe(120);
+  });
+
   it("ликвидация — своим типом; недоказуемая сумма — null", () => {
     const [row] = activityRows(
       [],
