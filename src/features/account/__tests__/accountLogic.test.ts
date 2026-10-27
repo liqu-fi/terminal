@@ -1,6 +1,7 @@
 import type {
   PortfolioCollateralEvent,
   PortfolioPoint,
+  PortfolioResponse,
   SettlementLedgerRow,
 } from "@liq/api-client";
 import { describe, expect, it } from "vitest";
@@ -8,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
   activityCsv,
   activityRows,
+  collateralEventsRead,
   filterActivity,
   fmtUsageWad,
   periodWindow,
@@ -209,5 +211,46 @@ describe("лента активности", () => {
     expect(lines[2]).toBe(
       `2023-11-14T22:13:20.000Z,Trade,"BTC,USD",,0x${"ab".repeat(32)}`,
     );
+  });
+});
+
+describe("collateralEventsRead", () => {
+  const withdrawal: PortfolioCollateralEvent = {
+    ...deposit,
+    type: "withdrawal",
+    amountUsd: 321,
+  };
+  function response(over: Partial<PortfolioResponse>): PortfolioResponse {
+    return { collateralEvents: [withdrawal], ...over } as PortfolioResponse;
+  }
+
+  it("ответа нет — null", () => {
+    expect(collateralEventsRead(undefined)).toBeNull();
+  });
+
+  it("поля нет, available: true — список ответа", () => {
+    expect(collateralEventsRead(response({ available: true }))).toEqual([
+      withdrawal,
+    ]);
+  });
+
+  it("поля нет, available: false — null", () => {
+    expect(collateralEventsRead(response({ available: false }))).toBeNull();
+  });
+
+  it("collateralEventsAvailable: true при available: false — список ответа", () => {
+    expect(
+      collateralEventsRead(
+        response({ available: false, collateralEventsAvailable: true }),
+      ),
+    ).toEqual([withdrawal]);
+  });
+
+  it("collateralEventsAvailable: false при available: true — null", () => {
+    expect(
+      collateralEventsRead(
+        response({ available: true, collateralEventsAvailable: false }),
+      ),
+    ).toBeNull();
   });
 });

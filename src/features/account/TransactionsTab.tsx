@@ -32,6 +32,7 @@ import {
   ACTIVITY_LABEL,
   activityCsv,
   activityRows,
+  collateralEventsRead,
   filterActivity,
   LEDGER_PAGE,
   periodWindow,
@@ -135,21 +136,21 @@ export function TransactionsTab() {
   } = useSettlementLedgerQuery(accountId, { ...range, limit: LEDGER_PAGE });
 
   // Три состояния запроса, не два (ruling после задачи 5), и ровно как в
-  // ленте OverviewTab, а не по букве брифа: пока хоть один из двух
-  // источников не осел — ничего не утверждаем; провал (`isError`) любого из
-  // двух — отдельная строка. `portfolio.available === false` — НЕ провал:
-  // это значит только «депозиты/выводы неизвестны», а не «леджера тоже
-  // нет» — расчёты леджера остаются видны, как и в ленте Overview
-  // (`activityFailed = monthFailed || ledgerFailed`, без проверки
-  // `available`). «Пусто» — только когда оба источника отдали ответ и
+  // ленте OverviewTab: пока хоть один из двух источников не осел — ничего не
+  // утверждаем; провал (`isError`) любого из двух — отдельная строка.
+  // «Депозиты/выводы не прочитаны» (`collateralEventsRead === null`) — НЕ
+  // провал и признак списка, а не кривой: расчёты леджера остаются видны, как
+  // и в ленте Overview. «Пусто» — только когда оба источника отдали ответ и
   // результирующий список действительно пуст.
   const pending = portfolioPending || ledgerPending;
   const failed = portfolioFailed || ledgerFailed;
 
   const rows = useMemo<Row[]>(() => {
     if (pending || failed) return [];
-    const events = portfolio?.available ? portfolio.collateralEvents : [];
-    const all = withinWindow(activityRows(events, ledger?.rows ?? []), range);
+    const all = withinWindow(
+      activityRows(collateralEventsRead(portfolio) ?? [], ledger?.rows ?? []),
+      range,
+    );
     return filterActivity(all, kind).map((row, i) => ({
       row,
       symbol: row.marketId === undefined ? "" : marketSymbol(markets, row.marketId),
@@ -210,11 +211,14 @@ export function TransactionsTab() {
           <Download size={14} /> CSV
         </Button>
       </div>
-      {/* `available: false` — «история депозитов и выводов не прочитана», а не
-          «их не было»: без подписи таблица из одних расчётов леджера (или
-          пустая) читалась бы как «переводов не делали». Строки леджера при
-          этом рисуются как обычно. */}
-      {!pending && !failed && portfolio?.available === false && (
+      {/* Список депозитов и выводов не прочитан (`collateralEventsRead` вернул
+          `null`) — это «неизвестно», а не «их не было»: без подписи таблица из
+          одних расчётов леджера (или пустая) читалась бы как «переводов не
+          делали». Строки леджера при этом рисуются как обычно. */}
+      {!pending &&
+        !failed &&
+        portfolio !== undefined &&
+        collateralEventsRead(portfolio) === null && (
         <p
           className="text-xs text-muted"
           data-testid="transactions-events-unavailable"
