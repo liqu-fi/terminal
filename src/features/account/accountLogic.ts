@@ -168,8 +168,8 @@ export interface ActivityRow {
 
 /**
  * Депозиты и выводы из ответа портфеля, либо `null` — «не прочитано». Это
- * признак списка, а не кривой: `available` говорит про точки графика, а
- * `collateralEventsAvailable` (шлюз 0.79) — про сам список. Поля нет (старый
+ * признак списка, а не кривой: `available` говорит про кривую и сводку, а
+ * `collateralEventsAvailable` (MR-242, SDK 0.79) — про сам список. Поля нет (старый
  * шлюз) — список следует за `available`, как раньше.
  */
 export function collateralEventsRead(

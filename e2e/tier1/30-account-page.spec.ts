@@ -153,7 +153,7 @@ test.describe("страница Account", () => {
     world,
   }) => {
     // Не литерал в позиции аргумента: `WirePortfolio` в world.ts не знает поля
-    // шлюза 0.79 (файл на лимите max-lines), мок отдаёт тело как есть.
+    // шлюза (MR-242, SDK 0.79) (файл на лимите max-lines), мок отдаёт тело как есть.
     const portfolio = {
       ...defaultPortfolio(),
       available: false,
@@ -169,6 +169,10 @@ test.describe("страница Account", () => {
     await expect(
       page.getByTestId("recent-activity-events-unavailable"),
     ).toHaveCount(0);
+    // Сводка и график остаются на `available`: кривая молчит.
+    await expect(page.getByTestId("account-stat-volume")).toHaveText("—");
+    await expect(page.getByTestId("today-pnl")).toHaveText("—");
+    await expect(page.getByTestId("portfolio-unavailable")).toBeVisible();
 
     await account.tab("transactions").click();
     await account.select("transactions-period", "all");
