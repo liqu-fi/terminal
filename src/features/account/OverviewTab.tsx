@@ -24,6 +24,7 @@ import { Panel, Stat, Unavailable } from "./AccountCards";
 import {
   ACTIVITY_LABEL,
   activityRows,
+  collateralEventsRead,
   fmtUsageWad,
   pnlSeries,
   windowPnl,
@@ -79,7 +80,7 @@ export function OverviewTab() {
   const activity = useMemo(
     () =>
       activityRows(
-        month?.available ? month.collateralEvents : [],
+        collateralEventsRead(month) ?? [],
         ledger?.rows ?? [],
       ).slice(0, RECENT),
     [month, ledger],
@@ -189,13 +190,15 @@ export function OverviewTab() {
               View all →
             </a>
           </div>
-          {/* Та же подпись, что во вкладке Transactions: `available: false`
-              значит «история депозитов и выводов не прочитана», а не «их не
-              было» и не «они недоступны», — строки леджера ниже рисуются как
-              обычно, кнопки Deposit / Withdraw работают. */}
+          {/* Та же подпись, что во вкладке Transactions: список депозитов и
+              выводов не прочитан (`collateralEventsRead` вернул `null`) —
+              «неизвестно», а не «их не было» и не «они недоступны»; строки
+              леджера ниже рисуются как обычно, кнопки Deposit / Withdraw
+              работают. */}
           {!activityPending &&
             !activityFailed &&
-            month?.available === false && (
+            month !== undefined &&
+            collateralEventsRead(month) === null && (
               <p
                 className="text-xs text-muted"
                 data-testid="recent-activity-events-unavailable"

@@ -2,6 +2,7 @@ import type {
   PortfolioCollateralEvent,
   PortfolioPeriod,
   PortfolioPoint,
+  PortfolioResponse,
   SettlementLedgerRow,
 } from "@liq/api-client";
 import { wadToNumber } from "@liq/core";
@@ -163,6 +164,22 @@ export interface ActivityRow {
   amountUsd: number | null;
   marketId?: bigint;
   txHash?: string;
+}
+
+/**
+ * Депозиты и выводы из ответа портфеля, либо `null` — «не прочитано». Это
+ * признак списка, а не кривой: `available` говорит про точки графика, а
+ * `collateralEventsAvailable` (шлюз 0.79) — про сам список. Поля нет (старый
+ * шлюз) — список следует за `available`, как раньше.
+ */
+export function collateralEventsRead(
+  portfolio: PortfolioResponse | undefined,
+): readonly PortfolioCollateralEvent[] | null {
+  if (portfolio === undefined) return null;
+  if (portfolio.collateralEventsAvailable === true)
+    return portfolio.collateralEvents;
+  if (portfolio.collateralEventsAvailable === false) return null;
+  return portfolio.available ? portfolio.collateralEvents : null;
 }
 
 /**

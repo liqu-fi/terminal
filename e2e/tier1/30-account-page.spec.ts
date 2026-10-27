@@ -148,6 +148,38 @@ test.describe("страница Account", () => {
     await expect(account.transactionRows).toHaveCount(1);
   });
 
+  test("кривая молчит, список прочитан (collateralEventsAvailable: true): депозит и расчёт видны, подписи нет", async ({
+    page,
+    world,
+  }) => {
+    // Не литерал в позиции аргумента: `WirePortfolio` в world.ts не знает поля
+    // шлюза 0.79 (файл на лимите max-lines), мок отдаёт тело как есть.
+    const portfolio = {
+      ...defaultPortfolio(),
+      available: false,
+      collateralEventsAvailable: true,
+    };
+    await enterTerminal(page, world, () =>
+      readyWorld({ portfolio, settlementLedger: [ledgerRowFixture()] }),
+    );
+    const account = new AccountPage(page);
+    await account.open();
+
+    await expect(account.activityRows).toHaveCount(2);
+    await expect(
+      page.getByTestId("recent-activity-events-unavailable"),
+    ).toHaveCount(0);
+
+    await account.tab("transactions").click();
+    await account.select("transactions-period", "all");
+    await expect(account.transactionRows).toHaveCount(2);
+    await expect(account.transactionsTable).toContainText("Deposit");
+    await expect(account.transactionsTable).toContainText("Trade");
+    await expect(
+      page.getByTestId("transactions-events-unavailable"),
+    ).toHaveCount(0);
+  });
+
   test("портфель отвечает 500: три панели говорят о недоступности", async ({
     page,
     world,
